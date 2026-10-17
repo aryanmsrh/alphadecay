@@ -13,11 +13,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 # --- Local Ollama Configuration ---
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-# Selected from your installed models: qwen2.5-coder:7b, deepseek-r1:14b, dolphin3:8b
-# qwen2.5-coder:7b is lean (4.7 GB) and fast for extraction/coding.
-# deepseek-r1:14b is ideal for deep adversarial reasoning if VRAM permits.
-LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "qwen2.5-coder:7b")
-LOCAL_REASONING_MODEL = os.getenv("LOCAL_REASONING_MODEL", "deepseek-r1:14b")
+# Selected unified model: deepseek-r1:7b (fits 100% inside 8GB VRAM with ~3.2 GB context headroom)
+LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "deepseek-r1:7b")
+LOCAL_REASONING_MODEL = os.getenv("LOCAL_REASONING_MODEL", "deepseek-r1:7b")
 
 # --- Operational Toggles ---
 # Offline Failsafe Switch: If True, bypasses all cloud calls (Gemini/Tavily) and runs 100% locally

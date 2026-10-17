@@ -1,6 +1,7 @@
 import sys
+import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
@@ -9,28 +10,39 @@ if str(BASE_DIR) not in sys.path:
 import httpx
 from config import (
     OLLAMA_BASE_URL,
-    LOCAL_MODEL_NAME,
-    LOCAL_REASONING_MODEL,
+    LOCAL_MODEL,
     GEMINI_API_KEY,
     USE_OFFLINE_MODE
 )
 
 class LLMClient:
     """
-    Unified LLM Client coordinating Local Ollama models and Cloud Gemini 2.0 Flash.
-    Features automatic fallback, offline toggle, and specialized routing.
+    Unified LLM Client coordinating Local DeepSeek-R1-7B (Ollama) and Cloud Gemini 2.0 Flash.
+    Features automatic fallback, offline toggle, and <think> tag extraction.
     """
 
     def __init__(self):
         self.ollama_url = OLLAMA_BASE_URL.rstrip("/")
         self.gemini_key = GEMINI_API_KEY
-        self.local_model = LOCAL_MODEL_NAME
-        self.reasoning_model = LOCAL_REASONING_MODEL
+        self.local_model = LOCAL_MODEL
         self.offline = USE_OFFLINE_MODE
+
+    @staticmethod
+    def parse_think_reasoning(text: str) -> Tuple[str, str]:
+        """
+        Separates DeepSeek-R1's internal reasoning (<think>...</think>) from the final output.
+        Returns: (internal_reasoning, clean_output)
+        """
+        match = re.search(r"<think>(.*?)</think>", text, flags=re.DOTALL)
+        if match:
+            reasoning = match.group(1).strip()
+            clean_output = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+            return reasoning, clean_output
+        return "", text.strip()
 
     def call_ollama(self, prompt: str, system: Optional[str] = None, model: Optional[str] = None) -> str:
         """
-        Calls local Ollama endpoint (e.g. qwen2.5-coder:7b or deepseek-r1:14b).
+        Calls local Ollama endpoint running deepseek-r1:7b.
         """
         target_model = model or self.local_model
         endpoint = f"{self.ollama_url}/api/generate"
@@ -44,7 +56,7 @@ class LLMClient:
             payload["system"] = system
 
         try:
-            with httpx.Client(timeout=45.0) as client:
+            with httpx.Client(timeout=60.0) as client:
                 res = client.post(endpoint, json=payload)
                 if res.status_code == 200:
                     return res.json().get("response", "").strip()
@@ -53,9 +65,9 @@ class LLMClient:
         except Exception as e:
             return f"[Ollama Connection Failed] {e}"
 
-    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-2.0-flash") -> str:
+    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-flash-latest") -> str:
         """
-        Calls Google Gemini 2.0 Flash API (Free tier via Google AI Studio).
+        Calls Google Gemini Flash API (Free tier via Google AI Studio).
         """
         if self.offline or not self.gemini_key:
             return self.call_ollama(prompt, system=system)
@@ -68,7 +80,10 @@ class LLMClient:
 
         payload = {
             "contents": contents,
-            "generationConfig": {"temperature": 0.2}
+            "generationConfig": {
+                "temperature": 0.1,
+                "maxOutputTokens": 2048
+            }
         }
 
         try:
@@ -89,35 +104,41 @@ class LLMClient:
             print(f"[Gemini Error] {e}. Falling back to Ollama.")
             return self.call_ollama(prompt, system=system)
 
-    def route_query(self, prompt: str, system: Optional[str] = None, task_type: str = "general") -> str:
+    def route_query(self, prompt: str, system: Optional[str] = None, task_type: str = "general") -> Tuple[str, str]:
         """
         Routes query according to optimal division of labor:
-        - 'adversarial': Routes to Local DeepSeek-R1 (excels at internal reasoning/think tags)
-        - 'concall_parsing' or 'synthesis': Routes to Gemini 2.0 Flash (high-context & prose)
-        - 'general': Defaults to local Qwen2.5-Coder-7B
+        - 'adversarial': Local DeepSeek-R1-7B (native chain-of-thought reflection).
+        - 'concall_parsing' or 'synthesis': Gemini 2.0 Flash (high-context & prose), fallback to Ollama.
+        - 'general': Local DeepSeek-R1-7B.
+        Returns: (thought_process, final_response)
         """
         if self.offline:
-            return self.call_ollama(prompt, system=system, model=self.local_model)
+            raw = self.call_ollama(prompt, system=system)
+            return self.parse_think_reasoning(raw)
 
         if task_type == "adversarial":
-            # Test local reasoning model first
-            response = self.call_ollama(prompt, system=system, model=self.reasoning_model)
-            if "Connection Failed" not in response:
-                return response
-            return self.call_gemini(prompt, system=system)
+            # Local DeepSeek-R1 excels at internal debate and self-falsification
+            raw = self.call_ollama(prompt, system=system)
+            if "Connection Failed" not in raw and "Error" not in raw:
+                return self.parse_think_reasoning(raw)
+            # Fallback to Gemini if Ollama offline
+            raw_gemini = self.call_gemini(prompt, system=system)
+            return "", raw_gemini
 
         elif task_type in ("concall_parsing", "synthesis"):
             if self.gemini_key:
-                return self.call_gemini(prompt, system=system)
-            return self.call_ollama(prompt, system=system, model=self.local_model)
+                raw_gemini = self.call_gemini(prompt, system=system)
+                return "", raw_gemini
+            raw = self.call_ollama(prompt, system=system)
+            return self.parse_think_reasoning(raw)
 
-        return self.call_ollama(prompt, system=system, model=self.local_model)
+        raw = self.call_ollama(prompt, system=system)
+        return self.parse_think_reasoning(raw)
 
 if __name__ == "__main__":
     client = LLMClient()
-    print("Testing LLMClient...")
-    print(f"Local model configured: {client.local_model}")
-    print(f"Reasoning model configured: {client.reasoning_model}")
-    print(f"Testing local Ollama connection with model '{client.local_model}'...")
-    test_res = client.call_ollama("Respond with 'Ollama is alive and ready for AlphaDecay!' in exactly one line.")
-    print(f"Ollama Response:\n{test_res}")
+    print("Testing LLMClient with unified local model:", client.local_model)
+    thought, answer = client.route_query("Explain in 1 sentence what debtor days measures in corporate finance.", task_type="general")
+    if thought:
+        print(f"[Thought Trace]: {thought[:150]}...")
+    print(f"[Final Answer]: {answer}")

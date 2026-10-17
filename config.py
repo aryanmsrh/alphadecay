@@ -13,9 +13,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 # --- Local Ollama Configuration ---
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-# Selected unified model: deepseek-r1:7b (fits 100% inside 8GB VRAM with ~3.2 GB context headroom)
-LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "deepseek-r1:7b")
-LOCAL_REASONING_MODEL = os.getenv("LOCAL_REASONING_MODEL", "deepseek-r1:7b")
+# Unified Local Model (DeepSeek-R1-7B fits 100% inside 8GB VRAM with ~3.2 GB context headroom)
+LOCAL_MODEL = os.getenv("LOCAL_MODEL", "deepseek-r1:7b")
 
 # --- Operational Toggles ---
 # Offline Failsafe Switch: If True, bypasses all cloud calls (Gemini/Tavily) and runs 100% locally

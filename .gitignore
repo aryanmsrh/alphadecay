@@ -34,8 +34,10 @@ env/
 
 # Scraper & pipeline disk cache
 data/cache/
+data/*.png
 *.json.cache
 *.log
+*.pdf
 
 # IDE & OS files
 .vscode/

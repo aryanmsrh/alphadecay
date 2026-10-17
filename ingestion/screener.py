@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 import httpx
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -7,7 +7,7 @@ import pandas as pd
 class ScreenerScraper:
     """
     Ultra-fast, deterministic scraper for Screener.in statutory tables using httpx + BeautifulSoup4.
-    Extracts trailing 8+ quarters of P&L, balance sheets, and operating cash flows.
+    Extracts trailing quarters of P&L, balance sheets, cash flows, historical ratios, and concall transcripts.
     """
 
     HEADERS = {
@@ -41,7 +41,7 @@ class ScreenerScraper:
                     continue
 
         if not html_content:
-            raise RuntimeError(f"Failed to fetch live data for ticker '{ticker}' from Screener.in")
+            raise RuntimeError(f"Failed to fetch live data for ticker \x27{ticker}\x27 from Screener.in")
 
         parsed_data = self._parse_screener_html(html_content, ticker)
         parsed_data["source_url"] = final_url
@@ -56,7 +56,6 @@ class ScreenerScraper:
         if not table:
             return {}
 
-        # Parse headers (quarters / years)
         headers = []
         thead = table.find("thead")
         if thead:
@@ -65,7 +64,6 @@ class ScreenerScraper:
                 if text:
                     headers.append(text)
 
-        # Parse rows
         rows = {}
         tbody = table.find("tbody")
         if tbody:
@@ -74,7 +72,6 @@ class ScreenerScraper:
                 if not tds:
                     continue
                 row_label = tds[0].get_text(strip=True).replace("+", "").strip()
-                # Remove nested button/sub-item artifacts
                 clean_values = []
                 for td in tds[1:]:
                     val_str = td.get_text(strip=True).replace(",", "").replace("%", "")
@@ -104,10 +101,24 @@ class ScreenerScraper:
             if name and value:
                 ratios[name.get_text(strip=True)] = value.get_text(strip=True)
 
-        # Parse Tables
+        # Parse Statutory Tables
         quarters_data = self._parse_table(soup, "quarters")
         balance_sheet_data = self._parse_table(soup, "balance-sheet")
         cash_flow_data = self._parse_table(soup, "cash-flow")
+        ratios_table = self._parse_table(soup, "ratios")
+
+        # Extract Concall Transcript Links from Documents Section
+        concall_transcripts = []
+        docs_section = soup.find("section", id="documents")
+        if docs_section:
+            for a in docs_section.find_all("a"):
+                text = a.get_text(strip=True)
+                href = a.get("href", "")
+                if "transcript" in text.lower() or "transcript" in href.lower():
+                    concall_transcripts.append({
+                        "title": text,
+                        "url": href
+                    })
 
         return {
             "ticker": ticker,
@@ -116,13 +127,6 @@ class ScreenerScraper:
             "quarters": quarters_data,
             "balance_sheet": balance_sheet_data,
             "cash_flow": cash_flow_data,
+            "ratios_table": ratios_table,
+            "concall_transcripts": concall_transcripts,
         }
-
-if __name__ == "__main__":
-    scraper = ScreenerScraper(use_cache=True)
-    print("Testing ScreenerScraper on HINDUNILVR...")
-    data = scraper.fetch_company_data("HINDUNILVR")
-    print(f"Company: {data['company_name']}")
-    print(f"Quarters available: {data['quarters'].get('periods', [])[-8:]}")
-    if "Sales" in data['quarters'].get('rows', {}):
-        print(f"Past 8Q Sales: {data['quarters']['rows']['Sales'][-8:]}")

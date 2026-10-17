@@ -46,7 +46,14 @@ def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
         "computed_metrics": {
             "debtor_days": summary.debtor_days,
             "sales_growth_yoy": summary.sales_growth_yoy,
-            "cfo_to_ebitda": summary.cfo_to_ebitda
+            "derived_volume_growth": summary.derived_volume_growth,
+            "beneish_dsri": summary.beneish_dsri,
+            "beneish_sgi": summary.beneish_sgi,
+            "beneish_gmi": summary.beneish_gmi,
+            "cfo_to_ebitda": summary.cfo_to_ebitda,
+            "margin_wedge_bps": summary.margin_wedge_bps,
+            "distribution_drag_bps": summary.distribution_drag_bps,
+            "peer_spread_days": summary.peer_spread_days
         },
         "anomalies": [a.model_dump() for a in summary.anomalies],
         "selected_anomaly": None,
@@ -87,12 +94,7 @@ def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
     # Step 5: Optional PDF Export
     if export_pdf_path:
         target_pdf = f"{ticker}_forensic_report.pdf" if export_pdf_path == "default" else export_pdf_path
-        summary_dict = {
-            "quarters_analyzed": summary.quarters_analyzed,
-            "sales_growth_yoy": summary.sales_growth_yoy,
-            "debtor_days": summary.debtor_days
-        }
-        pdf_path = export_forensic_pdf(ticker, company_name, summary_dict, discovery, target_pdf)
+        pdf_path = export_forensic_pdf(ticker, company_name, summary, discovery, target_pdf)
         print(f"\n[PDF Exporter] Official research note saved to: {pdf_path}")
 
 if __name__ == "__main__":

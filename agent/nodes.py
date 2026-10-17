@@ -175,10 +175,16 @@ def peer_triangulation_node(state: InvestigationState) -> Dict[str, Any]:
     for peer in peers:
         try:
             p_data = screener_scraper.fetch_company_data(peer)
-            p_name = p_data.get("company_name", peer)
-            p_days = p_data.get("ratios_table", {}).get("rows", {}).get("Debtor Days", [])
-            if len(p_days) >= 2:
-                p_delta = round(p_days[-1] - p_days[0], 1)
+            raw_p_days = p_data.get("ratios_table", {}).get("rows", {}).get("Debtor Days", [])
+            p_clean = []
+            for pv in raw_p_days:
+                try:
+                    if pv is not None and str(pv).strip() not in ("", "-", "nan", "None"):
+                        p_clean.append(float(pv))
+                except (ValueError, TypeError):
+                    pass
+            if len(p_clean) >= 2:
+                p_delta = round(p_clean[-1] - p_clean[0], 1)
             else:
                 p_delta = 2.0
             peer_deltas.append(p_delta)

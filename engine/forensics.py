@@ -176,17 +176,34 @@ class ForensicEngine:
 
         # Debtor days: prefer audited Screener ratios table, else calculate from balance sheet
         ratios_rows = raw_data.get("ratios_table", {}).get("rows", {})
-        debtor_days_list = ratios_rows.get("Debtor Days", [])
+        raw_debtor_days = ratios_rows.get("Debtor Days", [])
+
+        # Robustly clean and filter non-numeric / empty string entries
+        clean_debtor_days = []
+        for val in raw_debtor_days:
+            try:
+                if val is not None and str(val).strip() not in ("", "-", "nan", "None"):
+                    clean_debtor_days.append(float(val))
+            except (ValueError, TypeError):
+                continue
 
         debtor_days_dict = {}
         anomalies: List[AnomalyCandidate] = []
 
-        if debtor_days_list:
-            # Map trailing debtor days to target periods
-            days_sub = debtor_days_list[-trailing_len:] if len(debtor_days_list) >= trailing_len else debtor_days_list
+        if clean_debtor_days:
+            # Map available clean debtor days to target periods from the right
+            days_mapped = []
+            for i in range(len(target_periods)):
+                offset = len(target_periods) - 1 - i
+                val_idx = len(clean_debtor_days) - 1 - offset
+                if 0 <= val_idx < len(clean_debtor_days):
+                    days_mapped.append(clean_debtor_days[val_idx])
+                elif val_idx < 0:
+                    days_mapped.append(clean_debtor_days[0])
+                else:
+                    days_mapped.append(clean_debtor_days[-1])
             for idx, period in enumerate(target_periods):
-                val = days_sub[idx] if idx < len(days_sub) else days_sub[-1]
-                debtor_days_dict[period] = float(val)
+                debtor_days_dict[period] = days_mapped[idx]
         else:
             # Fallback calculation
             for idx, period in enumerate(target_periods):
@@ -209,7 +226,10 @@ class ForensicEngine:
         cfo_ebitda_val = 0.62
         for k, v in cf_rows.items():
             if "cfo/ebitda" in k.lower() and v:
-                cfo_ebitda_val = round(float(v[-1]) / 100.0, 2)
+                try:
+                    cfo_ebitda_val = round(float(v[-1]) / 100.0, 2)
+                except (ValueError, TypeError):
+                    cfo_ebitda_val = 0.62
                 break
 
         # Compute Beneish Sub-Indices (Feature A)
@@ -227,9 +247,16 @@ class ForensicEngine:
             peer_deltas = []
             for p in peer_data:
                 p_ticker = p.get("ticker", "PEER")
-                p_days = p.get("ratios_table", {}).get("rows", {}).get("Debtor Days", [])
-                if len(p_days) >= 2:
-                    p_delta = p_days[-1] - p_days[0]
+                raw_p_days = p.get("ratios_table", {}).get("rows", {}).get("Debtor Days", [])
+                p_clean = []
+                for pv in raw_p_days:
+                    try:
+                        if pv is not None and str(pv).strip() not in ("", "-", "nan", "None"):
+                            p_clean.append(float(pv))
+                    except (ValueError, TypeError):
+                        pass
+                if len(p_clean) >= 2:
+                    p_delta = round(p_clean[-1] - p_clean[0], 1)
                 else:
                     p_delta = 2.0
                 peer_deltas.append(p_delta)

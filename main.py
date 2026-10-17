@@ -2,6 +2,7 @@ import sys
 import argparse
 import json
 from pathlib import Path
+from typing import Optional
 
 BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
@@ -10,18 +11,19 @@ if str(BASE_DIR) not in sys.path:
 from ingestion.screener import ScreenerScraper
 from engine.forensics import ForensicEngine
 from agent.graph import investigation_app
+from exporter.pdf_report import export_forensic_pdf
 from config import TRACK_C_NIFTY50
 
-def run_investigation(ticker: str):
+def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
     ticker = ticker.upper().strip()
     print("=" * 70)
     print(f"  ALPHA-DECAY: Autonomous Forensic Investigation Engine")
     print(f"  Target Stock: {ticker} (Track C: FMCG & Retail)")
     print("=" * 70)
 
-    # Step 1: Scrape Ingestion Layer
-    print(f"\n[Phase 1] Fetching statutory filings from Screener.in for '{ticker}'...")
-    scraper = ScreenerScraper(use_cache=True)
+    # Step 1: Live Scraping Ingestion (Zero Caching)
+    print(f"\n[Phase 1] Fetching live statutory filings from Screener.in for '{ticker}'...")
+    scraper = ScreenerScraper(use_cache=False)
     raw_data = scraper.fetch_company_data(ticker)
     company_name = raw_data.get("company_name", ticker)
     print(f"  --> Identified Entity: {company_name}")
@@ -82,8 +84,21 @@ def run_investigation(ticker: str):
     print("  [Audit Complete] No buy/sell advice provided. Strictly forensic.")
     print("=" * 70)
 
+    # Step 5: Optional PDF Export
+    if export_pdf_path:
+        target_pdf = f"{ticker}_forensic_report.pdf" if export_pdf_path == "default" else export_pdf_path
+        summary_dict = {
+            "quarters_analyzed": summary.quarters_analyzed,
+            "sales_growth_yoy": summary.sales_growth_yoy,
+            "debtor_days": summary.debtor_days
+        }
+        pdf_path = export_forensic_pdf(ticker, company_name, summary_dict, discovery, target_pdf)
+        print(f"\n[PDF Exporter] Official research note saved to: {pdf_path}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AlphaDecay Autonomous Forensic Investigator")
     parser.add_argument("--ticker", type=str, default="HINDUNILVR", help="Track C NIFTY 50 Ticker (default: HINDUNILVR)")
+    parser.add_argument("--export-pdf", nargs="?", const="default", default=None, 
+                        help="Export 8-point schema finding to PDF (e.g. --export-pdf or --export-pdf report.pdf)")
     args = parser.parse_args()
-    run_investigation(args.ticker)
+    run_investigation(args.ticker, export_pdf_path=args.export_pdf)

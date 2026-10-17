@@ -1,12 +1,8 @@
-import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 import httpx
 from bs4 import BeautifulSoup
 import pandas as pd
-
-CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 class ScreenerScraper:
     """
@@ -20,22 +16,11 @@ class ScreenerScraper:
         "Accept-Language": "en-US,en;q=0.5",
     }
 
-    def __init__(self, use_cache: bool = True):
+    def __init__(self, use_cache: bool = False):
         self.use_cache = use_cache
-
-    def _get_cache_path(self, ticker: str) -> Path:
-        return CACHE_DIR / f"{ticker.upper()}_financials.json"
 
     def fetch_company_data(self, ticker: str) -> Dict[str, Any]:
         ticker = ticker.upper().strip()
-        cache_file = self._get_cache_path(ticker)
-
-        if self.use_cache and cache_file.exists():
-            try:
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                pass  # Fallback to fresh fetch if cache is corrupted
 
         urls_to_try = [
             f"https://www.screener.in/company/{ticker}/consolidated/",
@@ -44,7 +29,7 @@ class ScreenerScraper:
 
         html_content = ""
         final_url = ""
-        with httpx.Client(headers=self.HEADERS, timeout=12.0, follow_redirects=True) as client:
+        with httpx.Client(headers=self.HEADERS, timeout=15.0, follow_redirects=True) as client:
             for url in urls_to_try:
                 try:
                     resp = client.get(url)
@@ -52,19 +37,14 @@ class ScreenerScraper:
                         html_content = resp.text
                         final_url = url
                         break
-                except Exception as e:
+                except Exception:
                     continue
 
         if not html_content:
-            raise RuntimeError(f"Failed to fetch data for ticker '{ticker}' from Screener.in")
+            raise RuntimeError(f"Failed to fetch live data for ticker '{ticker}' from Screener.in")
 
         parsed_data = self._parse_screener_html(html_content, ticker)
         parsed_data["source_url"] = final_url
-
-        # Save to disk cache
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(parsed_data, f, indent=2)
-
         return parsed_data
 
     def _parse_table(self, soup: BeautifulSoup, section_id: str) -> Dict[str, Any]:

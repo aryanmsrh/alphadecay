@@ -242,11 +242,9 @@ Supporting Quantitative Deviation: {anomaly.get('description')}
 Peer Benchmark Evidence: {json.dumps(peer_ev, indent=2)}
 
 Your Mission: Try your hardest to EXONERATE the company.
-Find legitimate alternative business justifications:
-1. Did agricultural raw material deflation force price cuts, creating artificial realization drops?
-2. Was there an industry-wide festive calendar shift (e.g., late Diwali moving credit settlements)?
-3. Was there an ERP/billing system migration cutoff?
-4. Did competitors face identical pressures?
+Evidentiary Standards:
+- If the peer benchmark evidence indicates that competitors experienced comparable pressures (e.g. peer debtor stretch matches target within 5 days, or sector-wide raw material deflation/festive timing), YOU MUST EXONERATE THE COMPANY and set IS_FALSIFIED to TRUE.
+- Only if the quantitative divergence is clearly firm-specific (e.g. idiosyncratic spread >= 10 days, or margin wedge > 150 bps without peer precedent) and indicates uncollected channel receivables, set IS_FALSIFIED to FALSE.
 
 Respond in this EXACT format:
 IS_FALSIFIED: [TRUE or FALSE]
@@ -254,20 +252,22 @@ EVIDENCE_STRENGTH: [Strong, Moderate, or Weak]
 COUNTERARGUMENT: [1-2 sentences stating the strongest alternative explanation]
 FALSIFICATION_CRITERIA: [Exact future metric/condition that would disprove the prosecution's claim]
 """
-    system = "You are a rigorous, skeptical defense attorney stress-testing a forensic financial hypothesis. Be objective and demanding."
+    system = "You are a rigorous, skeptical defense attorney stress-testing a forensic financial hypothesis. Exonerate if peer or macro evidence justifies the numbers."
     _, critic_output = llm.route_query(critic_prompt, system=system, task_type="adversarial")
 
     # Parse defense verdict
     is_falsified = False
-    if "IS_FALSIFIED: TRUE" in critic_output.upper():
-        is_falsified = True
-
     # Parse evidence strength
     strength = "Strong"
-    if "MODERATE" in critic_output.upper():
-        strength = "Moderate"
-    elif "WEAK" in critic_output.upper():
+    if "WEAK" in critic_output.upper():
         strength = "Weak"
+    elif "MODERATE" in critic_output.upper():
+        strength = "Moderate"
+
+    # Parse defense verdict (exonerated if IS_FALSIFIED: TRUE or evidence strength is Weak)
+    is_falsified = False
+    if "IS_FALSIFIED: TRUE" in critic_output.upper() or strength == "Weak":
+        is_falsified = True
 
     # Extract counterargument
     counter_match = re.search(r"COUNTERARGUMENT:\s*(.*)", critic_output, re.IGNORECASE)

@@ -65,7 +65,7 @@ class LLMClient:
         except Exception as e:
             return f"[Ollama Connection Failed] {e}"
 
-    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-flash-latest") -> str:
+    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-3.5-flash") -> str:
         """
         Calls Google Gemini Flash API (Free tier via Google AI Studio).
         """
@@ -73,21 +73,18 @@ class LLMClient:
             return self.call_ollama(prompt, system=system)
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.gemini_key}"
-        contents = []
-        if system:
-            contents.append({"role": "user", "parts": [{"text": f"System Instructions: {system}"}]})
-        contents.append({"role": "user", "parts": [{"text": prompt}]})
-
         payload = {
-            "contents": contents,
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.1,
                 "maxOutputTokens": 2048
             }
         }
+        if system:
+            payload["system_instruction"] = {"parts": [{"text": system}]}
 
         try:
-            with httpx.Client(timeout=30.0) as client:
+            with httpx.Client(timeout=45.0) as client:
                 res = client.post(url, json=payload)
                 if res.status_code == 200:
                     data = res.json()

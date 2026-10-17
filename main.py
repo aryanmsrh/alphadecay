@@ -65,6 +65,7 @@ def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
         "falsification_reason": None,
         "evidence_strength": None,
         "iteration_count": 0,
+        "current_anomaly_index": 0,
         "final_discovery": None,
         "logs": []
     }

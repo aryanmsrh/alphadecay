@@ -254,22 +254,22 @@ def export_forensic_pdf(
         quarters = summary_data.get("quarters_analyzed", [])
         sales_growth = summary_data.get("sales_growth_yoy", {})
         debtor_days = summary_data.get("debtor_days", {})
-        dsri_val = summary_data.get("beneish_dsri", 1.12)
-        sgi_val = summary_data.get("beneish_sgi", 1.10)
-        gmi_val = summary_data.get("beneish_gmi", 1.0)
-        wedge_val = summary_data.get("margin_wedge_bps", 180.0)
-        drag_val = summary_data.get("distribution_drag_bps", 102.0)
-        spread_val = summary_data.get("peer_spread_days", 14.0)
+        dsri_val = summary_data.get("beneish_dsri", "N/A")
+        sgi_val = summary_data.get("beneish_sgi", "N/A")
+        gmi_val = summary_data.get("beneish_gmi", "N/A")
+        wedge_val = summary_data.get("margin_wedge_bps", 0.0)
+        drag_val = summary_data.get("distribution_drag_bps", 0.0)
+        spread_val = summary_data.get("peer_spread_days", "N/A")
     else:
         quarters = summary_data.quarters_analyzed
         sales_growth = summary_data.sales_growth_yoy
         debtor_days = summary_data.debtor_days
-        dsri_val = summary_data.beneish_dsri or 1.12
-        sgi_val = summary_data.beneish_sgi or 1.10
-        gmi_val = summary_data.beneish_gmi or 1.0
-        wedge_val = summary_data.margin_wedge_bps or 180.0
-        drag_val = summary_data.distribution_drag_bps or 102.0
-        spread_val = summary_data.peer_spread_days or 14.0
+        dsri_val = summary_data.beneish_dsri if summary_data.beneish_dsri is not None else "N/A"
+        sgi_val = summary_data.beneish_sgi if summary_data.beneish_sgi is not None else "N/A"
+        gmi_val = summary_data.beneish_gmi if summary_data.beneish_gmi is not None else "N/A"
+        wedge_val = summary_data.margin_wedge_bps if summary_data.margin_wedge_bps is not None else 0.0
+        drag_val = summary_data.distribution_drag_bps if summary_data.distribution_drag_bps is not None else 0.0
+        spread_val = summary_data.peer_spread_days if summary_data.peer_spread_days is not None else "N/A"
 
     # Embedded Historical Dual-Panel Forensic Chart (Feature D)
     if not chart_path or not os.path.exists(chart_path):

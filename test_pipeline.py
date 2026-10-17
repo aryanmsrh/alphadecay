@@ -104,6 +104,7 @@ def test_all():
             "falsification_reason": None,
             "evidence_strength": None,
             "iteration_count": 0,
+            "current_anomaly_index": 0,
             "final_discovery": None,
             "logs": []
         }

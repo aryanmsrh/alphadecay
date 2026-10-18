@@ -34,7 +34,11 @@ class TavilySearchClient:
             "query": query,
             "search_depth": "advanced",
             "include_answer": True,
-            "max_results": max_results
+            "max_results": max_results,
+            "exclude_domains": [
+                "investing.com", "finance.yahoo.com", "tradingview.com",
+                "moneycontrol.com", "groww.in", "upstox.com", "angelone.in", "5paisa.com"
+            ]
         }
 
         print("\n" + "=" * 70)

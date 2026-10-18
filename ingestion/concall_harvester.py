@@ -80,7 +80,7 @@ class ConcallHarvester:
             # Split into speaker turns / dialogue blocks
             paragraphs = re.split(r"\n(?=[A-Z][a-zA-Z\s\.\(\)]+:\s*)", qa_text)
 
-            matches: List[Dict[str, Any]] = []
+            candidate_matches: List[Dict[str, Any]] = []
             for i, p in enumerate(paragraphs):
                 p_clean = " ".join(p.split())
                 p_lower = p_clean.lower()
@@ -92,16 +92,20 @@ class ConcallHarvester:
                         next_turn = " ".join(paragraphs[i + 1].split())
                         context += "\n[Management Response]: " + next_turn
 
-                    matches.append({
+                    # Information density score: forensic keywords + quantitative metrics (% / days / bps / cr)
+                    num_metrics = len(re.findall(r'\d+(?:\.\d+)?%|\d+\s*(?:days|bps|cr)', p_lower))
+                    density_score = len(matched_kw) * 2 + num_metrics
+
+                    candidate_matches.append({
                         "matched_keywords": matched_kw,
                         "excerpt": context,
-                        "source_url": resolved_pdf_url
+                        "source_url": resolved_pdf_url,
+                        "density_score": density_score
                     })
 
-                    if len(matches) >= max_excerpts:
-                        break
-
-            return matches
+            # Sort candidate excerpts descending by information density
+            candidate_matches.sort(key=lambda x: x["density_score"], reverse=True)
+            return candidate_matches[:max_excerpts]
 
         except Exception:
             return []

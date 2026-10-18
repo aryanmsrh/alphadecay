@@ -14,6 +14,7 @@ from ingestion.web_search import TavilySearchClient
 from ingestion.screener import ScreenerScraper
 from ingestion.concall_harvester import ConcallHarvester
 from agent.llm_client import LLMClient
+from engine.forensics import ForensicEngine
 from config import PEER_MAPPING
 
 search_client = TavilySearchClient()
@@ -173,74 +174,86 @@ Task: In 2 to 3 concise bullet points, identify whether management's narrative c
 
     return {
         "prosecution_evidence": evidence_items,
+        "contradiction_analysis": contradiction_analysis.strip(),
         "logs": state.get("logs", []) + [log_entry, contradiction_analysis]
     }
 
 def peer_triangulation_node(state: InvestigationState) -> Dict[str, Any]:
     """
     Node 4: Evaluates competitor filings to determine if anomaly is firm-specific or sector-wide.
-    Prints all raw peer numbers, peer median, and idiosyncratic spread calculation.
+    Audits competitors on the exact same metric and unit as the selected anomaly.
     """
     ticker = state.get("ticker", "NESTLEIND")
     company_name = state.get("company_name", ticker)
     anomaly = state.get("selected_anomaly", {})
+    metric_type = anomaly.get("metric_type", "debtor_days")
+    unit = anomaly.get("unit", "d")
+    target_delta = float(anomaly.get("delta", 0.0))
     peers = PEER_MAPPING.get(ticker, ["BRITANNIA", "TATACONSUM"])[:2]
 
     peer_evidence = []
     peer_deltas = []
 
     print("\n" + "-" * 70)
-    print(f"[Node 4: Peer Triangulation] Scraping Statutory Peer Disclosures:")
+    print(f"[Node 4: Peer Triangulation] Scraping & Auditing Competitor Disclosures ({anomaly.get('metric_name')}):")
 
     for peer in peers:
         try:
             p_data = screener_scraper.fetch_company_data(peer)
             p_name = p_data.get("company_name", peer)
-            raw_p_days = p_data.get("ratios_table", {}).get("rows", {}).get("Debtor Days", [])
-            p_clean = []
-            for pv in raw_p_days:
-                try:
-                    if pv is not None and str(pv).strip() not in ("", "-", "nan", "None"):
-                        p_clean.append(float(pv))
-                except (ValueError, TypeError):
-                    pass
-            if len(p_clean) >= 2:
-                p_delta = round(p_clean[-1] - p_clean[0], 1)
-                peer_deltas.append(p_delta)
-                print(f"  • {p_name} ({peer}): Baseline Debtor Days={p_clean[0]}d -> Latest={p_clean[-1]}d (Delta: {p_delta}d)")
-            else:
-                p_delta = 0.0
-                peer_deltas.append(p_delta)
-                print(f"  • {p_name} ({peer}): Insufficient debtor history, delta recorded as 0.0d")
+            p_summary = ForensicEngine.audit_company(p_data)
+
+            if metric_type == "uvg_divergence":
+                p_q = p_summary.quarters_analyzed[-1] if p_summary.quarters_analyzed else None
+                p_sales_g = p_summary.sales_growth_yoy.get(p_q, 0.0) if p_q else 0.0
+                p_uvg = p_summary.derived_volume_growth.get(p_q, 0.0) if p_q else 0.0
+                p_val = round(p_sales_g - p_uvg, 2)
+                summary_text = f"{p_name} ({peer}) latest Sales YoY ({p_sales_g}%) vs UVG ({p_uvg}%) spread is {p_val}%."
+            elif metric_type == "margin_wedge":
+                p_val = float(p_summary.margin_wedge_bps or 0.0)
+                summary_text = f"{p_name} ({peer}) operating margin wedge is {p_val} bps."
+            else:  # debtor_days / default
+                days_list = list(p_summary.debtor_days.values())
+                if len(days_list) >= 2:
+                    b_idx = -5 if len(days_list) >= 5 else 0
+                    p_val = round(days_list[-1] - days_list[b_idx], 1)
+                else:
+                    p_val = 0.0
+                summary_text = f"{p_name} ({peer}) statutory debtor days shifted by {p_val}d over the trailing reporting cycle."
+
+            peer_deltas.append(p_val)
+            print(f"  • {p_name} ({peer}): Trailing Metric Delta = {p_val}{unit}")
 
             peer_evidence.append({
                 "peer": p_name,
                 "ticker": peer,
                 "url": f"https://www.screener.in/company/{peer}/consolidated/",
-                "debtor_delta": p_delta,
-                "summary": f"{p_name} ({peer}) statutory debtor days shifted by {p_delta}d over the trailing reporting cycle."
+                "metric_value": p_val,
+                "unit": unit,
+                "summary": summary_text
             })
         except Exception as e:
-            print(f"  [!] Failed to pull peer '{peer}': {e}")
+            print(f"  [!] Failed to evaluate peer '{peer}': {e}")
             peer_deltas.append(0.0)
 
-    target_delta = float(anomaly.get("delta", 0.0))
     peer_median = float(np.median(peer_deltas)) if peer_deltas else 0.0
-    relative_spread = round(target_delta - peer_median, 1)
+    relative_spread = round(target_delta - peer_median, 2)
+    spread_formatted = f"{relative_spread:+.2f}{unit}"
 
-    print(f"\n[Peer Spread Math]:")
-    print(f"  • Target ({ticker}) Delta:  {target_delta}d")
-    print(f"  • Peer Median Delta:        {peer_median}d")
-    print(f"  • Idiosyncratic Spread:     {target_delta}d - {peer_median}d = {'+' if relative_spread >= 0 else ''}{relative_spread}d")
+    print(f"\n[Peer Spread Math ({anomaly.get('metric_name')})]:")
+    print(f"  • Target ({ticker}) Metric:  {target_delta}{unit}")
+    print(f"  • Peer Median Metric:       {peer_median}{unit}")
+    print(f"  • Idiosyncratic Spread:     {target_delta}{unit} - {peer_median}{unit} = {spread_formatted}")
     print("-" * 70)
 
     log_entry = (
-        f"[Node 4: Peer Triangulation] Target delta: {target_delta}d vs Peer Median: {peer_median}d "
-        f"-> Relative Spread: {relative_spread}d"
+        f"[Node 4: Peer Triangulation] Target metric: {target_delta}{unit} vs Peer Median: {peer_median}{unit} "
+        f"-> Relative Spread: {spread_formatted}"
     )
 
     return {
         "peer_evidence": peer_evidence,
+        "computed_metrics": {**state.get("computed_metrics", {}), "peer_spread_days": relative_spread},
         "logs": state.get("logs", []) + [log_entry]
     }
 
@@ -262,45 +275,51 @@ Prosecution's Charge against {company_name} ({ticker}):
 
 Supporting Quantitative Deviation:
 - Metric: {anomaly.get('metric_name')}
-- Quantitative Delta: {anomaly.get('delta')}
+- Quantitative Delta: {anomaly.get('delta')} {anomaly.get('unit', '')}
 - Context: {anomaly.get('description')}
+- Multi-Quarter Trajectory: {anomaly.get('timeline_trajectory', 'N/A')}
 
 Peer Benchmark Disclosures:
 {json.dumps(peer_ev, indent=2)}
 
 Your Mandate: Strenuously EXONERATE {company_name}.
 Legal & Evidentiary Standard:
-1. If competitors experienced comparable working capital or margin movements (peer spread within 5 days, or sector-wide commodity deflation), you MUST EXONERATE the company and set IS_FALSIFIED: TRUE.
+1. If competitors experienced comparable working capital, volume or margin movements (peer spread within normal variance, or sector-wide commodity deflation), you MUST EXONERATE the company and set IS_FALSIFIED: TRUE.
 2. If the anomaly is a natural festive timing artifact or common supply chain normalization, you MUST set IS_FALSIFIED: TRUE.
 3. Only if the quantitative divergence is strictly firm-specific and completely unexplained by industry-wide patterns, set IS_FALSIFIED: FALSE.
 
-Respond in this EXACT format:
+CRITICAL INSTRUCTION FOR FALSIFICATION_CRITERIA:
+FALSIFICATION_CRITERIA must state what future POSITIVE operational rebound or metric normalization would DISPROVE the prosecution's thesis (e.g. UVG rebounding above +X% for 2 consecutive quarters, or debtor days compressing below Y days). Never state that further deterioration refutes the claim.
+
+Respond in this EXACT format (do not use markdown bolding like **):
 IS_FALSIFIED: [TRUE or FALSE]
 EVIDENCE_STRENGTH: [Strong, Moderate, or Weak]
 COUNTERARGUMENT: [2 sentences articulating the strongest alternative explanation]
-FALSIFICATION_CRITERIA: [Exact quantitative future metric that disproves the prosecution]
+FALSIFICATION_CRITERIA: [Exact future metric normalization that disproves the prosecution]
 """
     system = "You are a rigorous, highly skeptical defense attorney stress-testing a forensic financial hypothesis. Exonerate if peer data or macro reality explains the numbers."
     thought, critic_output = llm.route_query(critic_prompt, system=system, task_type="adversarial")
 
-    # Parse evidence strength
-    strength = "Moderate"
-    if "WEAK" in critic_output.upper():
-        strength = "Weak"
-    elif "STRONG" in critic_output.upper():
-        strength = "Strong"
+    # Clean markdown asterisks before regex parsing
+    clean_out = re.sub(r"\*+", "", critic_output).strip()
 
-    # Parse defense verdict (exonerated if IS_FALSIFIED: TRUE or evidence strength is Weak)
-    is_falsified = False
-    if "IS_FALSIFIED: TRUE" in critic_output.upper() or strength == "Weak":
+    # Parse defense verdict strictly via regex on its line
+    falsified_match = re.search(r"IS_FALSIFIED\s*:\s*(TRUE|FALSE)", clean_out, re.IGNORECASE)
+    is_falsified = (falsified_match.group(1).upper() == "TRUE") if falsified_match else False
+
+    # Parse evidence strength strictly via regex on its line
+    strength_match = re.search(r"EVIDENCE_STRENGTH\s*:\s*(Strong|Moderate|Weak)", clean_out, re.IGNORECASE)
+    strength = strength_match.group(1).capitalize() if strength_match else "Moderate"
+
+    if strength == "Weak":
         is_falsified = True
 
     # Extract counterargument
-    counter_match = re.search(r"COUNTERARGUMENT:\s*(.*)", critic_output, re.IGNORECASE)
-    counterargument = counter_match.group(1).strip() if counter_match else critic_output.strip()
+    counter_match = re.search(r"COUNTERARGUMENT\s*:\s*(.*)", clean_out, re.IGNORECASE)
+    counterargument = counter_match.group(1).strip() if counter_match else clean_out
 
     # Extract falsification criteria
-    falsify_match = re.search(r"FALSIFICATION_CRITERIA:\s*(.*)", critic_output, re.IGNORECASE)
+    falsify_match = re.search(r"FALSIFICATION_CRITERIA\s*:\s*(.*)", clean_out, re.IGNORECASE)
     falsification_condition = falsify_match.group(1).strip() if falsify_match else (
         f"Hypothesis is disproven if {company_name} demonstrates volume normalization without credit expansion for >=2 consecutive quarters."
     )
@@ -315,7 +334,7 @@ FALSIFICATION_CRITERIA: [Exact quantitative future metric that disproves the pro
 
     log_entry = f"[Node 5: Adversarial Critic] Falsified: {is_falsified} | Evidence Strength: {strength}"
 
-    return {
+    return_dict = {
         "is_falsified": is_falsified,
         "falsification_reason": counterargument if is_falsified else None,
         "evidence_strength": strength,
@@ -325,30 +344,32 @@ FALSIFICATION_CRITERIA: [Exact quantitative future metric that disproves the pro
         }],
         "logs": state.get("logs", []) + [log_entry]
     }
+    if is_falsified:
+        return_dict["current_anomaly_index"] = state.get("current_anomaly_index", 0) + 1
+        return_dict["iteration_count"] = state.get("iteration_count", 0) + 1
+
+    return return_dict
 
 def reflection_router(state: InvestigationState) -> str:
     """
     Conditional Edge: Checks if hypothesis was falsified by the Defense Attorney.
     If falsified and additional anomaly candidates exist, loops back to Triage.
+    NOTE: Conditional edges cannot mutate state in place.
     """
     is_falsified = state.get("is_falsified", False)
     current_idx = state.get("current_anomaly_index", 0)
     anomalies = state.get("anomalies", [])
-    has_more = (current_idx + 1) < len(anomalies)
 
     print("\n" + "=" * 70)
-    if is_falsified and has_more:
-        next_idx = current_idx + 1
+    if is_falsified and current_idx < len(anomalies):
         print(f"[Reflection Router] HYPOTHESIS FALSIFIED BY DEFENSE ATTORNEY!")
         print(f"  • Reason: {state.get('falsification_reason', 'Macro/industry factors explain the divergence.')}")
-        print(f"  • Advancing to candidate #{next_idx + 1} of {len(anomalies)}: '{anomalies[next_idx].get('metric_name')}'")
+        print(f"  • Advancing to candidate #{current_idx + 1} of {len(anomalies)}: '{anomalies[current_idx].get('metric_name')}'")
         print("  --> LOOPING BACK to Node 1 (Anomaly Triage)...")
         print("=" * 70)
-        state["current_anomaly_index"] = next_idx
-        state["iteration_count"] = state.get("iteration_count", 0) + 1
         return "loop_back"
 
-    if is_falsified and not has_more:
+    if is_falsified and current_idx >= len(anomalies):
         print(f"[Reflection Router] ALL CANDIDATES FALSIFIED BY ADVERSARIAL SCRUTINY.")
         print(f"  • Total candidates evaluated: {len(anomalies)}")
         print(f"  • Conclusion: Every anomaly was legitimately justified by sector/macro conditions.")
@@ -378,12 +399,14 @@ def compiler_node(state: InvestigationState) -> Dict[str, Any]:
     metrics = state.get("computed_metrics", {})
     raw_fin = state.get("raw_financials", {})
 
-    # Gather strictly verified URLs
-    verified_urls = [e.get("url") for e in prosecution if e.get("url")]
+    # Deduplicate verified URLs preserving insertion order
+    verified_urls = list(dict.fromkeys(e.get("url") for e in prosecution if e.get("url")))
     if not verified_urls:
         verified_urls = [raw_fin.get("source_url", f"https://www.screener.in/company/{ticker}/consolidated/")]
 
-    peer_sp_str = f"{metrics.get('peer_spread_days')}d" if metrics.get('peer_spread_days') is not None else "N/A"
+    unit = anomaly.get("unit", "")
+    peer_sp_raw = metrics.get('peer_spread_days')
+    peer_sp_str = f"{peer_sp_raw:+.2f}{unit}" if peer_sp_raw is not None else "N/A"
 
     if is_falsified:
         discovery = {
@@ -406,26 +429,39 @@ You are a professional equity research compiler synthesizing a verified forensic
 Quantitative Accounting Data:
 - Metric: {anomaly.get('metric_name')}
 - Period: {anomaly.get('period')}
-- Quantitative Delta: {anomaly.get('delta')}
+- Quantitative Delta: {anomaly.get('delta')} {anomaly.get('unit', '')}
 - Context: {anomaly.get('description')}
+- Multi-Quarter Trajectory: {anomaly.get('timeline_trajectory', 'N/A')}
 - Computed Ratios: Beneish DSRI = {metrics.get('beneish_dsri', 'N/A')}, Margin Wedge = {metrics.get('margin_wedge_bps', 'N/A')} bps, Peer Spread = {peer_sp_str}
-- Verified Sources (You MUST ONLY cite from this list): {json.dumps(verified_urls)}
+
+Harvested Exchange Concall Excerpts & Evidence:
+{json.dumps(prosecution, indent=2)}
+
+Forensic Contradiction Analysis:
+{state.get('contradiction_analysis', 'N/A')}
+
+Peer Triangulation Benchmarks:
+{json.dumps(state.get('peer_evidence', []), indent=2)}
+
+Defense Attorney Stress-Test:
 - Counterargument: {defense.get('counterargument')}
-- Falsification: {defense.get('falsification_condition')}
+- Falsification Criteria: {defense.get('falsification_condition')}
 - Rating: {strength}
+
+Verified Sources (You MUST ONLY cite from this exact list): {json.dumps(verified_urls)}
 
 Compile into this EXACT JSON structure:
 {{
   "1_The_Discovery": "Exactly 1 sentence stating the verified non-obvious reality",
-  "2_Why_It_Matters": ["Bullet 1", "Bullet 2", "Bullet 3"],
+  "2_Why_It_Matters": ["Bullet 1 citing evidence/implication", "Bullet 2 citing margin/working capital strain", "Bullet 3 citing peer divergence"],
   "3_Evidence": {json.dumps(verified_urls)},
-  "4_Timeline": "Quarters over which divergence emerged",
-  "5_Numbers": "Summary of exact calculation figures (DSRI, delta, margin wedge)",
+  "4_Timeline": "Quarters over which divergence emerged with inflection points",
+  "5_Numbers": "Summary of exact calculation figures (DSRI, delta, margin wedge, peer spread)",
   "6_Counterargument": "Strongest alternative explanation from defense",
-  "7_Falsification_Condition": "Exact future metric that proves agent wrong",
+  "7_Falsification_Condition": "Exact future metric normalization that proves agent wrong",
   "8_Evidence_Strength": "Rating and justification"
 }}
-Output ONLY valid JSON. Zero preamble.
+Output ONLY valid JSON. Zero preamble. Do NOT use markdown bold/italic asterisks (**) inside the JSON values.
 """
         system = "You are an institutional financial compiler. Produce clean JSON strictly following the schema using verified data only."
         _, raw_json = llm.route_query(synthesis_prompt, system=system, task_type="synthesis")
@@ -453,6 +489,17 @@ Output ONLY valid JSON. Zero preamble.
                 "7_Falsification_Condition": defense.get("falsification_condition", f"Disproven if {company_name} demonstrates normalization in {anomaly.get('metric_name')} for >=2 consecutive quarters."),
                 "8_Evidence_Strength": f"Rating: {strength} (Verified across statutory filings and peer benchmarking)"
             }
+
+    # Clean any leftover markdown asterisks from discovery
+    clean_discovery = {}
+    for k, v in discovery.items():
+        if isinstance(v, str):
+            clean_discovery[k] = re.sub(r"\*+", "", v).strip()
+        elif isinstance(v, list):
+            clean_discovery[k] = [re.sub(r"\*+", "", item).strip() if isinstance(item, str) else item for item in v]
+        else:
+            clean_discovery[k] = v
+    discovery = clean_discovery
 
     print("\n" + "-" * 70)
     print(f"[Node 6: Compiler Node] Compiled 8-Point Forensic Schema:")

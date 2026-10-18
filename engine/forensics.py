@@ -68,7 +68,9 @@ class ForensicEngine:
         gmi = 1.0
         aqi = 1.0
 
-        if len(debtor_days) >= 2 and debtor_days[0] > 0:
+        if len(debtor_days) >= 5 and debtor_days[-5] > 0:
+            dsri = round(debtor_days[-1] / debtor_days[-5], 3)
+        elif len(debtor_days) >= 2 and debtor_days[0] > 0:
             dsri = round(debtor_days[-1] / debtor_days[0], 3)
 
         if len(sales) >= 5 and sales[-5] > 0:
@@ -102,18 +104,20 @@ class ForensicEngine:
     ) -> Dict[str, float]:
         """
         Channel Margin Decoupling & Distribution Drag Calculator:
-        - Distribution Drag (bps) = Delta (Expenses / Sales) in basis points
+        - Distribution Drag (bps) = Delta (Expenses / Sales) in basis points (YoY [-5] vs [-1])
         - Margin Wedge (bps) = Delta Operating Margin contraction in basis points
         """
         if len(sales) < 2 or len(expenses) < 2:
             return {"margin_wedge_bps": 0.0, "distribution_drag_bps": 0.0}
 
+        base_idx = -5 if (len(sales) >= 5 and len(expenses) >= 5) else 0
         curr_exp_ratio = (expenses[-1] / sales[-1]) if sales[-1] > 0 else 0.0
-        base_exp_ratio = (expenses[0] / sales[0]) if sales[0] > 0 else 0.0
+        base_exp_ratio = (expenses[base_idx] / sales[base_idx]) if sales[base_idx] > 0 else 0.0
         distribution_drag_bps = round((curr_exp_ratio - base_exp_ratio) * 10000.0, 1)
 
+        base_opm_idx = -5 if len(opm) >= 5 else 0
         curr_opm = opm[-1] if opm else 0.0
-        base_opm = opm[0] if opm else 0.0
+        base_opm = opm[base_opm_idx] if opm else 0.0
         delta_opm_bps = round((curr_opm - base_opm) * 100.0, 1)
 
         # Margin wedge measures uncompensated cost drag (operating margin contraction)
@@ -123,6 +127,18 @@ class ForensicEngine:
             "margin_wedge_bps": margin_wedge_bps,
             "distribution_drag_bps": distribution_drag_bps
         }
+
+    @staticmethod
+    def compute_timeline_trajectory(periods: List[str], values: List[float], unit: str = "") -> str:
+        """
+        Computes multi-quarter trajectory tracking baseline to current.
+        Example: 'Dec 2024 (4.0d) -> Mar 2025 (4.0d) -> ... -> Sep 2026 (5.0d)'
+        """
+        if not periods or not values:
+            return ""
+        n = min(len(periods), len(values))
+        steps = [f"{periods[i]} ({values[i]}{unit})" for i in range(n)]
+        return " -> ".join(steps)
 
     @classmethod
     def audit_company(cls, raw_data: Dict[str, Any], peer_data: Optional[List[Dict[str, Any]]] = None) -> ForensicSummary:
@@ -232,14 +248,15 @@ class ForensicEngine:
                 debtor_days_dict[period] = calc_days
 
         days_series = list(debtor_days_dict.values())
-        delta_debtor_days = round((days_series[-1] - days_series[0]), 1) if len(days_series) >= 2 else 0.0
+        base_days_idx = -5 if len(days_series) >= 5 else 0
+        delta_debtor_days = round((days_series[-1] - days_series[base_days_idx]), 1) if len(days_series) >= 2 else 0.0
 
         print(f"\n--- [Step 3: Debtor Days & Trade Credit Velocity] ---")
         print(f"  • Statutory Debtor Days Ingested: {clean_debtor_days}")
         print(f"  • Mapped Trailing Debtor Days:    {debtor_days_dict}")
-        print(f"  • Baseline Debtor Days ({target_periods[0] if target_periods else ''}): {days_series[0]}d")
+        print(f"  • Baseline Debtor Days ({target_periods[base_days_idx] if target_periods else ''}): {days_series[base_days_idx]}d")
         print(f"  • Latest Debtor Days ({target_periods[-1] if target_periods else ''}):   {days_series[-1]}d")
-        print(f"  • Debtor Days Shift Delta:        {days_series[-1]}d - {days_series[0]}d = {'+' if delta_debtor_days >= 0 else ''}{delta_debtor_days}d")
+        print(f"  • Debtor Days Shift Delta:        {days_series[-1]}d - {days_series[base_days_idx]}d = {delta_debtor_days:+.1f}d")
 
         cf_rows = raw_data.get("cash_flow", {}).get("rows", {})
         cfo_list = [float(v) for v in cf_rows.get("Cash from Operating Activity", []) if str(v).strip() not in ("", "-")]
@@ -270,7 +287,7 @@ class ForensicEngine:
         )
 
         print(f"\n--- [Step 4: Beneish M-Score Forensic Sub-Indices] ---")
-        print(f"  • DSRI (Days Sales in Receivables Index): {days_series[-1]} / {days_series[0]} = {beneish['DSRI']}")
+        print(f"  • DSRI (Days Sales in Receivables Index): {days_series[-1]} / {days_series[base_days_idx]} = {beneish['DSRI']}")
         s_curr = target_sales[-1] if target_sales else 0
         s_base = target_sales[-5] if len(target_sales) >= 5 else (target_sales[0] if target_sales else 1)
         print(f"  • SGI  (Sales Growth Index):              {s_curr} / {s_base} = {beneish['SGI']}")
@@ -282,14 +299,16 @@ class ForensicEngine:
         # Compute Channel Margin Wedge
         channel_metrics = cls.compute_channel_margin_wedge(target_sales, target_expenses, target_opm)
 
-        base_exp_ratio = (target_expenses[0] / target_sales[0]) if (target_sales and target_sales[0] > 0) else 0.0
+        base_exp_idx = -5 if (len(target_sales) >= 5 and len(target_expenses) >= 5) else 0
+        base_exp_ratio = (target_expenses[base_exp_idx] / target_sales[base_exp_idx]) if (target_sales and target_sales[base_exp_idx] > 0) else 0.0
         curr_exp_ratio = (target_expenses[-1] / target_sales[-1]) if (target_sales and target_sales[-1] > 0) else 0.0
-        base_opm = target_opm[0] if target_opm else 0.0
+        base_opm_idx = -5 if len(target_opm) >= 5 else 0
+        base_opm = target_opm[base_opm_idx] if target_opm else 0.0
         curr_opm = target_opm[-1] if target_opm else 0.0
         delta_opm_bps = round((curr_opm - base_opm) * 100.0, 1)
 
         print(f"\n--- [Step 5: Channel Margin Decoupling & Distribution Drag] ---")
-        print(f"  • Base Cost Ratio:           {round(base_exp_ratio, 4)} ({target_periods[0] if target_periods else ''})")
+        print(f"  • Base Cost Ratio:           {round(base_exp_ratio, 4)} ({target_periods[base_exp_idx] if target_periods else ''})")
         print(f"  • Latest Cost Ratio:         {round(curr_exp_ratio, 4)} ({target_periods[-1] if target_periods else ''})")
         print(f"  • Distribution Expense Drag: ({round(curr_exp_ratio, 4)} - {round(base_exp_ratio, 4)}) * 10,000 = {channel_metrics['distribution_drag_bps']} bps")
         print(f"  • Base Operating Margin:     {base_opm}% -> Latest: {curr_opm}% (OPM Delta: {delta_opm_bps} bps)")
@@ -321,7 +340,8 @@ class ForensicEngine:
                     except (ValueError, TypeError):
                         pass
                 if len(p_clean) >= 2:
-                    p_delta = round(p_clean[-1] - p_clean[0], 1)
+                    p_base_idx = -5 if len(p_clean) >= 5 else 0
+                    p_delta = round(p_clean[-1] - p_clean[p_base_idx], 1)
                     peer_deltas.append(p_delta)
                     peer_comparison[p_ticker] = p_delta
 
@@ -331,33 +351,40 @@ class ForensicEngine:
                 peer_comparison["peer_median_delta"] = round(peer_median, 1)
                 peer_comparison["target_relative_spread"] = peer_spread_days
 
-        # --- MULTI-CANDIDATE ANOMALY POPULATION (ZERO HARDCODED SELECTION) ---
+        # --- MULTI-CANDIDATE ANOMALY POPULATION (MATERIALITY FLOORS ENFORCED) ---
         anomalies: List[AnomalyCandidate] = []
 
         # Candidate 1: Debtor Days & Trade Credit Velocity Stretch
-        if delta_debtor_days > 0 or beneish["DSRI"] > 1.05:
-            severity = round(max(delta_debtor_days, 1.0) * beneish["DSRI"] * 10.0, 2)
+        # Materiality Floor: abs(delta) >= 3.0 AND (latest >= 12.0 or DSRI >= 1.15)
+        if abs(delta_debtor_days) >= 3.0 and (days_series[-1] >= 12.0 or beneish["DSRI"] >= 1.15):
+            severity = round(max(abs(delta_debtor_days), 1.0) * beneish["DSRI"] * 10.0, 2)
             anomalies.append(AnomalyCandidate(
                 metric_name="Debtor Days Elongation & Trade Credit Stretch",
+                metric_type="debtor_days",
+                unit="d",
                 period=target_periods[-1] if target_periods else "Recent",
                 target_value=days_series[-1],
-                baseline_value=days_series[0],
+                baseline_value=days_series[base_days_idx],
                 delta=delta_debtor_days,
                 materiality=1.0,
                 severity_score=severity,
                 description=(
-                    f"Debtor days stretched from {days_series[0]}d to {days_series[-1]}d ({'+' if delta_debtor_days >= 0 else ''}{delta_debtor_days}d) "
-                    f"with Beneish DSRI at {beneish['DSRI']}, signaling trade credit extension to push inventory into distribution channels."
-                )
+                    f"Debtor days shifted from {days_series[base_days_idx]}d to {days_series[-1]}d ({delta_debtor_days:+.1f}d) "
+                    f"with Beneish DSRI at {beneish['DSRI']}, signaling trade credit expansion beyond historical operational norms."
+                ),
+                timeline_trajectory=cls.compute_timeline_trajectory(target_periods, days_series, "d")
             ))
 
         # Candidate 2: Channel Expense Drag & Operating Margin Decoupling
-        if channel_metrics["distribution_drag_bps"] > 0 or channel_metrics["margin_wedge_bps"] > 0:
+        # Materiality Floor: margin_wedge >= 50.0 bps or distribution_drag >= 50.0 bps
+        if channel_metrics["margin_wedge_bps"] >= 50.0 or channel_metrics["distribution_drag_bps"] >= 50.0:
             drag = channel_metrics["distribution_drag_bps"]
             wedge = channel_metrics["margin_wedge_bps"]
             severity = round((drag + wedge) * 0.1, 2)
             anomalies.append(AnomalyCandidate(
                 metric_name="Operating Expense Drag & Margin Decoupling",
+                metric_type="margin_wedge",
+                unit="bps",
                 period=target_periods[-1] if target_periods else "Trailing Cycle",
                 target_value=wedge,
                 baseline_value=0.0,
@@ -365,9 +392,10 @@ class ForensicEngine:
                 materiality=0.85,
                 severity_score=severity,
                 description=(
-                    f"Operating expenses expanded by +{drag} bps of net sales, creating a +{wedge} bps operating margin "
+                    f"Operating expenses expanded by {drag:+.1f} bps of net sales, creating a {wedge:+.1f} bps operating margin "
                     f"decoupling wedge between top-line growth and operating profitability."
-                )
+                ),
+                timeline_trajectory=cls.compute_timeline_trajectory(target_periods, target_opm, "%")
             ))
 
         # Candidate 3: Negative Derived Volume Growth (UVG) vs Headline Sales
@@ -377,8 +405,11 @@ class ForensicEngine:
             if latest_sales_g > latest_uvg:
                 divergence = round(latest_sales_g - latest_uvg, 2)
                 severity = round(divergence * 1.5, 2)
+                uvg_spreads = [round(s - u, 2) for s, u in zip(sales_growth_yoy, derived_uvg)]
                 anomalies.append(AnomalyCandidate(
                     metric_name="Derived Volume Contraction (UVG) vs Price Realization",
+                    metric_type="uvg_divergence",
+                    unit="%",
                     period=target_periods[-1] if target_periods else "Recent",
                     target_value=latest_uvg,
                     baseline_value=latest_sales_g,
@@ -387,8 +418,9 @@ class ForensicEngine:
                     severity_score=severity,
                     description=(
                         f"Reported sales grew +{latest_sales_g}% YoY while derived underlying volume growth was {latest_uvg}%, "
-                        f"indicating revenue expansion was supported by realization pass-through rather than unit off-take."
-                    )
+                        f"indicating revenue expansion was supported by realization pass-through rather than unit off-take (spread: {divergence}%)."
+                    ),
+                    timeline_trajectory=cls.compute_timeline_trajectory(target_periods, uvg_spreads, "%")
                 ))
 
         # Candidate 4: Operating Cash Flow Quality Deficit
@@ -397,6 +429,8 @@ class ForensicEngine:
             severity = round(deficit_pct * 0.5, 2)
             anomalies.append(AnomalyCandidate(
                 metric_name="Operating Cash Flow Conversion Deficit",
+                metric_type="cfo_conversion",
+                unit="%",
                 period=target_periods[-1] if target_periods else "Trailing Year",
                 target_value=round(cfo_to_ebitda * 100.0, 1),
                 baseline_value=70.0,
@@ -406,14 +440,17 @@ class ForensicEngine:
                 description=(
                     f"Cash from Operations (CFO) to Operating Profit fell to {round(cfo_to_ebitda*100.0, 1)}%, "
                     f"below the 70% institutional quality benchmark, indicating accounting profit is tied up in working capital."
-                )
+                ),
+                timeline_trajectory=f"CFO conversion: {round(cfo_to_ebitda * 100.0, 1)}% vs benchmark 70.0%"
             ))
 
         # Candidate 5: Multi-Peer Idiosyncratic Spread
-        if peer_spread_days is not None and peer_spread_days > 0:
+        if peer_spread_days is not None and peer_spread_days >= 3.0:
             severity = round(peer_spread_days * 1.2, 2)
             anomalies.append(AnomalyCandidate(
                 metric_name="Idiosyncratic Multi-Peer Debtor Spread",
+                metric_type="debtor_days",
+                unit="d",
                 period=target_periods[-1] if target_periods else "Recent",
                 target_value=delta_debtor_days,
                 baseline_value=round(delta_debtor_days - peer_spread_days, 1),
@@ -422,20 +459,24 @@ class ForensicEngine:
                 severity_score=severity,
                 description=(
                     f"Target debtor days widened by {delta_debtor_days}d vs peer median shift of "
-                    f"{round(delta_debtor_days - peer_spread_days, 1)}d (idiosyncratic spread of +{peer_spread_days}d)."
-                )
+                    f"{round(delta_debtor_days - peer_spread_days, 1)}d (idiosyncratic spread of {peer_spread_days:+.1f}d)."
+                ),
+                timeline_trajectory=cls.compute_timeline_trajectory(target_periods, days_series, "d")
             ))
 
         if not anomalies:
             anomalies.append(AnomalyCandidate(
                 metric_name="Working Capital Velocity Normalization",
+                metric_type="debtor_days",
+                unit="d",
                 period=target_periods[-1] if target_periods else "Recent",
                 target_value=days_series[-1],
-                baseline_value=days_series[0],
+                baseline_value=days_series[base_days_idx],
                 delta=delta_debtor_days,
                 materiality=0.5,
                 severity_score=1.0,
-                description=f"Working capital cycle shift of {delta_debtor_days} days across trailing periods."
+                description=f"Working capital cycle shift of {delta_debtor_days:+.1f} days across trailing periods within normal operational variance.",
+                timeline_trajectory=cls.compute_timeline_trajectory(target_periods, days_series, "d")
             ))
 
         # Rank candidates strictly by severity

@@ -16,8 +16,40 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfgen import canvas
+from xml.sax.saxutils import escape
 from exporter.forensic_chart import generate_forensic_chart
 from engine.models import ForensicSummary
+
+def safe_text(val: Any) -> str:
+    """
+    Sanitize dynamic text for ReportLab Paragraphs:
+    Strips markdown bold/italic asterisks and escapes XML special entities (&, <, >).
+    """
+    if val is None:
+        return ""
+    s = re.sub(r"\*+", "", str(val)).strip()
+    return escape(s)
+
+def format_signed_metric(val: Any, unit: str = "") -> str:
+    """
+    Format signed metric indicators cleanly (+120 bps, -2.0d) without printing +N/Ad or +-2.0d.
+    """
+    if val is None or str(val).strip() in ("", "N/A", "None", "nan"):
+        return "N/A"
+    try:
+        f_val = float(val)
+        if unit == "d":
+            return f"{f_val:+.1f}d"
+        elif unit == "bps":
+            return f"{f_val:+.0f} bps" if f_val.is_integer() else f"{f_val:+.1f} bps"
+        elif unit == "%":
+            return f"{f_val:+.1f}%"
+        else:
+            sep = " " if unit and not unit.startswith(" ") else ""
+            return f"{f_val:+.2f}{sep}{unit}".strip()
+    except (ValueError, TypeError):
+        s = str(val).strip()
+        return s if s else "N/A"
 
 class ResearchNoteCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -183,7 +215,7 @@ def export_forensic_pdf(
     story = []
 
     def make_section(title_text):
-        p = Paragraph(f"<b>{title_text.upper()}</b>", h2_style)
+        p = Paragraph(f"<b>{safe_text(title_text).upper()}</b>", h2_style)
         t = Table([[p]], colWidths=[539])
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), c_bg_head),
@@ -201,8 +233,8 @@ def export_forensic_pdf(
     # Header block
     head_data = [
         [
-            Paragraph(f"<b>{company_name.upper()}</b><br/>"
-                      f"<font size=8.5 color='#1E40AF'><b>Ticker: {ticker} | Track C: FMCG & Retail</b></font>", title_style),
+            Paragraph(f"<b>{safe_text(company_name).upper()}</b><br/>"
+                      f"<font size=8.5 color='#1E40AF'><b>Ticker: {safe_text(ticker)} | Track C: FMCG & Retail</b></font>", title_style),
             Paragraph(f"<b>Generated:</b> {curr_date}<br/>"
                       f"<b>Engine:</b> AlphaDecay v1.2 (Autonomous Forensic)<br/>"
                       f"<b>Mandate:</b> Non-Obvious Forensic Divergence", meta_style)
@@ -223,7 +255,7 @@ def export_forensic_pdf(
     disc_box = [
         [
             Paragraph("<font size=7.5 color='#1E3A8A'><b>1. THE DISCOVERY (NON-OBVIOUS REALITY)</b></font><br/>"
-                      f"{discovery_sentence}", discovery_text_style)
+                      f"{safe_text(discovery_sentence)}", discovery_text_style)
         ]
     ]
     t_disc = Table(disc_box, colWidths=[539])
@@ -243,9 +275,9 @@ def export_forensic_pdf(
     story.append(Spacer(1, 2))
     why_matters = find_value(discovery, "whymatters", "why_it_matters", default=[])
     if isinstance(why_matters, list):
-        bullets = "".join([f"• <b>{item}</b><br/>" for item in why_matters])
+        bullets = "".join([f"• <b>{safe_text(item)}</b><br/>" for item in why_matters])
     else:
-        bullets = str(why_matters)
+        bullets = safe_text(why_matters)
     story.append(Paragraph(bullets, body_style))
     story.append(Spacer(1, 4))
 
@@ -270,6 +302,17 @@ def export_forensic_pdf(
         wedge_val = summary_data.margin_wedge_bps if summary_data.margin_wedge_bps is not None else 0.0
         drag_val = summary_data.distribution_drag_bps if summary_data.distribution_drag_bps is not None else 0.0
         spread_val = summary_data.peer_spread_days if summary_data.peer_spread_days is not None else "N/A"
+
+    # Determine unit for peer relative spread
+    spread_unit = "d"
+    if hasattr(summary_data, "anomalies") and summary_data.anomalies:
+        spread_unit = getattr(summary_data.anomalies[0], "unit", "d")
+    elif isinstance(summary_data, dict) and summary_data.get("anomalies"):
+        first_a = summary_data["anomalies"][0]
+        if isinstance(first_a, dict):
+            spread_unit = first_a.get("unit", "d")
+        elif hasattr(first_a, "unit"):
+            spread_unit = getattr(first_a, "unit", "d")
 
     # Embedded Historical Dual-Panel Forensic Chart (Feature D)
     if not chart_path or not os.path.exists(chart_path):
@@ -307,21 +350,21 @@ def export_forensic_pdf(
     indicator_table = [
         [
             Paragraph("<b>Beneish DSRI:</b>", table_header),
-            Paragraph(f"<b>{dsri_val}</b> (Threshold: &gt;1.20)", table_text),
+            Paragraph(f"<b>{safe_text(dsri_val)}</b> (Threshold: &gt;1.20)", table_text),
             Paragraph("<b>QC Margin Wedge:</b>", table_header),
-            Paragraph(f"<b>+{wedge_val} bps</b> (Gross vs OPM)", table_text),
+            Paragraph(f"<b>{format_signed_metric(wedge_val, 'bps')}</b> (Gross vs OPM)", table_text),
         ],
         [
             Paragraph("<b>Beneish SGI:</b>", table_header),
-            Paragraph(f"<b>{sgi_val}</b> (Growth under stress)", table_text),
+            Paragraph(f"<b>{safe_text(sgi_val)}</b> (Growth under stress)", table_text),
             Paragraph("<b>Distribution Drag:</b>", table_header),
-            Paragraph(f"<b>+{drag_val} bps</b> (Other Exp/Sales)", table_text),
+            Paragraph(f"<b>{format_signed_metric(drag_val, 'bps')}</b> (Other Exp/Sales)", table_text),
         ],
         [
             Paragraph("<b>Beneish GMI:</b>", table_header),
-            Paragraph(f"<b>{gmi_val}</b> (Gross Margin decay)", table_text),
+            Paragraph(f"<b>{safe_text(gmi_val)}</b> (Gross Margin decay)", table_text),
             Paragraph("<b>Peer Relative Spread:</b>", table_header),
-            Paragraph(f"<b>+{spread_val}d</b> (vs Sector Median)", table_text),
+            Paragraph(f"<b>{format_signed_metric(spread_val, spread_unit)}</b> (vs Sector Median)", table_text),
         ]
     ]
     t_indicators = Table(indicator_table, colWidths=[105, 164, 115, 155])
@@ -350,15 +393,15 @@ def export_forensic_pdf(
         display_q = quarters[-cols_count:]
         
         num_header = [Paragraph("<b>Metric / Quarter</b>", table_header)] + [
-            Paragraph(f"<b>{q}</b>", table_header) for q in display_q
+            Paragraph(f"<b>{safe_text(q)}</b>", table_header) for q in display_q
         ]
         
         row_growth = [Paragraph("<b>Net Sales YoY (%)</b>", table_text)] + [
-            Paragraph(f"{sales_growth.get(q, 'N/A')}%", table_text) for q in display_q
+            Paragraph(f"{safe_text(sales_growth.get(q))}%" if sales_growth.get(q) is not None and str(sales_growth.get(q)) != 'N/A' else "N/A", table_text) for q in display_q
         ]
         
         row_debtor = [Paragraph("<b>Debtor Days</b>", table_text)] + [
-            Paragraph(f"{debtor_days.get(q, 'N/A')}d", table_text) for q in display_q
+            Paragraph(f"{safe_text(debtor_days.get(q))}d" if debtor_days.get(q) is not None and str(debtor_days.get(q)) != 'N/A' else "N/A", table_text) for q in display_q
         ]
 
         col_w = [149] + [390 / cols_count] * cols_count
@@ -377,7 +420,7 @@ def export_forensic_pdf(
 
     num_summary = find_value(discovery, "numbers", default="")
     if num_summary:
-        story.append(Paragraph(f"<b>Forensic Calculation Summary:</b> {num_summary}", body_style))
+        story.append(Paragraph(f"<b>Forensic Calculation Summary:</b> {safe_text(num_summary)}", body_style))
         story.append(Spacer(1, 4))
 
     # 6. TIMELINE & TRACEABLE EVIDENCE TRAIL (Including BSE Concall Transcripts)
@@ -386,14 +429,14 @@ def export_forensic_pdf(
     timeline_desc = find_value(discovery, "timeline", default="Timeline established across trailing cycles.")
     evidence_urls = find_value(discovery, "evidence", default=[])
     if isinstance(evidence_urls, list):
-        ev_str = "<br/>".join([f"• <font color='#1E40AF'><u>{u}</u></font>" for u in evidence_urls])
+        ev_str = "<br/>".join([f"• <font color='#1E40AF'><u>{safe_text(u)}</u></font>" for u in evidence_urls])
     else:
-        ev_str = str(evidence_urls)
+        ev_str = safe_text(evidence_urls)
 
     time_ev_table = [
         [
             Paragraph("<b>Divergence Timeline:</b>", table_header),
-            Paragraph(timeline_desc, body_style)
+            Paragraph(safe_text(timeline_desc), body_style)
         ],
         [
             Paragraph("<b>Auditable Evidence Links:</b>", table_header),
@@ -417,7 +460,7 @@ def export_forensic_pdf(
     story.append(make_section("7. Adversarial Counterargument (The Defense / Devil's Advocate)"))
     story.append(Spacer(1, 2))
     counter = find_value(discovery, "counterargument", default="None recorded.")
-    story.append(Paragraph(f"<b>Strongest Alternative Macro Explanation:</b> {counter}", body_style))
+    story.append(Paragraph(f"<b>Strongest Alternative Macro Explanation:</b> {safe_text(counter)}", body_style))
     story.append(Spacer(1, 4))
 
     # 8. OBJECTIVE FALSIFICATION CONDITION & EVIDENCE RATING
@@ -429,11 +472,11 @@ def export_forensic_pdf(
     falsify_table = [
         [
             Paragraph("<b>Falsification Criteria:</b>", table_header),
-            Paragraph(f"<b>Disproven if:</b> {falsify_cond}", body_style)
+            Paragraph(f"<b>Disproven if:</b> {safe_text(falsify_cond)}", body_style)
         ],
         [
             Paragraph("<b>Evidence Strength:</b>", table_header),
-            Paragraph(f"<b>{ev_strength}</b> (Triangulated across BSE statutory filings & peer spread)", body_style)
+            Paragraph(f"<b>{safe_text(ev_strength)}</b> (Triangulated across BSE statutory filings & peer spread)", body_style)
         ]
     ]
     t_falsify = Table(falsify_table, colWidths=[120, 419])

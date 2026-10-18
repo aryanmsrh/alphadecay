@@ -6,6 +6,8 @@ class AnomalyCandidate(BaseModel):
     Represents a statistically significant accounting divergence flagged by the math sandbox.
     """
     metric_name: str
+    metric_type: str = Field(description="Normalized type: uvg_divergence, debtor_days, margin_wedge, cfo_conversion")
+    unit: str = Field(description="Unit of measurement: %, d, bps")
     period: str
     target_value: float
     baseline_value: float
@@ -13,6 +15,7 @@ class AnomalyCandidate(BaseModel):
     materiality: float
     severity_score: float = Field(description="Priority score = abs(delta) * materiality")
     description: str
+    timeline_trajectory: str = Field(default="", description="Multi-quarter trajectory tracking baseline to current")
 
 class ForensicSummary(BaseModel):
     ticker: str

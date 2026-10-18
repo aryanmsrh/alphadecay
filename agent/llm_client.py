@@ -86,7 +86,7 @@ class LLMClient:
             print(f"\n{err_msg}")
             return err_msg
 
-    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-3.5-flash") -> str:
+    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-2.5-flash") -> str:
         """
         Calls Google Gemini API with complete request/response verbosity and automatic local fallback.
         """
@@ -144,11 +144,11 @@ class LLMClient:
         """
         Routes query according to optimal division of labor:
         - 'adversarial': Local DeepSeek-R1-7B (native chain-of-thought reflection).
-        - 'concall_parsing' or 'synthesis': Gemini 3.5 Flash (high speed & prose), failover to Ollama.
+        - 'concall_parsing' or 'synthesis': Gemini 2.5 Flash (high speed & prose), failover to Ollama.
         - 'general': Local DeepSeek-R1-7B.
         Returns: (thought_process, final_response)
         """
-        print(f"\n>>> [LLM Router] Routing task '{task_type}' (Local Model: '{self.local_model}', Cloud: 'gemini-3.5-flash')")
+        print(f"\n>>> [LLM Router] Routing task '{task_type}' (Local Model: '{self.local_model}', Cloud: 'gemini-2.5-flash')")
 
         if self.offline:
             raw = self.call_ollama(prompt, system=system)

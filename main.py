@@ -66,6 +66,7 @@ def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
         "evidence_strength": None,
         "iteration_count": 0,
         "current_anomaly_index": 0,
+        "contradiction_analysis": None,
         "final_discovery": None,
         "logs": []
     }
@@ -94,6 +95,11 @@ def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
 
     # Step 5: Optional PDF Export
     if export_pdf_path:
+        # Sync dynamically computed peer spread onto summary so report renders actual peer metrics
+        computed_res = final_state.get("computed_metrics", {})
+        if "peer_spread_days" in computed_res and computed_res["peer_spread_days"] is not None:
+            summary.peer_spread_days = computed_res["peer_spread_days"]
+
         target_pdf = f"{ticker}_forensic_report.pdf" if export_pdf_path == "default" else export_pdf_path
         pdf_path = export_forensic_pdf(ticker, company_name, summary, discovery, target_pdf)
         print(f"\n[PDF Exporter] Official research note saved to: {pdf_path}")

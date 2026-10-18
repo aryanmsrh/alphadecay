@@ -19,5 +19,6 @@ class InvestigationState(TypedDict):
     evidence_strength: Optional[str]  # "Strong", "Moderate", "Weak"
     iteration_count: int
     current_anomaly_index: int
+    contradiction_analysis: Optional[str]
     final_discovery: Optional[Dict[str, Any]]
     logs: List[str]

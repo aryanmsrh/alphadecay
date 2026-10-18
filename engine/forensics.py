@@ -402,12 +402,17 @@ class ForensicEngine:
         if len(sales_growth_yoy) >= 2 and len(derived_uvg) >= 2:
             latest_sales_g = sales_growth_yoy[-1]
             latest_uvg = derived_uvg[-1]
-            if latest_sales_g > latest_uvg:
+            if latest_sales_g - latest_uvg >= 3.0:
                 divergence = round(latest_sales_g - latest_uvg, 2)
                 severity = round(divergence * 1.5, 2)
                 uvg_spreads = [round(s - u, 2) for s, u in zip(sales_growth_yoy, derived_uvg)]
+                metric_title = (
+                    "Derived Volume Contraction (UVG) vs Price Realization"
+                    if latest_uvg < 0
+                    else "Price Realization vs Underlying Volume Divergence"
+                )
                 anomalies.append(AnomalyCandidate(
-                    metric_name="Derived Volume Contraction (UVG) vs Price Realization",
+                    metric_name=metric_title,
                     metric_type="uvg_divergence",
                     unit="%",
                     period=target_periods[-1] if target_periods else "Recent",

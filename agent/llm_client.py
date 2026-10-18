@@ -160,13 +160,13 @@ class LLMClient:
                 return self.parse_think_reasoning(raw)
             print("\n[Failover Triggered] Local Ollama unavailable. Diverting to Gemini Cloud API...")
             raw_gemini = self.call_gemini(prompt, system=system)
-            return "", raw_gemini
+            return self.parse_think_reasoning(raw_gemini)
 
         elif task_type in ("concall_parsing", "synthesis"):
             if self.gemini_key:
                 raw_gemini = self.call_gemini(prompt, system=system)
                 if raw_gemini and "[Ollama Error]" not in raw_gemini and "[Ollama Connection Failed]" not in raw_gemini:
-                    return "", raw_gemini
+                    return self.parse_think_reasoning(raw_gemini)
             raw = self.call_ollama(prompt, system=system)
             return self.parse_think_reasoning(raw)
 

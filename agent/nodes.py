@@ -189,7 +189,7 @@ def peer_triangulation_node(state: InvestigationState) -> Dict[str, Any]:
     metric_type = anomaly.get("metric_type", "debtor_days")
     unit = anomaly.get("unit", "d")
     target_delta = float(anomaly.get("delta", 0.0))
-    peers = PEER_MAPPING.get(ticker, ["BRITANNIA", "TATACONSUM"])[:2]
+    peers = [p for p in PEER_MAPPING.get(ticker, ["BRITANNIA", "TATACONSUM", "DABUR"]) if p != ticker][:2]
 
     peer_evidence = []
     peer_deltas = []
@@ -212,6 +212,10 @@ def peer_triangulation_node(state: InvestigationState) -> Dict[str, Any]:
             elif metric_type == "margin_wedge":
                 p_val = float(p_summary.margin_wedge_bps or 0.0)
                 summary_text = f"{p_name} ({peer}) operating margin wedge is {p_val} bps."
+            elif metric_type == "cfo_conversion":
+                p_cfo = round((p_summary.cfo_to_ebitda or 0.70) * 100.0, 1)
+                p_val = round(max(0.0, 70.0 - p_cfo), 1)
+                summary_text = f"{p_name} ({peer}) CFO to EBITDA conversion deficit is {p_val}% (CFO/EBITDA: {p_cfo}%)."
             else:  # debtor_days / default
                 days_list = list(p_summary.debtor_days.values())
                 if len(days_list) >= 2:
@@ -315,11 +319,11 @@ FALSIFICATION_CRITERIA: [Exact future metric normalization that disproves the pr
         is_falsified = True
 
     # Extract counterargument
-    counter_match = re.search(r"COUNTERARGUMENT\s*:\s*(.*)", clean_out, re.IGNORECASE)
+    counter_match = re.search(r"COUNTERARGUMENT\s*:\s*(.+?)(?=\n\s*FALSIFICATION_CRITERIA|\Z)", clean_out, re.IGNORECASE | re.DOTALL)
     counterargument = counter_match.group(1).strip() if counter_match else clean_out
 
     # Extract falsification criteria
-    falsify_match = re.search(r"FALSIFICATION_CRITERIA\s*:\s*(.*)", clean_out, re.IGNORECASE)
+    falsify_match = re.search(r"FALSIFICATION_CRITERIA\s*:\s*(.+)", clean_out, re.IGNORECASE | re.DOTALL)
     falsification_condition = falsify_match.group(1).strip() if falsify_match else (
         f"Hypothesis is disproven if {company_name} demonstrates volume normalization without credit expansion for >=2 consecutive quarters."
     )

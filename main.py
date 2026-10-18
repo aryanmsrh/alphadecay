@@ -100,6 +100,13 @@ def run_investigation(ticker: str, export_pdf_path: Optional[str] = None):
         if "peer_spread_days" in computed_res and computed_res["peer_spread_days"] is not None:
             summary.peer_spread_days = computed_res["peer_spread_days"]
 
+        # Ensure summary reflects the exact unit of the surviving anomaly after possible reflection loop-backs
+        selected_a = final_state.get("selected_anomaly")
+        if selected_a and summary.anomalies:
+            surviving_unit = selected_a.get("unit")
+            if surviving_unit:
+                summary.anomalies[0].unit = surviving_unit
+
         target_pdf = f"{ticker}_forensic_report.pdf" if export_pdf_path == "default" else export_pdf_path
         pdf_path = export_forensic_pdf(ticker, company_name, summary, discovery, target_pdf)
         print(f"\n[PDF Exporter] Official research note saved to: {pdf_path}")

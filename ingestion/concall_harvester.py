@@ -32,11 +32,16 @@ class ConcallHarvester:
         if not pdf_url:
             return []
 
+        resolved_pdf_url = pdf_url
         try:
             with httpx.Client(headers=self.HEADERS, timeout=self.timeout, follow_redirects=True) as client:
                 resp = client.get(pdf_url)
                 if resp.status_code != 200 or len(resp.content) < 5000:
                     return []
+                # Ensure the payload is genuinely a PDF document
+                if not resp.content.startswith(b"%PDF"):
+                    return []
+                resolved_pdf_url = str(resp.url)
                 pdf_bytes = io.BytesIO(resp.content)
         except Exception:
             return []
@@ -82,15 +87,15 @@ class ConcallHarvester:
 
                 matched_kw = [kw for kw in self.FORENSIC_KEYWORDS if kw in p_lower]
                 if matched_kw and len(p_clean) > 80:
-                    context = p_clean[:400]
+                    context = p_clean
                     if i + 1 < len(paragraphs):
-                        next_turn = " ".join(paragraphs[i + 1].split())[:350]
+                        next_turn = " ".join(paragraphs[i + 1].split())
                         context += "\n[Management Response]: " + next_turn
 
                     matches.append({
                         "matched_keywords": matched_kw,
                         "excerpt": context,
-                        "source_url": pdf_url
+                        "source_url": resolved_pdf_url
                     })
 
                     if len(matches) >= max_excerpts:
@@ -108,4 +113,4 @@ if __name__ == "__main__":
     print(f"Extracted {len(results)} forensic concall excerpts")
     for r in results:
         print(f"Keywords: {r['matched_keywords']}")
-        print(f"Excerpt: {r['excerpt'][:200]}...")
+        print(f"Excerpt:\n{r['excerpt']}")

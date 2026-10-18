@@ -165,7 +165,7 @@ Task: In 2 to 3 concise bullet points, identify whether management's narrative c
     print("\n" + "-" * 70)
     print(f"[Node 3: Evidence Harvester] Harvested {len(evidence_items)} Sources:")
     for idx, e in enumerate(evidence_items, 1):
-        print(f"  [{idx}] {e.get('title')}\n      URL: {e.get('url')}\n      Snippet: {e.get('excerpt')[:180]}...")
+        print(f"  [{idx}] {e.get('title')}\n      URL: {e.get('url')}\n      Excerpt:\n{e.get('excerpt')}")
     print(f"\n[Contradiction Analysis]:\n{contradiction_analysis.strip()}")
     print("-" * 70)
 
@@ -442,15 +442,15 @@ Output ONLY valid JSON. Zero preamble.
             discovery = {
                 "1_The_Discovery": f"{company_name} exhibited an accounting divergence in {anomaly.get('period')}: {anomaly.get('description')}",
                 "2_Why_It_Matters": [
-                    "Reported accounting figures decouple from operational velocity indicators.",
-                    "Working capital expansion indicates distributor channel inventory buildup.",
-                    "Cash conversion quality lags reported accounting profitability."
+                    f"Statutory {anomaly.get('metric_name')} diverged by {anomaly.get('delta')} relative to baseline.",
+                    f"Accounting metrics (Beneish DSRI: {metrics.get('beneish_dsri', 'N/A')}, Margin Wedge: {metrics.get('margin_wedge_bps', 'N/A')} bps) indicate working capital strain.",
+                    f"Adversarial defense rating assessed as {strength}."
                 ],
                 "3_Evidence": verified_urls,
                 "4_Timeline": f"Divergence established across {anomaly.get('period', 'trailing quarters')}.",
                 "5_Numbers": f"Delta: {anomaly.get('delta', 0.0)} in {anomaly.get('metric_name', 'metric')} | Beneish DSRI: {metrics.get('beneish_dsri', 'N/A')} | Margin Wedge: {metrics.get('margin_wedge_bps', 'N/A')} bps.",
-                "6_Counterargument": defense.get("counterargument", "Input commodity price deflation forced SKU price adjustments."),
-                "7_Falsification_Condition": defense.get("falsification_condition", f"Disproven if {company_name} demonstrates volume normalization without credit expansion for >=2 consecutive quarters."),
+                "6_Counterargument": defense.get("counterargument", f"Management cites operational and supply chain adjustments for {company_name}."),
+                "7_Falsification_Condition": defense.get("falsification_condition", f"Disproven if {company_name} demonstrates normalization in {anomaly.get('metric_name')} for >=2 consecutive quarters."),
                 "8_Evidence_Strength": f"Rating: {strength} (Verified across statutory filings and peer benchmarking)"
             }
 

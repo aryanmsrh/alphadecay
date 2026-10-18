@@ -13,18 +13,20 @@ from config import (
     OLLAMA_BASE_URL,
     LOCAL_MODEL,
     GEMINI_API_KEY,
+    GEMINI_MODEL,
     USE_OFFLINE_MODE
 )
 
 class LLMClient:
     """
-    Unified, 100% Verbose LLM Client coordinating Local DeepSeek-R1-7B (Ollama) and Cloud Gemini 3.5 Flash.
+    Unified, 100% Verbose LLM Client coordinating Local DeepSeek-R1-7B (Ollama) and Cloud Gemini 3.8 Flash.
     Displays every API request, latency, raw token stream, internal thoughts, and completion verbatim.
     """
 
     def __init__(self):
         self.ollama_url = OLLAMA_BASE_URL.rstrip("/")
         self.gemini_key = GEMINI_API_KEY
+        self.gemini_model = GEMINI_MODEL
         self.local_model = LOCAL_MODEL
         self.offline = USE_OFFLINE_MODE
 
@@ -86,10 +88,11 @@ class LLMClient:
             print(f"\n{err_msg}")
             return err_msg
 
-    def call_gemini(self, prompt: str, system: Optional[str] = None, model: str = "gemini-2.5-flash") -> str:
+    def call_gemini(self, prompt: str, system: Optional[str] = None, model: Optional[str] = None) -> str:
         """
         Calls Google Gemini API with complete request/response verbosity and automatic local fallback.
         """
+        model = model or self.gemini_model
         if self.offline or not self.gemini_key:
             print("\n[LLM Client] Offline mode enabled or no Gemini key found. Directing to Ollama.")
             return self.call_ollama(prompt, system=system)
@@ -144,11 +147,11 @@ class LLMClient:
         """
         Routes query according to optimal division of labor:
         - 'adversarial': Local DeepSeek-R1-7B (native chain-of-thought reflection).
-        - 'concall_parsing' or 'synthesis': Gemini 2.5 Flash (high speed & prose), failover to Ollama.
+        - 'concall_parsing' or 'synthesis': Gemini 3.8 Flash (high speed & prose), failover to Ollama.
         - 'general': Local DeepSeek-R1-7B.
         Returns: (thought_process, final_response)
         """
-        print(f"\n>>> [LLM Router] Routing task '{task_type}' (Local Model: '{self.local_model}', Cloud: 'gemini-2.5-flash')")
+        print(f"\n>>> [LLM Router] Routing task '{task_type}' (Local Model: '{self.local_model}', Cloud: '{self.gemini_model}')")
 
         if self.offline:
             raw = self.call_ollama(prompt, system=system)

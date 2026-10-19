@@ -34,14 +34,8 @@ env/
 
 # Scraper & pipeline disk cache
 data/cache/
-data/*.png
-data/*.db
-data/*.db-wal
-data/*.db-shm
-data/runs/
 *.json.cache
 *.log
-*.pdf
 
 # IDE & OS files
 .vscode/
@@ -52,3 +46,5 @@ Thumbs.db
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints
 !ALPHA_DECAY_PROJECT_OVERVIEW.pdf
+!ALPHA_DECAY_PROJECT_OVERVIEW.pdf
+!data/**

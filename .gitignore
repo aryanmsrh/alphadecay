@@ -51,3 +51,4 @@ Thumbs.db
 
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints
+!ALPHA_DECAY_PROJECT_OVERVIEW.pdf

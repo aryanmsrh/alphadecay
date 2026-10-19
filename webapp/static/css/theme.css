@@ -881,6 +881,48 @@ a:hover {
   color: #FFFFFF;
 }
 
+/* Empty State Component */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 24px;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+.empty-state svg {
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  margin-bottom: 18px;
+  opacity: 0.75;
+}
+
+.empty-state h2,
+.empty-state h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin-bottom: 22px;
+  line-height: 1.6;
+}
+
 @keyframes pulse {
   0% { opacity: 0.6; }
   50% { opacity: 1; }

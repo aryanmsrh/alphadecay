@@ -380,7 +380,7 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
         [
             Paragraph("<b>LLM & Reasoning</b>", table_cell_bold),
             Paragraph("Google Gemini 3.5 Flash Lite + Ollama (DeepSeek-R1)", table_cell),
-            Paragraph("Direct HTTP client (httpx) with high thinking level; cloud Gemini 3.5 Flash Lite primary; local Ollama deepseek-r1:7b zero-cost offline failsafe.", table_cell)
+            Paragraph("Direct HTTP client (httpx) with high thinking level; cloud Gemini 3.5 Flash Lite primary; local Ollama deepseek-r1:7b offline reasoning fallback.", table_cell)
         ],
         [
             Paragraph("<b>Ingestion & Harvest</b>", table_cell_bold),
@@ -491,7 +491,7 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     story.append(Paragraph(
         "<b><font color='#38bdf8'>1. Zero Arithmetic Hallucination:</font></b> Pure Python deterministic calculations guarantee accurate numbers during live evaluations.<br/>"
         "<b><font color='#38bdf8'>2. Multi-Company Generalizability:</font></b> Works out-of-the-box across any Track C listed company (HUL, ITC, Nestle, Britannia, Tata Consumer).<br/>"
-        "<b><font color='#38bdf8'>3. Dual-Provider Resilience:</font></b> Seamless switch to local Ollama (deepseek-r1:7b) via <code>--offline</code> protects against venue Wi-Fi drops.<br/>"
+        "<b><font color='#38bdf8'>3. Dual-Provider Resilience:</font></b> Seamless switch to local Ollama (deepseek-r1:7b) via <code>--offline</code> routes LLM reasoning locally without cloud API keys.<br/>"
         "<b><font color='#38bdf8'>4. Complete Auditability:</font></b> Every claim links back to SEBI LODR filings, eliminating subjective LLM assertions.",
         body_style
     ))

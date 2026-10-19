@@ -91,7 +91,7 @@ Follow these step-by-step instructions to get the project running on your local 
 Ensure you have the following installed on your system:
 * **Python 3.10, 3.11, or 3.12** (`python3 --version` or `python --version`)
 * **Git** (`git --version`)
-* *(Optional)* **Ollama** if you wish to run the agent 100% offline without cloud API keys.
+* *(Optional)* **Ollama** if you wish to run LLM reasoning locally using `deepseek-r1:7b` without cloud LLM API keys.
 
 ---
 
@@ -149,7 +149,7 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 # Optional: Tavily Search API key (from https://tavily.com/)
 TAVILY_API_KEY=your_tavily_key_here
 
-# Offline toggle (Set to true if running without internet via Ollama)
+# Offline LLM toggle (Set to true if routing reasoning locally via Ollama without cloud keys)
 USE_OFFLINE_MODE=false
 ```
 > **Note for Beginners:** A free Google Gemini API key from [Google AI Studio](https://aistudio.google.com/) is all that is required to run online investigations. If you do not have a Tavily key, the system automatically falls back to statutory filings.
@@ -211,8 +211,8 @@ Each run automatically saves all JSON metrics, charts, and the 2-page PDF into t
 
 ---
 
-### **Step 8: Run 100% Offline (Zero-Cost Local Mode with Ollama)**
-If you are at a venue with unstable Wi-Fi or wish to run without external API calls:
+### **Step 8: Run Local LLM Reasoning Mode (Ollama Fallback)**
+If you wish to execute LLM reasoning locally without cloud API keys:
 
 1. Install and start [Ollama](https://ollama.ai/):
    ```bash
@@ -222,24 +222,11 @@ If you are at a venue with unstable Wi-Fi or wish to run without external API ca
    ```bash
    python main.py --ticker HINDUNILVR --offline --export-pdf
    ```
-The agent automatically routes all reasoning tasks to your local Ollama instance with zero external network dependencies.
+> **Technical Note on Network Connectivity:** The `--offline` flag routes all LLM reasoning tasks locally to your Ollama model (`deepseek-r1:7b`). Data harvesters (Screener.in statutory statements and BSE exchange filings) still require network access to fetch public corporate disclosures unless cached.
 
 ---
 
-## **4. Understanding the Investigation Artifacts**
-
-Whenever an investigation completes, all artifacts are saved to `data/runs/<run_id>/`:
-
-| Artifact | File Path | Description |
-| :--- | :--- | :--- |
-| **Institutional 2-Page PDF** | `data/runs/<run_id>/report.pdf` | A publication-grade research note compiled strictly to 2 pages via ReportLab, containing the full 8-point brief, calculations, and evidence. |
-| **Dual-Axis Trajectory Chart**| `data/runs/<run_id>/chart.png` | High-resolution Matplotlib chart plotting Quarterly Net Sales (₹ Cr) on the left axis against Operating Margin (%) on the right axis. |
-| **Audit State Manifest** | `data/runs/<run_id>.json` | Complete machine-readable JSON bundle containing raw statements, computed ratios, severity scores, and cyclic audit steps. |
-| **System Overview Whitepaper**| `ALPHA_DECAY_PROJECT_OVERVIEW.pdf` | A standalone 2-page technical architecture PDF detailing the project background, timeline, nodes, and tech stack in the website's design. |
-
----
-
-## **5. The Official 8-Point Hackathon Brief Deliverables**
+## **4. The Official 8-Point Hackathon Brief Deliverables**
 
 Every investigation synthesizes the exact 8 deliverables mandated by the ATMOS 2026 Participant Brief:
 
@@ -254,7 +241,7 @@ Every investigation synthesizes the exact 8 deliverables mandated by the ATMOS 2
 
 ---
 
-## **6. Deterministic Forensic Financial Math Sandbox**
+## **5. Deterministic Forensic Financial Math Sandbox**
 
 To protect against arithmetic hallucination, all financial metrics are computed in pure Python using audited SEBI LODR disclosures:
 
@@ -270,7 +257,7 @@ To protect against arithmetic hallucination, all financial metrics are computed 
 
 ---
 
-## **7. Project Directory Structure**
+## **6. Project Directory Structure**
 
 ```
 alphadecay/
@@ -316,7 +303,7 @@ alphadecay/
 
 ---
 
-## **8. Common Troubleshooting & FAQs for Beginners**
+## **7. Common Troubleshooting & FAQs for Beginners**
 
 #### **Q1: The web server reports `Address already in use` on port 5000.**
 * **Fix:** Another process is occupying port 5000. Start the server on a different port:
@@ -350,6 +337,13 @@ alphadecay/
 
 ---
 
-## **9. License & Academic Integrity**
+## **8. Intellectual Property, Anti-Plagiarism & License**
 
-Developed for the **Finding the Next Signal** Autonomous Financial Research Hackathon at **ATMOS 2026, BITS Pilani Hyderabad Campus**. Released under the **MIT License**.
+Developed for the **Finding the Next Signal** Autonomous Financial Research Hackathon at **ATMOS 2026, BITS Pilani Hyderabad Campus** by **Aryan Mishra**.
+
+This project is licensed under the custom **ALPHA-DECAY Source-Available Attribution & Non-Commercial Research License** (see full terms in [`LICENSE`](LICENSE)).
+
+### **Key License Restrictions:**
+- **Mandatory Attribution:** Any permitted reference, inspection, educational study, or demonstration must prominently credit **Aryan Mishra** as the original author and architect and link to the upstream repository ([`github.com/aryanmsrh/alphadecay`](https://github.com/aryanmsrh/alphadecay)).
+- **Strict Anti-Plagiarism & Competition Ban:** Under no circumstances may this software, its code, its prompts, its mathematical sandbox, or derivative works be copied, modified, rebranded, or submitted to any hackathon, competition, contest, evaluation, or grading by any third party without prior express written consent.
+- **Non-Commercial Restriction:** The software may not be monetized, sold, or incorporated into commercial financial advisory or trading tools.

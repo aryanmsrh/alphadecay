@@ -1,0 +1,58 @@
+ALPHA-DECAY SOURCE-AVAILABLE ATTRIBUTION & NON-COMMERCIAL RESEARCH LICENSE
+
+Copyright (c) 2026 Aryan Mishra <f20261228@hyderabad.bits-pilani.ac.in>
+All Rights Reserved.
+
+Repository: https://github.com/aryanmsrh/alphadecay
+Project: ALPHA-DECAY — Autonomous Financial Research Agent (ATMOS 2026, BITS Pilani Hyderabad)
+
+================================================================================
+TERMS AND CONDITIONS FOR USE, COPYING, DISTRIBUTION, AND MODIFICATION
+================================================================================
+
+1. GRANT OF PERMISSION
+Permission is hereby granted to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to inspect, view, study,
+and run the Software solely for personal, educational, academic, and evaluation
+purposes, subject to the restrictions below.
+
+2. MANDATORY ATTRIBUTION & CITATION
+Any permitted use, reference, demonstration, educational study, or fork of this
+Software, in whole or in part, must retain the above copyright notice, this list
+of conditions, and a prominent, clickable hyperlink to the original upstream
+repository:
+    https://github.com/aryanmsrh/alphadecay
+Attribution must clearly identify Aryan Mishra as the original author and architect
+of the Software.
+
+3. PROHIBITION OF PLAGIARISM & COMPETITION RE-SUBMISSION
+This Software was originally developed and submitted for the "Finding the Next Signal"
+Autonomous Financial Research Hackathon at ATMOS 2026, BITS Pilani Hyderabad Campus.
+Under no circumstances may this Software, its source code, its generated outputs,
+its architecture, or any derivative work thereof be copied, modified, rebranded,
+or submitted to any hackathon, competition, contest, prize evaluation, academic
+grading, or bounty program by any party other than the original author, without
+prior express written authorization from Aryan Mishra. Blatant copying, repackaging,
+or plagiarism of this project is strictly forbidden and constitutes an infringement
+of intellectual property rights.
+
+4. NON-COMMERCIAL RESTRICTION
+The Software may NOT be used, licensed, sold, monetized, or integrated into commercial
+products, trading systems, financial advisory services, or proprietary tools without
+a separate, explicit commercial license executed in writing by the copyright holder.
+
+5. RESTRICTIONS ON DERIVATIVE WORKS & REDISTRIBUTION
+Any permitted derivative works or forks must:
+    (a) Prominently state that they are modified versions of AlphaDecay;
+    (b) Clearly identify the original authorship of Aryan Mishra;
+    (c) Include a copy of this License; and
+    (d) Not remove, obscure, or alter any copyright, patent, trademark, or
+        attribution notices contained within the Software.
+
+6. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

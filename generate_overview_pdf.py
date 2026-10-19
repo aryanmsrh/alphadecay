@@ -379,8 +379,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
         ],
         [
             Paragraph("<b>LLM & Reasoning</b>", table_cell_bold),
-            Paragraph("Google Gemini 3.8/2.5 Flash + Ollama (DeepSeek-R1)", table_cell),
-            Paragraph("Direct HTTP client (httpx) with high thinking level; cloud Gemini 3.8/2.5 Flash primary; local Ollama deepseek-r1:7b zero-cost offline failsafe.", table_cell)
+            Paragraph("Google Gemini 3.5 Flash Lite + Ollama (DeepSeek-R1)", table_cell),
+            Paragraph("Direct HTTP client (httpx) with high thinking level; cloud Gemini 3.5 Flash Lite primary; local Ollama deepseek-r1:7b zero-cost offline failsafe.", table_cell)
         ],
         [
             Paragraph("<b>Ingestion & Harvest</b>", table_cell_bold),

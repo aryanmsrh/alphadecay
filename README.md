@@ -144,7 +144,7 @@ Open `.env` in any text editor (VS Code, Nano, Notepad) and enter your API keys:
 GEMINI_API_KEY=your_gemini_api_key_here
 
 # Default Gemini model
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 
 # Optional: Tavily Search API key (from https://tavily.com/)
 TAVILY_API_KEY=your_tavily_key_here

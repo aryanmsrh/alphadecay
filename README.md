@@ -1,243 +1,98 @@
-# AlphaDecay: Production-Grade Forensic Financial Intelligence Engine
-
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
-[![Framework: Flask](https://img.shields.io/badge/Framework-Flask%203.1-000000.svg)](https://flask.palletsprojects.com/)
-[![Orchestrator: LangGraph](https://img.shields.io/badge/Orchestrator-LangGraph-purple.svg)](https://langchain-ai.github.io/langgraph/)
-[![Primary LLM: Gemini](https://img.shields.io/badge/Primary%20LLM-Gemini%20Flash-4285F4.svg)](https://ai.google.dev/)
-[![Fallback LLM: Ollama DeepSeek R1](https://img.shields.io/badge/Fallback%20LLM-Ollama%20DeepSeek--R1--7B-black.svg)](https://ollama.com/)
-[![Tests: Pytest](https://img.shields.io/badge/Tests-70%20Passing-brightgreen.svg)](tests/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-**Track C: Consumer, FMCG & Retail**  
-**Autonomous Forensic Financial Research Engine & Interactive Terminal**  
+# ALPHA-DECAY: Autonomous Financial Research Agent
+### ATMOS 2026 · BITS Pilani, Hyderabad Campus
+**Track C: Consumer, FMCG & Retail Financial Discovery**  
+**Participant Brief:** Finding the Next Signal Hackathon  
 **Lead:** Aryan Mishra (`f20261228@hyderabad.bits-pilani.ac.in`)
 
 ---
 
-## 1. Overview & Web Application
+## 1. Executive Summary
 
-**AlphaDecay** transforms financial analysis from passive summarization into an active, evidence-driven forensic courtroom.
+**ALPHA-DECAY** is an autonomous financial research agent built for high-conviction accounting forensics and non-obvious story discovery in Indian FMCG & Retail listed entities.
 
-The application features:
-- **Interactive Financial Forensics Dashboard:** A modern dark-theme terminal interface (`#05070A`, `#0D1117`, `#121922`) built on Flask, Jinja2, Chart.js, and SQLite.
-- **Zero LLM Arithmetic:** Accounting identities, growth metrics, period alignments, and canonical Beneish ratios are calculated deterministically in audited Python code.
-- **Centralized Model Provider:** Gemini First with thinking level `HIGH`. Resilient, automatic fallback to local Ollama (`deepseek-r1:7b`) on transient or permanent failures.
-- **Observable Execution Pipeline:** 9 distinct canonical execution phases monitored in real-time via Server-Sent Events (SSE) and polling fallback.
-- **Durable Run Storage:** SQLite persistence for all runs, events, metrics, and structured evidence.
-- **Artifact Isolation:** Each run generates an isolated directory (`data/runs/<run_id>/`) with publication-grade PDF notes, structured state JSON bundles, source snapshots, and forensic charts.
-
----
-
-## 2. High-Level Architecture & Separation of Concerns
-
-```
-                                [User Browser / CLI]
-                                         │
-                    ┌────────────────────┴────────────────────┐
-                    ▼                                         ▼
-            [Flask Web UI]                            [CLI Entry Point]
-         `GET /`, `POST /api/...`                       `python main.py`
-                    │                                         │
-                    └────────────────────┬────────────────────┘
-                                         ▼
-                        [Investigation Execution Service]
-                          `webapp/services.py` (Worker)
-                                         │
-       ┌──────────────────┬──────────────┴────────────────┬──────────────────┐
-       ▼                  ▼                               ▼                  ▼
-[1. Ingestion]   [2. Math Sandbox]              [3. LangGraph App]   [4. Run Store]
- Screener / BSE    Canonical DSRI,                Courtroom Cycle,      SQLite DB,
- Concall Scraper   Residual, Wedge               Adversarial Review    Events & Runs
-       │                  │                               │                  │
-       └──────────────────┴──────────────┬────────────────┴──────────────────┘
-                                         ▼
-                    [5. Artifact & Report Generators]
-                     2-Page Dark PDF, High-Res Chart,
-                     Run Manifest & State JSON Bundle
-```
+Rather than passive summarization, the system executes an active, adversarial research loop:
+1. **Direct Ingestion:** Ingests trailing quarterly statements, balance sheets, ratios, and earnings call transcripts from Screener.in and regulatory exchange disclosures.
+2. **Deterministic Calculations Only:** *Zero LLM Arithmetic.* Net sales YoY growth, operating profit margins, margin change in percentage points, expense growth, debtor turnover days, and cash flow conversion are calculated deterministically in pure Python with step-by-step arithmetic explanations accessible to non-business users.
+3. **Top 5 Anomalies Ranked by Severity / 10:** Scans for operational and accounting divergences (working capital drag, debtor days elongation, cost decoupling, margin compression, cash flow deficits) and ranks them strictly descending by severity score.
+4. **Cyclic Hypothesis & Disproving Pipeline:** For each anomaly, the agent formulates a sharp, testable forensic hypothesis and pits it against an adversarial **Disproving Agent**. If scrutiny breaks down the claim, the agent reformulates a refined Hypothesis #2 before advancing to the next anomaly.
+5. **Strict Binary Final Verdict:**
+   - **`HYPOTHESIS PASSED`**: The scrutiny of the disproving agent could *not* break down the hypothesis. An evidence-backed, non-obvious discovery was substantiated.
+   - **`HYPOTHESIS FAILED`**: The scrutiny broke down the hypothesis; observed variations are fully explained by standard business cycles or sector-wide dynamics.
+6. **Official 8-Point Hackathon Deliverable:** Generates the mandatory 8 research elements (The Discovery, Why It Matters, Evidence Sources, Timeline, Numbers, Counterargument, Falsification Condition, Evidence Strength).
+7. **Apple Glassmorphic UI:** OLED pitch black (`#000000`) theme with frosted translucent glass cards, modern SF typography, monospace technical metrics, and vibrant red/green/blue accents.
 
 ---
 
-## 3. Quickstart & Launching the Web Application
+## 2. System Architecture
 
-### Prerequisites
-- Linux / WSL2 Ubuntu with Python 3.10+
-- `uv` package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- Local Ollama running with `deepseek-r1:7b` (for offline/fallback testing)
-
-### Step 1: Clone and Set Up Environment
-```bash
-git clone https://github.com/aryanmsrh/alphadecay.git
-cd alphadecay
-
-# Create clean virtual environment using uv
-uv venv
-
-# Activate virtualenv
-source .venv/bin/activate
-
-# Install dependencies (Flask, ReportLab, LangGraph, etc.)
-uv pip install -r requirements.txt
 ```
-
-### Step 2: Configure Credentials (`.env`)
-```bash
-cp .env.example .env
+[Target Listed FMCG Ticker] (e.g. HINDUNILVR, ITC, NESTLEIND, BRITANNIA)
+         │
+         ▼
+[1. Data Ingestion: Screener.in + Concall Transcripts + Tavily Search]
+         │
+         ▼
+[2. Deterministic Financial Sandbox (Zero LLM Math)]
+  • YoY Revenue Growth, OPM %, YoY Margin Delta, Debtor Days, CFO Conversion
+  • Step-by-Step Arithmetic + Plain-English Meanings & Significances
+  • Detect up to 5 anomalies, score severity /10, and sort descending
+         │
+         ▼
+[3. Cyclic Hypothesis & Disproving Pipeline]
+  • Loop through sorted anomalies:
+      ┌──────────────────────────────────────────────────────────────┐
+      │ Anomaly #i (Severity: X/10)                                  │
+      │   ├─ Formulate Hypothesis 1                                  │
+      │   ├─ Pit against Disproving Agent                            │
+      │   ├─ [HYPOTHESIS PASSED] -> Record as PASSED, advance        │
+      │   └─ [HYPOTHESIS FAILED] -> Formulate Hypothesis 2           │
+      │         ├─ Pit against Disproving Agent                      │
+      │         ├─ [HYPOTHESIS PASSED] -> Record as PASSED, advance  │
+      │         └─ [HYPOTHESIS FAILED] -> Record as FAILED, advance  │
+      └──────────────────────────────────────────────────────────────┘
+         │
+         ▼
+[4. Final Synthesis & Mandatory 8-Point Deliverable]
+  • Strict Binary Verdict: HYPOTHESIS PASSED or HYPOTHESIS FAILED
+  • 8-Point Research Brief: Discovery, Why It Matters, Evidence, Timeline,
+    Numbers, Counterargument, Falsification Condition, Evidence Strength
+         │
+         ▼
+[5. Apple Glassmorphic Web Dashboard & Publication-Grade PDF]
+  • Pure pitch black with frosted glass blur, squircle cards & glowing pills
+  • Instant 2-page research PDF export (ReportLab)
 ```
-Key configuration settings in `.env`:
-```ini
-# Google Gemini (Primary Model)
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-3.5-flash-lite
-GEMINI_THINKING_LEVEL=HIGH
-
-# Local Ollama (Fallback Model)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_FALLBACK_MODEL=deepseek-r1:7b
-
-# Tavily AI Search (Web Provenance)
-TAVILY_API_KEY=your_tavily_api_key_here
-
-# Operational Toggles
-USE_OFFLINE_MODE=False
-INVESTIGATION_CUTOFF_DATE=
-```
-
-### Step 3: Start the Web Dashboard
-```bash
-python run_web.py
-```
-By default, the server binds to `127.0.0.1:5000`:
-```text
-========================================================================
-  ALPHA-DECAY // FINANCIAL FORENSIC INTELLIGENCE TERMINAL v2.0
-========================================================================
-  • Web Dashboard URL:     http://127.0.0.1:5000/
-  • Primary Model:         gemini-3.5-flash-lite (Configured)
-  • Local Fallback Model:  deepseek-r1:7b (http://localhost:11434)
-  • Execution Mode:        ONLINE (Gemini First)
-  • Security Boundary:     Binding strictly to 127.0.0.1
-  • Persistent DB:         /path/to/alphadecay/data/alphadecay.db
-========================================================================
-  Press Ctrl+C to terminate the local server.
-```
-Open **`http://127.0.0.1:5000`** in your browser to explore the dashboard.
 
 ---
 
-## 4. Running Investigations
+## 3. Quickstart & Usage
 
-### Option A: Via the Web Terminal
-1. Navigate to `http://127.0.0.1:5000/investigations/new`.
-2. Select a pre-configured Track C company (e.g. `HINDUNILVR`, `ITC`, `NESTLEIND`, `BRITANNIA`, `TATACONSUM`) or enter any listed ticker.
-3. (Optional) Set a point-in-time cutoff date (`YYYY-MM-DD`) to simulate historical knowledge.
-4. Click **Launch Autonomous Audit**.
-5. Watch the 9-stage pipeline execute in real-time, inspect interactive charts, review hypotheses, and download artifacts.
-
-### Option B: Via Command Line Interface (CLI)
+### Step 1: Run via CLI
 ```bash
-# Investigate Nestle India (with publication-grade 2-page PDF export)
+# Run investigation on Hindustan Unilever with 2-page PDF export
+python main.py --ticker HINDUNILVR --export-pdf
+
+# Run on Nestle India
 python main.py --ticker NESTLEIND --export-pdf
 
-# Investigate Hindustan Unilever with reproducible cutoff date
-python main.py --ticker HINDUNILVR --export-pdf --cutoff-date 2025-03-31
-
-# Force local offline mode using Ollama
-python main.py --ticker ITC --offline
+# Run fully offline using local Ollama (deepseek-r1:7b)
+python main.py --ticker BRITANNIA --offline --export-pdf
 ```
-*Note: Investigations run via the CLI automatically persist into the SQLite database and appear on the web dashboard.*
 
----
-
-## 5. Web Application Features & Tabbed Workspace
-
-The investigation detail workspace (`/investigations/<run_id>`) provides six dedicated analysis tabs:
-
-- **Tab A: Overview & Verdict:** Displays the primary quantitative finding, adjudication verdict (`SUPPORTED`, `REFUTED`, `NOT_ESTABLISHED`), data sufficiency assessment, the mandatory 8-Point Forensic Schema, and epistemic limitations.
-- **Tab B: Interactive Analytics:** Chart.js dual-metric visualization (Reported Sales YoY vs Expense Residual Heuristic, and Debtor Days velocity). Features hover tooltips, period toggles, and a compact data-table view with zero false zeros.
-- **Tab C: Courtroom Adjudication:** Adversarial debate cards (Prosecution vs Defense), testable predictions, falsification criteria, and follow-up investigation recommendations.
-- **Tab D: Evidence Explorer:** Filterable registry of statutory disclosures and earnings call transcripts with an interactive detail modal containing verbatim excerpts and direct BSE/NSE links.
-- **Tab E: Normalized Data & Provenance:** Full observation table from `ForensicEngine` with formula inspection for derived metrics.
-- **Tab F: Artifacts & Export:** Download verified artifacts directly:
-  - Official Institutional PDF Research Note (`<ticker>_forensic_report.pdf`)
-  - Structured Audit State Bundle (`investigation_<ticker>.json`)
-  - Run Audit Manifest (`run_manifest.json`)
-  - Source Disclosures Snapshot (`source_snapshot_<ticker>.json`)
-  - High-Res Forensic Chart (`forensic_chart_<ticker>.png`)
-
----
-
-## 6. Real-Time Pipeline Stages
-
-Investigations follow nine canonical execution phases:
-1. `data_ingestion`: Ingesting statutory financial disclosures from Screener and exchange filings.
-2. `financial_analytics`: Running deterministic math sandbox (canonical DSRI, margin wedge, expense residual).
-3. `anomaly_triage`: Prioritizing divergences by severity score (or routing to normal baseline compiler).
-4. `hypothesis_generation`: Formulating competing adverse and benign explanations via Gemini.
-5. `evidence_retrieval`: Harvesting concall dialogue blocks and verified press reports.
-6. `peer_analysis`: Triangulating with peer filings and calculating idiosyncratic spread.
-7. `adversarial_assessment`: Prosecution vs Defense debate evaluated by independent adjudicator.
-8. `report_validation`: Applying deterministic citation, direction, and schema validation gates.
-9. `pdf_generation`: Compiling the dark-theme PDF report and high-resolution chart.
-
----
-
-## 7. Storage, Persistence & Artifacts
-
-- **SQLite Database:** `data/alphadecay.db` stores all runs, real-time stage events, computed metrics, observations, and structured adjudications.
-- **Run-Scoped Artifact Directories:** Generated files are placed in isolated directories:
-  `data/runs/<run_id>/`
-  - Prevents race conditions or concurrent runs from overwriting each other's outputs.
-  - Download endpoints verify path containment to prevent path traversal vulnerabilities.
-
----
-
-## 8. Provider Diagnostics & Health
-
-Access the settings and diagnostics page at `/settings` or via API:
-- `GET /api/health`: Instant health check of model configuration.
-- `GET /api/diagnostics`: Detailed diagnostics without remote calls.
-- `GET /api/diagnostics?live=true`: Active ping verifying live latency and reachability of Gemini and Ollama.
-
----
-
-## 9. Security Posture
-
-AlphaDecay is designed as an institutional research workstation with strict security boundaries:
-- **Localhost Only:** Development server binds to `127.0.0.1` by default.
-- **Debug Mode Off:** Flask runs with `debug=False` by default.
-- **Zero Secret Leakage:** API keys are never exposed in DOM attributes, HTML templates, JSON responses, or logs.
-- **CSRF Protection:** State-changing API endpoints require a valid session CSRF token via `X-CSRF-Token` header or form field.
-- **Path Traversal Defense:** Artifact serving verifies that filenames conform to strict regex patterns and reside inside the canonical run folder.
-- **Jinja2 Autoescaping:** All untrusted evidence text is HTML-escaped.
-
----
-
-## 10. Automated Tests
-
-AlphaDecay includes a comprehensive test suite covering analytics, courtroom logic, model provider routing, PDF rendering, Flask routes, integration workflows, and security:
-
+### Step 2: Run the Web Dashboard
 ```bash
-# Run all 70 automated tests
-pytest -v
+python run_web.py --port 5000
 ```
+Open **http://127.0.0.1:5000** in your browser.
 
-### Test Breakdown
-- `tests/test_analytics.py`: Hand-calculated canonical DSRI, growth formulas, edge cases.
-- `tests/test_courtroom.py`: 8-point schema, legacy verdict migration, reflection router.
-- `tests/test_evidence.py`: Provenance vault, citation validator, cutoff date filtering.
-- `tests/test_llm_provider.py`: Gemini-first routing, Ollama fallback, bounded backoff, structured repair.
-- `tests/test_pdf_export.py`: ReportLab two-page dark canvas rendering and charts.
-- `tests/test_periods.py`: YoY period alignment, March 2025 vs March 2024 regression fix.
-- `tests/test_regressions.py`: Domain regressions across FMCG companies and margin signs.
-- `tests/test_theme_rendering.py`: Color token contrast and dark PDF pixel verification.
-- `tests/test_webapp_routes.py`: Flask dashboard, submission validation, 404 handling, pagination.
-- `tests/test_webapp_integration.py`: End-to-end background execution, DB durability, cancellation.
-- `tests/test_webapp_security.py`: CSRF enforcement, path traversal defense, secret sanitization.
-
----
-
-## 11. License
-
-MIT License. Developed for Production-Grade Forensic Financial Intelligence.
+- **Dashboard:** Real-time completed investigations, binary verdicts (`HYPOTHESIS PASSED` / `HYPOTHESIS FAILED`), and primary discoveries.
+- **New Investigation:** Quick-select Track C FMCG stocks or enter any listed ticker symbol.
+- **Investigation Detail:** Interactive workspace with:
+  - The Discovery banner
+  - Plain-English math formulas and calculations
+  - Top 5 tested anomalies ranked by severity `/10`
+  - Cyclic Agent audit trail with passed vs failed hypotheses
+  - Official 8-point research brief deliverable
+  - Net sales & operating margin dual-axis trajectory chart
+  - Traceable source links & concall excerpts
+  - 1-click download of the 2-page research PDF

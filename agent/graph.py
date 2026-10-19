@@ -9,51 +9,30 @@ from langgraph.graph import StateGraph, START, END
 from agent.state import InvestigationState
 from agent.nodes import (
     anomaly_triage_node,
-    triage_router,
-    hypothesis_generator_node,
-    evidence_harvester_node,
-    peer_triangulation_node,
-    adversarial_critic_node,
+    attacker_node,
+    defender_node,
+    adjudicator_node,
     reflection_router,
     compiler_node
 )
 
+
 def build_investigation_graph():
-    """
-    Constructs the cyclic state graph implementing the Courtroom model with
-    no-anomaly bypass, multi-candidate traversal, and reflection cycle.
-    """
     workflow = StateGraph(InvestigationState)
 
-    # Add Nodes
     workflow.add_node("anomaly_triage", anomaly_triage_node)
-    workflow.add_node("hypothesis_generator", hypothesis_generator_node)
-    workflow.add_node("evidence_harvester", evidence_harvester_node)
-    workflow.add_node("peer_triangulation", peer_triangulation_node)
-    workflow.add_node("adversarial_critic", adversarial_critic_node)
+    workflow.add_node("attacker", attacker_node)
+    workflow.add_node("defender", defender_node)
+    workflow.add_node("adjudicator", adjudicator_node)
     workflow.add_node("compiler", compiler_node)
 
-    # Start Edge
     workflow.add_edge(START, "anomaly_triage")
+    workflow.add_edge("anomaly_triage", "attacker")
+    workflow.add_edge("attacker", "defender")
+    workflow.add_edge("defender", "adjudicator")
 
-    # Conditional Triage Edge: Bypass hypotheses & courtroom on zero-anomaly state
     workflow.add_conditional_edges(
-        "anomaly_triage",
-        triage_router,
-        {
-            "proceed_to_hypotheses": "hypothesis_generator",
-            "bypass_to_compiler": "compiler"
-        }
-    )
-
-    # Standard Sequential Edges for candidate analysis
-    workflow.add_edge("hypothesis_generator", "evidence_harvester")
-    workflow.add_edge("evidence_harvester", "peer_triangulation")
-    workflow.add_edge("peer_triangulation", "adversarial_critic")
-
-    # Conditional Reflection Loop Edge
-    workflow.add_conditional_edges(
-        "adversarial_critic",
+        "adjudicator",
         reflection_router,
         {
             "loop_back": "anomaly_triage",
@@ -65,10 +44,5 @@ def build_investigation_graph():
 
     return workflow.compile()
 
-# Pre-compiled application instance
-investigation_app = build_investigation_graph()
 
-if __name__ == "__main__":
-    print("Compiling LangGraph Investigation StateGraph...")
-    app = build_investigation_graph()
-    print("Graph compiled successfully with reflection cycle!")
+investigation_app = build_investigation_graph()

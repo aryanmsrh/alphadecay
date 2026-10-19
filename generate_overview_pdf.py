@@ -31,6 +31,8 @@ pdfmetrics.registerFont(TTFont("JetBrainsMono-Bold", str(FONTS_DIR / "JetBrainsM
 
 registerFontFamily("JetBrainsMono", normal="JetBrainsMono", bold="JetBrainsMono-Bold")
 
+GITHUB_URL = "https://github.com/aryanmsrh/alphadecay"
+
 def draw_website_background(canv, doc):
     """
     Renders the website's signature pitch-black canvas (#070709) before any content is drawn.
@@ -65,18 +67,22 @@ class WebsiteThemedCanvas(canvas.Canvas):
         # 1px Subtle thin border matching website --border
         self.setStrokeColor(colors.HexColor("#27272a"))
         self.setLineWidth(0.6)
-        self.line(24, 22, 612 - 24, 22)
+        self.line(24, 21, 612 - 24, 21)
 
-        # Left: Terminal ID & Spec Title in JetBrains Mono
+        # Left: Clean, concise spec title
         self.setFont("JetBrainsMono", 6.8)
         self.setFillColor(colors.HexColor("#71717a")) # --text-muted
-        self.drawString(24, 12, "ALPHA-DECAY // QUANT FORENSIC TERMINAL — SYSTEM ARCHITECTURE SPECIFICATION")
+        self.drawString(24, 11, "ALPHA-DECAY // QUANT FORENSIC SPECIFICATION")
+
+        # Center: Clean GitHub Link without overlap
+        self.setFont("JetBrainsMono", 6.8)
+        self.setFillColor(colors.HexColor("#38bdf8")) # --accent-blue
+        self.drawCentredString(320, 11, "github.com/aryanmsrh/alphadecay")
 
         # Right: Page Indicator in JetBrains Mono Bold with Accent Sky Blue
         self.setFont("JetBrainsMono-Bold", 6.8)
-        self.setFillColor(colors.HexColor("#38bdf8")) # --accent-blue
         page_str = f"PAGE {self._pageNumber} OF {page_count}"
-        self.drawRightString(612 - 24, 12, page_str)
+        self.drawRightString(612 - 24, 11, page_str)
         self.restoreState()
 
 def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
@@ -85,102 +91,102 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
         pagesize=letter,
         leftMargin=24,
         rightMargin=24,
-        topMargin=18,
-        bottomMargin=26
+        topMargin=16,
+        bottomMargin=24
     )
 
     styles = getSampleStyleSheet()
 
-    # Typography matching website theme.css
+    # Enhanced Typography matching website theme.css with larger, high-readability font sizes
     title_style = ParagraphStyle(
         "WebTitle",
         parent=styles["Normal"],
         fontName="SpaceGrotesk-Bold",
-        fontSize=12.5,
-        leading=14.5,
+        fontSize=13.0,
+        leading=15.0,
         textColor=colors.HexColor("#f4f4f6")
     )
     subtitle_style = ParagraphStyle(
         "WebSubtitle",
         parent=styles["Normal"],
         fontName="PlusJakartaSans",
-        fontSize=7.4,
-        leading=9.2,
+        fontSize=7.8,
+        leading=9.8,
         textColor=colors.HexColor("#a1a1aa")
     )
     h1_style = ParagraphStyle(
         "WebH1",
         parent=styles["Normal"],
         fontName="SpaceGrotesk-Bold",
-        fontSize=8.2,
-        leading=10.5,
+        fontSize=8.6,
+        leading=11.0,
         textColor=colors.HexColor("#38bdf8"), # --accent-blue
-        spaceBefore=2.5,
-        spaceAfter=1.5
+        spaceBefore=2.0,
+        spaceAfter=1.2
     )
     body_style = ParagraphStyle(
         "WebBody",
         parent=styles["Normal"],
         fontName="PlusJakartaSans",
-        fontSize=6.8,
-        leading=8.6,
+        fontSize=7.1,
+        leading=9.2,
         textColor=colors.HexColor("#e4e4e7") # High-contrast primary text
     )
     mono_style = ParagraphStyle(
         "WebMono",
         parent=styles["Normal"],
         fontName="JetBrainsMono",
-        fontSize=6.0,
-        leading=7.6,
+        fontSize=6.4,
+        leading=8.0,
         textColor=colors.HexColor("#38bdf8")
     )
     table_head = ParagraphStyle(
         "WebTHead",
         parent=styles["Normal"],
         fontName="JetBrainsMono-Bold",
-        fontSize=6.5,
-        leading=8.0,
+        fontSize=6.8,
+        leading=8.5,
         textColor=colors.HexColor("#38bdf8")
     )
     table_cell = ParagraphStyle(
         "WebTCell",
         parent=styles["Normal"],
         fontName="PlusJakartaSans",
-        fontSize=6.3,
-        leading=7.8,
+        fontSize=6.7,
+        leading=8.3,
         textColor=colors.HexColor("#e4e4e7")
     )
     table_cell_bold = ParagraphStyle(
         "WebTCellBold",
         parent=styles["Normal"],
         fontName="SpaceGrotesk-Bold",
-        fontSize=6.4,
-        leading=7.9,
+        fontSize=6.8,
+        leading=8.4,
         textColor=colors.HexColor("#f4f4f6")
     )
 
     story = []
 
     # ---------------- PAGE 1 ----------------
-    # Top Entity Header Card
+    # Top Entity Header Card with Repository Link
     header_data = [
         [
             Paragraph("<b>ALPHA-DECAY</b>: Autonomous Financial Forensic Research Agent", title_style),
-            Paragraph("<b>ATMOS 2026 // BITS PILANI HYDERABAD</b><br/><font color='#22c55e'>Track C: Consumer, FMCG & Retail (NIFTY 50)</font>", ParagraphStyle("TR", parent=styles["Normal"], fontName="JetBrainsMono-Bold", fontSize=6.8, leading=8.6, alignment=2, textColor=colors.HexColor("#f4f4f6")))
+            Paragraph("<b>ATMOS 2026 // BITS PILANI HYDERABAD</b><br/><font color='#22c55e'>Track C: Consumer, FMCG & Retail (NIFTY 50)</font>", ParagraphStyle("TR", parent=styles["Normal"], fontName="JetBrainsMono-Bold", fontSize=7.0, leading=9.0, alignment=2, textColor=colors.HexColor("#f4f4f6")))
         ],
         [
             Paragraph("System Architecture, Multi-Agent Nodes, Deterministic Math Sandbox & Development Timeline", subtitle_style),
-            Paragraph("<font color='#38bdf8'>EVALUATION TARGET:</font> Finding the Next Signal Hackathon", ParagraphStyle("TR2", parent=styles["Normal"], fontName="JetBrainsMono", fontSize=6.2, leading=8.0, alignment=2, textColor=colors.HexColor("#a1a1aa")))
+            Paragraph("<font color='#38bdf8'>REPOSITORY:</font> <a href='https://github.com/aryanmsrh/alphadecay'><font color='#38bdf8'><u>github.com/aryanmsrh/alphadecay</u></font></a>", ParagraphStyle("TR2", parent=styles["Normal"], fontName="JetBrainsMono", fontSize=6.6, leading=8.4, alignment=2, textColor=colors.HexColor("#38bdf8")))
         ]
     ]
     header_table = Table(header_data, colWidths=[356, 208])
     header_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#131318")), # --bg-surface
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 6),
-        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ('RIGHTPADDING', (0,0), (-1,-1), 5),
         ('BOX', (0,0), (-1,-1), 0.6, colors.HexColor("#27272a")), # --border
         ('LINEBELOW', (0,1), (-1,1), 1.0, colors.HexColor("#38bdf8")) # Cyan accent line
     ]))
@@ -202,7 +208,7 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
         [
             Paragraph("<b>Phase 1: Ingestion</b>", table_cell_bold),
             Paragraph("Statutory Scrapers (Screener & BSE)", table_cell),
-            Paragraph("Harvests multi-year quarterly P&L, annual balance sheets, and cash flow statements from audited SEBI LODR filings; extracts verbatim dialogue blocks from official BSE concall PDFs.", table_cell)
+            Paragraph("Harvests multi-year quarterly P&L, annual balance sheets, and cash flow statements from audited SEBI LODR filings; extracts verbatim dialogue blocks from official BSE concall PDFs via PyPDF.", table_cell)
         ],
         [
             Paragraph("<b>Phase 2: Math Sandbox</b>", table_cell_bold),
@@ -234,8 +240,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     proc_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#18181f")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 1.2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#27272a")),
@@ -250,7 +256,7 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
         "ALPHA-DECAY utilizes a specialized multi-agent graph with distinct epistemic boundaries. To eliminate confirmation bias, no single agent is allowed to declare a finding without adversarial cross-examination:",
         body_style
     ))
-    story.append(Spacer(1, 1.5))
+    story.append(Spacer(1, 1.2))
 
     nodes_data = [
         [Paragraph("Agent / Node", table_head), Paragraph("Role & Epistemic Mandate", table_head), Paragraph("Implementation Mechanics & Failure Modes Prevented", table_head)],
@@ -279,8 +285,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     nodes_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#18181f")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 1.2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#27272a")),
@@ -295,7 +301,7 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
         "To guarantee mathematical integrity, arithmetic is decoupled from LLM inference. All indicators are calculated directly in pure Python using audited balance sheets and SEBI LODR disclosures:",
         body_style
     ))
-    story.append(Spacer(1, 1.5))
+    story.append(Spacer(1, 1.2))
 
     math_data = [
         [Paragraph("Forensic Indicator", table_head), Paragraph("Exact Formula", table_head), Paragraph("Period Alignment", table_head), Paragraph("Forensic Significance & Diagnostic Insight", table_head)],
@@ -328,8 +334,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     math_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#18181f")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 1.2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#27272a")),
@@ -340,50 +346,50 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     # ---------------- PAGE 2 ----------------
     story.append(PageBreak())
 
-    # Page 2 Header Card
+    # Page 2 Header Card with Repository Link
     p2_header_data = [
         [
             Paragraph("<b>ALPHA-DECAY</b> // Technology Stack, Development Timeline & Deliverable Compliance", title_style),
-            Paragraph("<font color='#38bdf8'>ATMOS 2026 RESEARCH SPEC</font>", ParagraphStyle("TRP2", parent=styles["Normal"], fontName="JetBrainsMono-Bold", fontSize=6.8, leading=8.6, alignment=2, textColor=colors.HexColor("#f4f4f6")))
+            Paragraph("<b>REPOSITORY:</b> <a href='https://github.com/aryanmsrh/alphadecay'><font color='#38bdf8'><u>github.com/aryanmsrh/alphadecay</u></font></a>", ParagraphStyle("TRP2", parent=styles["Normal"], fontName="JetBrainsMono-Bold", fontSize=6.8, leading=8.6, alignment=2, textColor=colors.HexColor("#38bdf8")))
         ]
     ]
-    p2_header_table = Table(p2_header_data, colWidths=[420, 144])
+    p2_header_table = Table(p2_header_data, colWidths=[356, 208])
     p2_header_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#131318")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 6),
-        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ('RIGHTPADDING', (0,0), (-1,-1), 5),
         ('BOX', (0,0), (-1,-1), 0.6, colors.HexColor("#27272a")),
         ('LINEBELOW', (0,0), (-1,0), 1.0, colors.HexColor("#38bdf8"))
     ]))
     story.append(p2_header_table)
     story.append(Spacer(1, 2))
 
-    # Section 5: Tech Stack
-    story.append(Paragraph("5. Complete Technology Stack & Infrastructure", h1_style))
+    # Section 5: Tech Stack (Strictly verified against actual codebase)
+    story.append(Paragraph("5. Verified Technology Stack & Production Infrastructure (Audited Against Codebase)", h1_style))
     stack_data = [
-        [Paragraph("Layer", table_head), Paragraph("Technology / Framework", table_head), Paragraph("Design Rationale & Implementation Details", table_head)],
+        [Paragraph("Layer", table_head), Paragraph("Actual Technology Used", table_head), Paragraph("Codebase Verification & Architectural Implementation Details", table_head)],
         [
             Paragraph("<b>Core & Runtime</b>", table_cell_bold),
-            Paragraph("Python 3.10+, Flask, SQLite", table_cell),
-            Paragraph("Pure Python deterministic core; lightweight Flask microservice; SQLite persistent caching for instant multi-company audit recall.", table_cell)
+            Paragraph("Python 3.10+, Flask 3.1, Atomic JSON Store", table_cell),
+            Paragraph("Pure Python deterministic core; lightweight Flask microservice (run_web.py); transactional JSON run store (webapp/run_store.py) with atomic .tmp swap.", table_cell)
         ],
         [
             Paragraph("<b>LLM & Reasoning</b>", table_cell_bold),
-            Paragraph("Google Gemini 2.5 Flash + Ollama (DeepSeek-R1)", table_cell),
-            Paragraph("Dual-provider resilience: cloud-first Gemini 2.5 Flash for high-speed chain-of-thought; local Ollama zero-cost offline fallback.", table_cell)
+            Paragraph("Google Gemini 3.8/2.5 Flash + Ollama (DeepSeek-R1)", table_cell),
+            Paragraph("Direct HTTP client (httpx) with high thinking level; cloud Gemini 3.8/2.5 Flash primary; local Ollama deepseek-r1:7b zero-cost offline failsafe.", table_cell)
         ],
         [
-            Paragraph("<b>Ingestion & Scraping</b>", table_cell_bold),
-            Paragraph("Requests, BeautifulSoup4, DuckDuckGo API", table_cell),
-            Paragraph("Extracts statutory filings from Screener.in; downloads official BSE PDF concalls; harvests triangulating financial press articles.", table_cell)
+            Paragraph("<b>Ingestion & Harvest</b>", table_cell_bold),
+            Paragraph("Requests, BeautifulSoup4, PyPDF, Tavily API", table_cell),
+            Paragraph("Screener.in scraping via requests/BS4; official BSE concall PDFs downloaded via httpx and parsed via PyPDF; targeted financial search via Tavily.", table_cell)
         ],
         [
             Paragraph("<b>Exporters & Visuals</b>", table_cell_bold),
-            Paragraph("ReportLab Canvas, Matplotlib, Chart.js", table_cell),
-            Paragraph("ReportLab custom flowables for strict 2-page institutional PDF; Matplotlib dual-axis sales vs margin chart; Chart.js in browser.", table_cell)
+            Paragraph("ReportLab 5.0, Matplotlib 3.11, Chart.js", table_cell),
+            Paragraph("ReportLab custom flowables for strictly 2-page dark research PDF; Matplotlib dual-axis sales vs margin chart; Chart.js in browser workstation.", table_cell)
         ],
         [
             Paragraph("<b>Frontend UI</b>", table_cell_bold),
@@ -395,8 +401,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     stack_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#18181f")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 1.2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#27272a")),
@@ -434,8 +440,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     tl_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#18181f")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 1.2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#27272a")),
@@ -469,8 +475,8 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     brief_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#18181f")),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 1.2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.2),
+        ('TOPPADDING', (0,0), (-1,-1), 1.0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.0),
         ('LEFTPADDING', (0,0), (-1,-1), 3),
         ('RIGHTPADDING', (0,0), (-1,-1), 3),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#27272a")),
@@ -507,7 +513,7 @@ def build_pdf(filename="ALPHA_DECAY_PROJECT_OVERVIEW.pdf"):
     doc_fitz = pymupdf.open(filename)
     doc_fitz[0].get_pixmap(dpi=150).save("page_1.png")
     doc_fitz[1].get_pixmap(dpi=150).save("page_2.png")
-    print("Exported page_1.png and page_2.png for inspection.")
+    print("Exported page_1.png and page_2.png for visual verification.")
 
 if __name__ == "__main__":
     build_pdf()

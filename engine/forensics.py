@@ -515,11 +515,11 @@ class ForensicEngine:
                     materiality=0.9,
                     severity_score=severity,
                     description=(
-                        f"Reported sales grew +{latest_sales_g}% YoY while the expense-adjusted revenue growth residual was {latest_res}% "
-                        f"(mathematical spread: {divergence}%). SCREENING HEURISTIC: Identifies a divergence between headline growth "
+                        f"Reported sales grew {latest_sales_g:+.2f}% YoY while the expense-adjusted revenue growth residual was {latest_res:.2f}% "
+                        f"(mathematical spread: {divergence:.2f}%). SCREENING HEURISTIC: Identifies a divergence between headline growth "
                         f"and cost-adjusted realization; does NOT constitute company-reported unit volume growth or causal proof."
                     ),
-                    timeline_trajectory=f"Sales YoY: +{latest_sales_g}% vs Expense Residual: {latest_res}% (Spread: {divergence}%)",
+                    timeline_trajectory=f"Sales YoY: {latest_sales_g:+.2f}% vs Expense Residual: {latest_res:.2f}% (Spread: {divergence:.2f}%)",
                     is_heuristic=True,
                     comparison_basis="YoY",
                     direction="adverse"

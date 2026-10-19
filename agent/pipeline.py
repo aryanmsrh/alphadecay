@@ -24,7 +24,7 @@ def formulate_hypothesis(
     if attempt == 1:
         prompt = f"""
 You are a top-tier institutional financial forensic investigator analyzing {company_name} ({ticker}) for the ATMOS 2026 Hackathon (Track C: Consumer, FMCG & Retail).
-We detected this quantitative anomaly (Severity: {severity}/10):
+We detected this financial anomaly (Severity: {severity}/10):
 - Metric: {metric}
 - Observation: {summary}
 - Financial Detail: {anomaly.get('math_detail', '')}
@@ -33,7 +33,7 @@ We detected this quantitative anomaly (Severity: {severity}/10):
 Recent Evidence & Filings Snippets:
 {ev_context}
 
-Deterministic Calculations:
+Verified Financial Calculations:
 {json.dumps([f"{k.get('name')}: {k.get('value')} ({k.get('period')})" for k in key_numbers[:6]], indent=2)}
 
 CAUSAL GROUNDING RULES:
@@ -104,7 +104,7 @@ Observation: {anomaly.get('summary')}
 Forensic Hypothesis Under Scrutiny (Attempt {attempt}):
 "{hypothesis}"
 
-DETERMINISTIC FINANCIAL METRICS:
+VERIFIED FINANCIAL METRICS:
 {json.dumps(key_numbers, indent=2)}
 
 AVAILABLE VERIFIED EVIDENCE EXCERPTS & SOURCES:
@@ -151,7 +151,7 @@ Output ONLY valid JSON matching this exact structure:
     except Exception:
         pass
 
-    # Deterministic fallback evaluation if LLM call fails
+    # Standard rule-based fallback evaluation if model call fails
     sev = float(anomaly.get("severity", 3.0))
     if sev >= 6.5:
         verdict = "HYPOTHESIS PASSED"
@@ -355,7 +355,7 @@ HYPOTHESES THAT PASSED SCRUTINY ({len(passed_hypotheses)}):
 HYPOTHESES THAT FAILED SCRUTINY ({len(failed_hypotheses)}):
 {json.dumps(failed_hypotheses, indent=2)}
 
-DETERMINISTIC FINANCIAL METRICS:
+VERIFIED FINANCIAL METRICS:
 {json.dumps(key_numbers, indent=2)}
 
 PRIMARY EVIDENCE & DISCLOSURES:
@@ -364,7 +364,7 @@ PRIMARY EVIDENCE & DISCLOSURES:
 CAUSAL GROUNDING AND RIGOR MANDATE:
 - Ground every claim strictly in reported statutory numbers or management disclosures.
 - Explicitly differentiate between:
-  1. Quantitative Financial Facts (exact audited figures, percentages, dates from statements)
+  1. Financial Statement Facts (exact figures, percentages, dates from statements)
   2. Management Disclosures (claims made in earnings concalls or presentations)
   3. Analytical Inferences (the agent's deduced interpretation and tested causal mechanism)
 - The Discovery sentence MUST be exactly ONE clear sentence describing the non-obvious reality (e.g. price vs volume, CFO conversion contraction, working capital / credit stretch).
@@ -376,7 +376,7 @@ Produce the official 8-point research brief matching the participant brief rules
 2. "2_Why_It_Matters": 3 to 5 analytical bullets explaining the commercial, cash flow, and channel implications.
 3. "3_Evidence": List of verified independent sources with clickable URLs or document titles.
 4. "4_Timeline": When the change or divergence emerged and developed across quarters/fiscal years.
-5. "5_Numbers": Only the specific deterministic calculations and figures needed to substantiate the finding.
+5. "5_Numbers": Only the specific financial calculations and figures needed to substantiate the finding.
 6. "6_Counterargument": The strongest alternative benign explanation or counterevidence considered.
 7. "7_Falsification_Condition": What future quarterly metric normalization would definitively disprove this finding.
 8. "8_Evidence_Strength": Format strictly as "[Rating] ([Score]/10): [Detailed Reasoning]" (e.g. "Strong (8.5/10): Audited statutory Cash Flow and P&L statements confirm persistent CFO/EBITDA conversion contraction across 3 consecutive fiscal years").
@@ -415,7 +415,7 @@ Output ONLY valid JSON:
     except Exception:
         pass
 
-    # Deterministic fallback
+    # Standard rule-based fallback
     if final_binary_verdict == "HYPOTHESIS PASSED":
         top_h = passed_hypotheses[0]
         discovery = f"{company_name} reports resilient top-line growth, but scrutiny of {top_h['anomaly_metric']} reveals {top_h['hypothesis'].lower()}"
@@ -446,7 +446,7 @@ Output ONLY valid JSON:
             f"Annual Audited Balance Sheet & Cash Flow Disclosures for {company_name}"
         ],
         "4_Timeline": f"Observed across recent quarters trailing up to latest statutory disclosures.",
-        "5_Numbers": f"Key deterministic metrics: {metrics_summary_str}",
+        "5_Numbers": f"Key verified metrics: {metrics_summary_str}",
         "6_Counterargument": "Operating shifts reflect normal seasonal demand, distribution channel expansion, or raw material cost cycles.",
         "7_Falsification_Condition": "Two consecutive quarters of counter-trend data in trade receivables and operating cash flow.",
         "8_Evidence_Strength": ev_strength

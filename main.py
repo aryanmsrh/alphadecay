@@ -16,7 +16,7 @@ from webapp.run_store import run_store
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Alpha Decay: Autonomous Financial Research Agent")
+    parser = argparse.ArgumentParser(description="AlphaDecay: Autonomous Financial Research Agent")
     parser.add_argument("--ticker", type=str, default="HINDUNILVR", help="Listed company ticker symbol (default: HINDUNILVR)")
     parser.add_argument("--hypothesis", type=str, default=None, help="Forensic hypothesis to investigate (optional)")
     parser.add_argument("--export-pdf", action="store_true", default=False, help="Export 2-page investigation PDF report")
@@ -33,7 +33,7 @@ def main():
     run_id = uuid.uuid4().hex[:8]
 
     print("=" * 80)
-    print("  Alpha Decay // Finding the Next Signal: Autonomous Research Agent")
+    print("  AlphaDecay // Finding the Next Signal: Autonomous Research Agent")
     print(f"  Target Entity:       {ticker}")
     print(f"  Run Identifier:      {run_id}")
     print(f"  Sector Track:        Track C — Consumer, FMCG & Retail")
@@ -42,7 +42,7 @@ def main():
     print(f"  Execution Mode:      {'OFFLINE (Ollama)' if config.USE_OFFLINE_MODE else 'ONLINE (Gemini First)'}")
     print("=" * 80)
 
-    print(f"\n[1/5] Ingesting statutory filings & executing deterministic math...")
+    print(f"\n[1/5] Ingesting statutory filings & computing financial indicators...")
     try:
         result = investigate_company(
             ticker=ticker,
@@ -60,7 +60,7 @@ def main():
     result["provider_used"] = result.get("provider")
     run_store.save_run(result)
 
-    print(f"\n[2/5] Deterministic Financial Calculations & Metric Significations:")
+    print(f"\n[2/5] Verified Financial Indicators & Metric Significations:")
     print("-" * 80)
     for kn in result.get("indicators", {}).get("key_numbers", []):
         print(f"  • {kn.get('name')}: {kn.get('value')}")

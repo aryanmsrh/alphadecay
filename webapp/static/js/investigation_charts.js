@@ -1,5 +1,5 @@
 /**
- * Alpha Decay Interactive Financial Analytics Chart Engine
+ * AlphaDecay Interactive Financial Analytics Chart Engine
  * Chart.js wrapper with dark terminal theme tokens, metric toggling,
  * zero false zeros, and tabular data view.
  */

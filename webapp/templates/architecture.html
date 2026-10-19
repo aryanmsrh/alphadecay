@@ -14,11 +14,11 @@
             ATMOS 2026 BITS PILANI · TRACK C (FMCG & RETAIL)
           </span>
           <span class="badge" style="background: rgba(34, 197, 94, 0.12); color: var(--accent-green); border-color: rgba(34, 197, 94, 0.3);">
-            LANGGRAPH WORKFLOW
+            AUTONOMOUS PIPELINE
           </span>
         </div>
         <h1 style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.5px;">
-          Alpha Decay: System Architecture & Beginner's Financial Guide
+          AlphaDecay: System Architecture & Beginner's Financial Guide
         </h1>
         <p style="color: var(--text-secondary); font-size: 14px; max-width: 780px; line-height: 1.6;">
           An automated financial research tool that looks for real operational shifts in listed Indian FMCG companies. This page explains how the multi-agent setup works behind the scenes and explains all the business and financial terms in simple, plain English.
@@ -30,7 +30,7 @@
         <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">Quick Navigation</span>
         <div style="display: flex; flex-wrap: wrap; gap: 6px;">
           <a href="#pipeline-architecture" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">How It Works</a>
-          <a href="#langgraph-cyclic" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Two-Agent Debate</a>
+          <a href="#two-agent-debate" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Two-Agent Debate</a>
           <a href="#math-sandbox" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Formulas & Math</a>
           <a href="#financial-glossary" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Finance Glossary</a>
           <a href="#fmcg-case-study" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">HUL Example</a>
@@ -52,7 +52,7 @@
     </div>
 
     <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 18px; line-height: 1.6;">
-      Most financial AI apps mess up basic math because they ask the language model to calculate numbers directly. AI models are notoriously bad at arithmetic. <b>Alpha Decay calculates all ratios and margins in regular Python code first</b>, so the numbers are always 100% accurate before any AI reads them.
+      Most financial AI apps mess up basic math because they ask the language model to calculate numbers directly. AI models are notoriously bad at arithmetic. <b>AlphaDecay calculates all ratios and margins in regular Python code first</b>, so the numbers are always 100% accurate before any AI reads them.
     </p>
 
     <!-- Visual Architecture Flow Grid -->
@@ -92,7 +92,7 @@
       <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-yellow); font-weight: 700;">STEP 03 // RANKING</span>
-          <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-yellow); font-size: 10px;">engine/forensics.py</span>
+          <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-yellow); font-size: 10px;">engine/analytics.py</span>
         </div>
         <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Spotting & Ranking Divergences</h3>
         <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
@@ -106,10 +106,10 @@
       <!-- Phase 4 Card -->
       <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-purple); font-weight: 700;">STEP 04 // TWO-AGENT DEBATE</span>
-          <span class="badge" style="background: rgba(168, 85, 247, 0.1); color: var(--accent-purple); font-size: 10px;">agent/cyclic_pipeline.py</span>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-blue); font-weight: 700;">STEP 04 // TWO-AGENT DEBATE</span>
+          <span class="badge" style="background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); font-size: 10px;">agent/pipeline.py</span>
         </div>
-        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">LangGraph Two-Agent Debate</h3>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Two-Agent Fact-Checking Debate</h3>
         <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
           Pits an <b>Investigative Agent</b> against a skeptical <b>Disproving Agent</b>. The first agent proposes a theory based on the numbers and earnings calls. The skeptic tries to shoot it down using ordinary business explanations. If the skeptic disproves it, the agent gets one second try to refine or drop the claim.
         </p>
@@ -122,7 +122,7 @@
       <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-red); font-weight: 700;">STEP 05 // REVIEW & VERDICT</span>
-          <span class="badge" style="background: rgba(244, 63, 94, 0.1); color: var(--accent-red); font-size: 10px;">agent/nodes.py</span>
+          <span class="badge" style="background: rgba(244, 63, 94, 0.1); color: var(--accent-red); font-size: 10px;">agent/pipeline.py</span>
         </div>
         <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Final Review & Verdict</h3>
         <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
@@ -152,20 +152,20 @@
   </div>
 
   <!-- SECTION 2: HOW THE TWO AGENTS DEBATE -->
-  <div id="langgraph-cyclic" class="card">
+  <div id="two-agent-debate" class="card">
     <div class="card-header">
       <div class="card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-blue);">
           <circle cx="12" cy="12" r="10"></circle>
           <polyline points="12 6 12 12 16 14"></polyline>
         </svg>
-        <span>2. How the Two Agents Debate (LangGraph Workflow)</span>
+        <span>2. How the Two Agents Debate (Fact-Checking Loop)</span>
       </div>
       <span class="badge badge-queued" style="font-family: var(--font-mono);">Fact-Checking Workflow</span>
     </div>
 
     <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 16px; line-height: 1.6;">
-      If you ask a regular AI to find an issue with a company, it will almost always agree with you and make mountains out of molehills (confirmation bias). Alpha Decay solves this by having two agents argue from opposite perspectives before reaching a conclusion:
+      If you ask a regular AI to find an issue with a company, it will almost always agree with you and make mountains out of molehills (confirmation bias). AlphaDecay solves this by having two agents argue from opposite perspectives before reaching a conclusion:
     </p>
 
     <!-- State Machine Steps -->
@@ -464,14 +464,14 @@
         <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
           <strong style="color: var(--text-primary); font-size: 14px;">SEBI LODR Regulation 33</strong>
           <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
-            The official Indian law requiring all listed public companies to publish audited quarterly financial statements within 45 days of the quarter ending. This is the official data source Alpha Decay scrapes.
+            The official Indian law requiring all listed public companies to publish audited quarterly financial statements within 45 days of the quarter ending. This is the official data source AlphaDecay scrapes.
           </p>
         </div>
 
         <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
           <strong style="color: var(--text-primary); font-size: 14px;">Falsification Condition</strong>
           <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
-            A proper scientific test should state what evidence would prove it wrong. In every Alpha Decay report, the agent specifies what future result (e.g. cash flow conversion recovering above 82%) would disprove its conclusion.
+            A proper scientific test should state what evidence would prove it wrong. In every AlphaDecay report, the agent specifies what future result (e.g. cash flow conversion recovering above 82%) would disprove its conclusion.
           </p>
         </div>
 
@@ -536,7 +536,7 @@
         <thead>
           <tr>
             <th style="width: 25%;">Required Point</th>
-            <th style="width: 75%;">What Alpha Decay Provides</th>
+            <th style="width: 75%;">What AlphaDecay Provides</th>
           </tr>
         </thead>
         <tbody>

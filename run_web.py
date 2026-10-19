@@ -13,7 +13,7 @@ from webapp.app import create_app
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Alpha Decay Financial Research Web Application")
+    parser = argparse.ArgumentParser(description="AlphaDecay Financial Research Web Application")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host interface to bind")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "5000")), help="Port number")
     parser.add_argument("--debug", action="store_true", default=False, help="Enable Flask debug mode")
@@ -28,7 +28,7 @@ def main():
     app = create_app()
 
     print("=" * 70)
-    print("  Alpha Decay // Financial Research Engine")
+    print("  AlphaDecay // Financial Research Engine")
     print("=" * 70)
     print(f"  • Web Dashboard URL:     http://{args.host}:{args.port}/")
     print(f"  • Primary Model:         {config.GEMINI_MODEL} ({'Configured' if config.GEMINI_API_KEY else 'API Key Missing'})")

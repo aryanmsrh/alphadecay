@@ -43,10 +43,24 @@ def calculate_operating_margin(operating_profit: Optional[float], revenue: Optio
     return round((operating_profit / revenue) * 100.0, 2)
 
 
+def coerce_float(val: Any) -> Optional[float]:
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        cleaned = val.replace(",", "").replace("%", "").strip()
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+    return None
+
+
 def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
     ticker = raw_data.get("ticker", "").upper().strip()
     company_name = raw_data.get("company_name", ticker)
-    quarters = raw_data.get("quarters", {})
+    quarters = raw_data.get("quarters") or raw_data.get("quarterly_results") or {}
     periods = quarters.get("periods", [])
     rows = quarters.get("rows", {})
 
@@ -61,14 +75,22 @@ def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
     opm_by_period = {}
 
     for idx, p in enumerate(periods):
-        if idx < len(sales_series) and isinstance(sales_series[idx], (int, float)):
-            sales_by_period[p] = float(sales_series[idx])
-        if idx < len(expenses_series) and isinstance(expenses_series[idx], (int, float)):
-            expenses_by_period[p] = float(expenses_series[idx])
-        if idx < len(operating_profit_series) and isinstance(operating_profit_series[idx], (int, float)):
-            operating_profit_by_period[p] = float(operating_profit_series[idx])
-        if idx < len(opm_series) and isinstance(opm_series[idx], (int, float)):
-            opm_by_period[p] = float(opm_series[idx])
+        if idx < len(sales_series):
+            val = coerce_float(sales_series[idx])
+            if val is not None:
+                sales_by_period[p] = val
+        if idx < len(expenses_series):
+            val = coerce_float(expenses_series[idx])
+            if val is not None:
+                expenses_by_period[p] = val
+        if idx < len(operating_profit_series):
+            val = coerce_float(operating_profit_series[idx])
+            if val is not None:
+                operating_profit_by_period[p] = val
+        if idx < len(opm_series):
+            val = coerce_float(opm_series[idx])
+            if val is not None:
+                opm_by_period[p] = val
 
     quarterly_history = []
     trailing_periods = periods[-8:] if len(periods) >= 8 else periods
@@ -110,14 +132,14 @@ def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
         margin_change_pp = round(current_margin - prior_margin, 2)
 
     # Extract annual Profit & Loss and Cash Flow statements
-    pl_data = raw_data.get("profit_loss", {})
+    pl_data = raw_data.get("profit_loss") or raw_data.get("annual_pnl") or {}
     pl_periods = pl_data.get("periods", [])
     pl_rows = pl_data.get("rows", {})
     pl_sales = pl_rows.get("Sales", [])
     pl_op = pl_rows.get("Operating Profit", [])
     pl_expenses = pl_rows.get("Expenses", [])
 
-    cf_data = raw_data.get("cash_flow", {})
+    cf_data = raw_data.get("cash_flow") or raw_data.get("cashflow") or {}
     cf_periods = cf_data.get("periods", [])
     cf_rows = cf_data.get("rows", {})
     cfo_series_raw = cf_rows.get("Cash from Operating Activity", [])
@@ -126,15 +148,22 @@ def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
     pl_op_by_period = {}
     pl_sales_by_period = {}
     for idx, p in enumerate(pl_periods):
-        if p != "TTM" and idx < len(pl_op) and isinstance(pl_op[idx], (int, float)):
-            pl_op_by_period[p] = float(pl_op[idx])
-        if p != "TTM" and idx < len(pl_sales) and isinstance(pl_sales[idx], (int, float)):
-            pl_sales_by_period[p] = float(pl_sales[idx])
+        if p != "TTM":
+            if idx < len(pl_op):
+                val = coerce_float(pl_op[idx])
+                if val is not None:
+                    pl_op_by_period[p] = val
+            if idx < len(pl_sales):
+                val = coerce_float(pl_sales[idx])
+                if val is not None:
+                    pl_sales_by_period[p] = val
 
     cfo_by_period = {}
     for idx, p in enumerate(cf_periods):
-        if idx < len(cfo_series_raw) and isinstance(cfo_series_raw[idx], (int, float)):
-            cfo_by_period[p] = float(cfo_series_raw[idx])
+        if idx < len(cfo_series_raw):
+            val = coerce_float(cfo_series_raw[idx])
+            if val is not None:
+                cfo_by_period[p] = val
 
     # Find common audited annual periods between Cash Flow and Profit & Loss
     common_annual_periods = [p for p in cf_periods if p in pl_op_by_period and p in cfo_by_period]
@@ -162,9 +191,9 @@ def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
         two_prior_cfo_to_op_profit_pct = round((two_prior_annual_cfo / two_prior_annual_op) * 100.0, 2)
 
     # Ratios table parsing
-    ratios_rows = raw_data.get("ratios_table", {}).get("rows", {})
+    ratios_rows = (raw_data.get("ratios_table") or raw_data.get("ratios") or {}).get("rows", {})
     debtor_days_series = ratios_rows.get("Debtor Days", [])
-    clean_debtor_days = [float(v) for v in debtor_days_series if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).isdigit())]
+    clean_debtor_days = [coerce_float(v) for v in debtor_days_series if coerce_float(v) is not None]
     debtor_days_latest = clean_debtor_days[-1] if clean_debtor_days else None
     debtor_days_prior = clean_debtor_days[-2] if len(clean_debtor_days) >= 2 else None
     debtor_days_change = None
@@ -172,29 +201,29 @@ def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
         debtor_days_change = round(debtor_days_latest - debtor_days_prior, 1)
 
     inv_days_series = ratios_rows.get("Inventory Days", [])
-    clean_inv_days = [float(v) for v in inv_days_series if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).isdigit())]
+    clean_inv_days = [coerce_float(v) for v in inv_days_series if coerce_float(v) is not None]
     inv_days_latest = clean_inv_days[-1] if clean_inv_days else None
     inv_days_prior = clean_inv_days[-2] if len(clean_inv_days) >= 2 else None
     inv_days_change = round(inv_days_latest - inv_days_prior, 1) if (inv_days_latest is not None and inv_days_prior is not None) else None
 
     days_payable_series = ratios_rows.get("Days Payable", [])
-    clean_payable_days = [float(v) for v in days_payable_series if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).isdigit())]
+    clean_payable_days = [coerce_float(v) for v in days_payable_series if coerce_float(v) is not None]
     payable_days_latest = clean_payable_days[-1] if clean_payable_days else None
     payable_days_prior = clean_payable_days[-2] if len(clean_payable_days) >= 2 else None
 
     ccc_series = ratios_rows.get("Cash Conversion Cycle", [])
-    clean_ccc = [float(v) for v in ccc_series if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).replace("-", "", 1).isdigit())]
+    clean_ccc = [coerce_float(v) for v in ccc_series if coerce_float(v) is not None]
     ccc_latest = clean_ccc[-1] if clean_ccc else None
     ccc_prior = clean_ccc[-2] if len(clean_ccc) >= 2 else None
 
     wc_days_series = ratios_rows.get("Working Capital Days", [])
-    clean_wc_days = [float(v) for v in wc_days_series if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).replace("-", "", 1).isdigit())]
+    clean_wc_days = [coerce_float(v) for v in wc_days_series if coerce_float(v) is not None]
     wc_days_latest = clean_wc_days[-1] if clean_wc_days else None
     wc_days_prior = clean_wc_days[-2] if len(clean_wc_days) >= 2 else None
     wc_days_change = round(wc_days_latest - wc_days_prior, 1) if (wc_days_latest is not None and wc_days_prior is not None) else None
 
-    bs_rows = raw_data.get("balance_sheet", {}).get("rows", {})
-    trade_rec_series = [float(v) for v in bs_rows.get("Trade Receivables", []) if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "", 1).isdigit())]
+    bs_rows = (raw_data.get("balance_sheet") or raw_data.get("balancesheet") or {}).get("rows", {})
+    trade_rec_series = [coerce_float(v) for v in bs_rows.get("Trade Receivables", []) if coerce_float(v) is not None]
     receivables_growth_yoy = None
     if len(trade_rec_series) >= 2:
         receivables_growth_yoy = calculate_percentage_growth(trade_rec_series[-1], trade_rec_series[-2])
@@ -228,7 +257,7 @@ def calculate_financial_indicators(raw_data: Dict[str, Any]) -> Dict[str, Any]:
             "formula": "Current_OPM - Prior_YoY_OPM",
             "calculation_steps": f"{current_margin:.2f}% - {prior_margin:.2f}% = {margin_change_pp:+.2f} pp ({int(margin_change_pp * 100):+d} bps)" if (current_margin is not None and prior_margin is not None) else "Awaiting disclosures",
             "plain_english": "The expansion or contraction in operating profit margin percentage points across a full 12-month seasonal cycle.",
-            "what_it_signifies": "Quantifies operational cost leverage. A negative spread indicates input commodity inflation, freight, or ad-spends expanding faster than sales realization."
+            "what_it_signifies": "Measures operational cost leverage. A negative spread indicates input commodity inflation, freight, or ad-spends expanding faster than sales realization."
         },
         {
             "name": "Operating Expense Growth (YoY)",

@@ -121,7 +121,7 @@ You are an expert financial investigator evaluating a forensic hypothesis for {c
 INVESTIGATION HYPOTHESIS:
 "{hypothesis}"
 
-DETERMINISTIC FINANCIAL CALCULATIONS (Use these exact numbers, do NOT alter or invent calculations):
+VERIFIED FINANCIAL CALCULATIONS (Use these exact numbers, do NOT alter or invent calculations):
 {json.dumps(key_numbers, indent=2)}
 
 OBSERVED FINANCIAL RED FLAGS / ANOMALIES:
@@ -131,7 +131,7 @@ AVAILABLE VERIFIED EVIDENCE & SOURCE EXCERPTS:
 {json.dumps(evidence_items, indent=2)}
 
 INSTRUCTIONS:
-1. Evaluate whether the evidence and deterministic calculations support, refute, or fail to establish the hypothesis.
+1. Evaluate whether the evidence and verified calculations support, refute, or fail to establish the hypothesis.
 2. Select one of three strict verdicts:
    - "SUPPORTED" (Available evidence supports the hypothesis)
    - "REFUTED" (Available evidence contradicts the hypothesis)
@@ -145,7 +145,7 @@ Format your response strictly as valid JSON matching this schema:
   "verdict_summary": "1-2 sentence plain-English summary of the verdict",
   "1_Executive_Summary": "Concise summary of what was investigated and the final verdict",
   "2_Company_and_Hypothesis": "Entity details and the exact hypothesis under examination",
-  "3_Key_Financial_Numbers": "Summary of key numbers, periods, and deterministic calculations",
+  "3_Key_Financial_Numbers": "Summary of key numbers, periods, and verified calculations",
   "4_Potential_Red_Flags": "Observed anomalies and their analytical significance",
   "5_Supporting_Evidence": "The strongest factual evidence supporting the hypothesis",
   "6_Counterevidence": "Factual evidence or context contradicting or weakening the hypothesis",

@@ -8,7 +8,7 @@ from ingestion.screener import ScreenerScraper
 from ingestion.concall_harvester import ConcallHarvester
 from ingestion.web_search import TavilySearchClient
 from engine.analytics import calculate_financial_indicators
-from agent.cyclic_pipeline import run_cyclic_investigation
+from agent.pipeline import run_cyclic_investigation
 from exporter.chart import generate_investigation_chart
 from exporter.pdf import generate_pdf_report
 
@@ -31,7 +31,7 @@ def investigate_company(
     raw_data = scraper.fetch_company_data(clean_ticker)
     company_name = raw_data.get("company_name", clean_ticker)
 
-    # 2. Analytics: Deterministic Python calculations + Top 5 Anomaly scoring /10
+    # 2. Analytics: Financial ratio calculations + Top 5 Anomaly scoring /10
     indicators = calculate_financial_indicators(raw_data)
 
     # 3. Evidence Collection: Earnings call excerpts + Web Search

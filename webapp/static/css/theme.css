@@ -1,5 +1,5 @@
 /*
- * Alpha Decay: Modern Financial Research Dashboard
+ * AlphaDecay: Modern Financial Research Dashboard
  * True Pitch Black (#000000), Elegant Deep Surfaces, Crisp Micro-Borders,
  * Modern Typography (Space Grotesk + Plus Jakarta Sans + JetBrains Mono),
  * Smooth Fluid Animations & High-Legibility Scaled Typography.
@@ -20,7 +20,7 @@
   --text-muted: #71717A;
   --text-dim: #52525B;
 
-  /* Refined Modern Accents */
+  /* Refined Modern Accents (Strictly No Purple) */
   --accent-blue: #38BDF8;
   --accent-blue-dim: #0284C7;
   --accent-green: #22C55E;
@@ -28,7 +28,6 @@
   --accent-red: #F43F5E;
   --accent-red-dim: #BE123C;
   --accent-yellow: #F59E0B;
-  --accent-purple: #A855F7;
 
   /* Crisp Micro Borders */
   --border: rgba(255, 255, 255, 0.08);
@@ -158,7 +157,7 @@ a:hover {
   background: var(--bg-secondary);
 }
 
-/* Distinctive Alpha Decay Brand Header */
+/* Distinctive AlphaDecay Brand Header */
 .brand-link {
   display: flex;
   align-items: center;
@@ -201,7 +200,7 @@ a:hover {
 
 .brand-highlight {
   color: var(--accent-blue);
-  background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+  background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

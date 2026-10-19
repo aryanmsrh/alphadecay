@@ -19,7 +19,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
 
-# 1. Register Quant Workstation Fonts (Space Grotesk + Plus Jakarta Sans + JetBrains Mono)
+# 1. Register Typography Fonts (Space Grotesk + Plus Jakarta Sans + JetBrains Mono)
 FONTS_DIR = Path(__file__).resolve().parent.parent / "webapp" / "static" / "fonts"
 
 try:
@@ -54,7 +54,7 @@ def draw_website_background(canv, doc):
 
 class WebsiteThemedCanvas(canvas.Canvas):
     """
-    Two-pass canvas for running page numbering and quant terminal footer over the content.
+    Two-pass canvas for running page numbering and consistent footer over the content.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -82,7 +82,7 @@ class WebsiteThemedCanvas(canvas.Canvas):
         # Left: Clean, concise spec title
         self.setFont(FONT_MONO, 7.0)
         self.setFillColor(colors.HexColor("#71717a")) # --text-muted
-        self.drawString(20, 10, "Alpha Decay // Financial Research Report")
+        self.drawString(20, 10, "AlphaDecay // Financial Research Report")
 
         # Center: Clean GitHub Link without overlap
         self.setFont(FONT_MONO, 7.0)
@@ -121,7 +121,7 @@ def generate_pdf_report(
 
     styles = getSampleStyleSheet()
 
-    # Pitch-Black Quant Terminal Typography
+    # Pitch-Black Minimalist Typography
     title_style = ParagraphStyle(
         "DocTitle",
         parent=styles["Normal"],
@@ -205,7 +205,7 @@ def generate_pdf_report(
     # Top Entity Header Card
     header_table_data = [
         [
-            Paragraph(f"<b>Alpha Decay // Financial Research Report</b><br/><font size=10 color='#f4f4f6'><b>{company} ({ticker})</b> · Track C: Consumer, FMCG & Retail</font><br/><font size=7 color='#a1a1aa'><b>EVIDENCE STRENGTH:</b> {ev_strength_text} &nbsp;|&nbsp; <b>ATMOS 2026 BITS PILANI</b></font>", title_style),
+            Paragraph(f"<b>AlphaDecay // Financial Research Report</b><br/><font size=10 color='#f4f4f6'><b>{company} ({ticker})</b> · Track C: Consumer, FMCG & Retail</font><br/><font size=7 color='#a1a1aa'><b>EVIDENCE STRENGTH:</b> {ev_strength_text} &nbsp;|&nbsp; <b>ATMOS 2026 BITS PILANI</b></font>", title_style),
             Paragraph(f"<font size=7 color='#f4f4f6'>FINAL VERDICT</font><br/><b>{verdict}</b>", badge_style)
         ]
     ]
@@ -326,7 +326,7 @@ def generate_pdf_report(
 
     p2_header_data = [
         [
-            Paragraph(f"<b>Alpha Decay</b> // Two-Agent Fact-Checking Trail & Falsification", title_style),
+            Paragraph(f"<b>AlphaDecay</b> // Two-Agent Fact-Checking Trail & Falsification", title_style),
             Paragraph("<b>REPOSITORY:</b> <a href='https://github.com/aryanmsrh/alphadecay'><font color='#38bdf8'><u>github.com/aryanmsrh/alphadecay</u></font></a>", ParagraphStyle("TRP2", parent=styles["Normal"], fontName=FONT_MONO_BOLD, fontSize=7.0, leading=8.8, alignment=2, textColor=colors.HexColor("#38bdf8")))
         ]
     ]

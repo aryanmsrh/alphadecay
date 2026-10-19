@@ -1,5 +1,5 @@
 /**
- * Alpha Decay Common Frontend Utilities
+ * AlphaDecay Common Frontend Utilities
  * CSRF token management, toast notifications, tab switching
  */
 

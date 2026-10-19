@@ -262,7 +262,6 @@ To protect against arithmetic hallucination, all financial metrics are computed 
 ```
 alphadecay/
 ├── ALPHA_DECAY_PROJECT_OVERVIEW.pdf # 2-Page Technical Architecture Whitepaper PDF
-├── generate_overview_pdf.py         # Script to compile the project overview PDF
 ├── main.py                          # CLI runner for autonomous investigations
 ├── run_web.py                       # Boots the pitch-black quant terminal web server
 ├── config.py                        # Centralized configuration, models & thresholds

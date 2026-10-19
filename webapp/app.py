@@ -173,6 +173,11 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
 
         return render_template("settings.html", diagnostics=diagnostics)
 
+    @app.route("/architecture")
+    @app.route("/guide")
+    def architecture_page():
+        return render_template("architecture.html")
+
     @app.route("/api/investigate", methods=["POST"])
     @app.route("/api/investigation/create", methods=["POST"])
     def api_create_investigation():

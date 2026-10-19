@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}SYSTEM ARCHITECTURE & FINANCIAL INTELLIGENCE GUIDE{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Hero Header Card -->
+  <div class="card" style="border-left: 3px solid var(--accent-blue); background: linear-gradient(135deg, rgba(56, 189, 248, 0.05) 0%, rgba(19, 19, 24, 0.95) 100%);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span class="badge badge-queued" style="background: rgba(56, 189, 248, 0.12); color: var(--accent-blue); border-color: rgba(56, 189, 248, 0.3);">
+            ATMOS 2026 BITS PILANI · TRACK C (FMCG & RETAIL)
+          </span>
+          <span class="badge" style="background: rgba(34, 197, 94, 0.12); color: var(--accent-green); border-color: rgba(34, 197, 94, 0.3);">
+            LANGGRAPH STATEGRAPH V2.0
+          </span>
+        </div>
+        <h1 style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; letter-spacing: -0.5px;">
+          ALPHA-DECAY: Architecture & Beginner's Financial Forensics Guide
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 14px; max-width: 780px; line-height: 1.6;">
+          An autonomous financial research engine built to discover non-obvious operational and accounting divergences across listed Indian FMCG enterprises. This guide explains the entire multi-agent LangGraph pipeline and breaks down every financial metric in plain, beginner-friendly English.
+        </p>
+      </div>
+
+      <!-- Quick Navigation Anchors -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">Quick Navigation</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <a href="#pipeline-architecture" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Pipeline Architecture</a>
+          <a href="#langgraph-cyclic" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">LangGraph Cyclic Engine</a>
+          <a href="#math-sandbox" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Math Sandbox</a>
+          <a href="#financial-glossary" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">Forensic Glossary</a>
+          <a href="#fmcg-case-study" class="btn btn-secondary btn-sm" style="font-size: 11.5px; padding: 4px 10px;">HUL Case Study</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: END-TO-END PIPELINE ARCHITECTURE -->
+  <div id="pipeline-architecture" class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-blue);">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>1. End-to-End System Pipeline Architecture</span>
+      </div>
+      <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">6 Discrete Phases · Zero LLM Math Hallucination</span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 18px; line-height: 1.6;">
+      Most financial AI applications fail because they treat an LLM as an all-in-one calculator, search engine, and synthesizer. Large language models inherently hallucinate arithmetic when performing complex ratios. <b>ALPHA-DECAY decouples the arithmetic engine entirely from language reasoning</b>, ensuring 100% mathematical determinism.
+    </p>
+
+    <!-- Visual Architecture Flow Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 16px;">
+      
+      <!-- Phase 1 Card -->
+      <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-blue); font-weight: 700;">PHASE 01 // HARVEST</span>
+          <span class="badge" style="background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); font-size: 10px;">ingestion/</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Statutory Data Ingestion</h3>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          Harvests multi-year quarterly P&L statements, annual balance sheets, and audited cash flows from official SEBI LODR filings via Screener.in. Downloads official BSE India earnings call PDFs and parses dialogue blocks using <code>PyPDF</code>.
+        </p>
+        <div style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+          Output: Audited statements & verbatim management quotes.
+        </div>
+      </div>
+
+      <!-- Phase 2 Card -->
+      <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-green); font-weight: 700;">PHASE 02 // DETERMINISM</span>
+          <span class="badge" style="background: rgba(34, 197, 94, 0.1); color: var(--accent-green); font-size: 10px;">engine/analytics.py</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Forensic Math Engine</h3>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          Executes in pure Python with zero LLM inference. Computes Core EBITDA (ex-other income), YoY revenue growth, CFO conversion, Days Sales Outstanding (DSO), Days Inventory (DIO), Days Payable (DPO), and Cash Conversion Cycle (CCC).
+        </p>
+        <div style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+          Safeguard: Strict annual-to-annual period alignment.
+        </div>
+      </div>
+
+      <!-- Phase 3 Card -->
+      <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-yellow); font-weight: 700;">PHASE 03 // TRIAGE</span>
+          <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-yellow); font-size: 10px;">engine/forensics.py</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Anomaly Ranking & Scoring</h3>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          Applies quantitative heuristics across financial ratios. Detects and ranks divergences out of 10.0 (CFO conversion decoupling, working capital stretches, margin wedges) to select the top candidate anomaly for adversarial testing.
+        </p>
+        <div style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+          Scoring: Divergences ranked by capital severity.
+        </div>
+      </div>
+
+      <!-- Phase 4 Card -->
+      <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-purple); font-weight: 700;">PHASE 04 // ADVERSARIAL</span>
+          <span class="badge" style="background: rgba(168, 85, 247, 0.1); color: var(--accent-purple); font-size: 10px;">agent/cyclic_pipeline.py</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">LangGraph Multi-Agent Loop</h3>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          Pits the <b>Investigative Agent (Prosecutor)</b> against the <b>Disproving Agent (Defense)</b>. Uses a 2-attempt self-correcting cycle. If the defense breaks down the initial thesis with benign commercial context, Attempt 2 is refined.
+        </p>
+        <div style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+          Epistemic Boundary: Eliminates confirmation bias.
+        </div>
+      </div>
+
+      <!-- Phase 5 Card -->
+      <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-red); font-weight: 700;">PHASE 05 // VERDICT</span>
+          <span class="badge" style="background: rgba(244, 63, 94, 0.1); color: var(--accent-red); font-size: 10px;">agent/nodes.py</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Binary Adjudication Gate</h3>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          An independent judge node evaluates whether the prosecution withstood defense refutations. Emits strictly binary terminal verdicts: <code>HYPOTHESIS PASSED</code> or <code>HYPOTHESIS FAILED</code>, framing falsification criteria.
+        </p>
+        <div style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+          Methodology: Karl Popper's empirical falsification.
+        </div>
+      </div>
+
+      <!-- Phase 6 Card -->
+      <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-blue); font-weight: 700;">PHASE 06 // PACKAGING</span>
+          <span class="badge" style="background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); font-size: 10px;">exporter/ & webapp/</span>
+        </div>
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Institutional Artifact Packaging</h3>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          Renders publication-grade strict 2-page dark PDF research reports via ReportLab, generates high-res dual-axis Matplotlib trajectory charts, and commits runs transactionally to an atomic JSON run store.
+        </p>
+        <div style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">
+          Artifacts: report.pdf · chart.png · run.json
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 2: LANGGRAPH MULTI-AGENT CYCLIC ENGINE -->
+  <div id="langgraph-cyclic" class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple);">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>2. The LangGraph Adversarial Cyclic StateGraph</span>
+      </div>
+      <span class="badge badge-queued" style="font-family: var(--font-mono);">Epistemic Boundary Control</span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 16px; line-height: 1.6;">
+      In single-prompt LLM agents, when an agent is asked to "find something wrong", it experiences <b>confirmation bias</b>: it invents or exaggerates minor accounting noise to please the user. ALPHA-DECAY solves this using a two-sided adversarial debate structured as a LangGraph state machine:
+    </p>
+
+    <!-- State Machine Steps -->
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+      
+      <!-- Step 1 -->
+      <div style="display: flex; gap: 14px; background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); border-left: 3px solid var(--accent-blue);">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 18px; color: var(--accent-blue); min-width: 28px;">01</div>
+        <div>
+          <strong style="color: var(--text-primary); font-size: 14px;">Investigative Agent (The Prosecution)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;">
+            Ingests the top-ranked financial divergence and cross-examines it against management quotes from BSE earnings calls. It formulates <b>Attempt 1 Hypothesis</b>: connecting numbers (e.g. CFO drop) to operational tactics (e.g. aggressive channel distribution or supplier credit contractions).
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="display: flex; gap: 14px; background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); border-left: 3px solid var(--accent-red);">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 18px; color: var(--accent-red); min-width: 28px;">02</div>
+        <div>
+          <strong style="color: var(--text-primary); font-size: 14px;">Disproving Agent (The Defense)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;">
+            Given the exact same filings, the defense's sole mandate is to <b>falsify and dismantle</b> the hypothesis. It tests whether benign commercial realities explain the shift: negative cash conversion cycles (-89 days for HUL) proving supplier funding, pre-monsoon buffer inventories, or commodity price fluctuations.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="display: flex; gap: 14px; background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); border-left: 3px solid var(--accent-yellow);">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 18px; color: var(--accent-yellow); min-width: 28px;">03</div>
+        <div>
+          <strong style="color: var(--text-primary); font-size: 14px;">Cyclic Refinement Gate (Attempt 1 vs Attempt 2)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;">
+            If the defense refutes Attempt 1, the pipeline does not stop. The Investigative Agent ingests the defense’s critique, isolates where the initial logic was weak, and formulates <b>Attempt 2</b> to test if a narrower, undeniable finding holds. If the finding is still broken down, it is abandoned and marked as refuted.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div style="display: flex; gap: 14px; background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); border-left: 3px solid var(--accent-green);">
+        <div style="font-family: var(--font-mono); font-weight: 800; font-size: 18px; color: var(--accent-green); min-width: 28px;">04</div>
+        <div>
+          <strong style="color: var(--text-primary); font-size: 14px;">Independent Adjudication Gate (The Judge)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5;">
+            Acts as the terminal verification gate. It compares the prosecution's evidence against the defense's refutation. It issues a binary verdict (<code>HYPOTHESIS PASSED</code> if it survived adversarial challenge, or <code>HYPOTHESIS FAILED</code> if benign factors explained it), frames explicit falsification conditions, and drafts the 8-point brief.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 3: DETERMINISTIC FINANCIAL MATH SANDBOX -->
+  <div id="math-sandbox" class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-green);">
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <line x1="8" y1="6" x2="16" y2="6"></line>
+          <line x1="16" y1="14" x2="16" y2="18"></line>
+          <path d="M16 10h.01"></path>
+          <path d="M12 10h.01"></path>
+          <path d="M8 10h.01"></path>
+          <path d="M12 14h.01"></path>
+          <path d="M8 14h.01"></path>
+          <path d="M12 18h.01"></path>
+          <path d="M8 18h.01"></path>
+        </svg>
+        <span>3. Deterministic Forensic Financial Math Engine</span>
+      </div>
+      <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">Pure Python Engine · engine/analytics.py</span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 16px; line-height: 1.6;">
+      All formulas are executed in deterministic Python with locked audited baselines. Below are the core accounting identities computed by the engine:
+    </p>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 22%;">Metric & Formula</th>
+            <th style="width: 18%;">Period Alignment</th>
+            <th style="width: 20%;">Normal Threshold</th>
+            <th style="width: 40%;">Forensic Insight & Diagnostic Significance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">CFO-to-EBITDA Ratio</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">(Audited_CFO / Audited_Operating_Profit) * 100</code>
+            </td>
+            <td>Annual Audited to Annual Audited</td>
+            <td><span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--accent-green);">&ge; 80.0% Conversion</span></td>
+            <td>
+              <b>Earnings Quality Test:</b> Measures how much reported accounting operating profit turns into actual hard cash in the bank. A drop below 80% indicates paper profits failing to liquidate into cash.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">Core EBITDA (ex-Other Income)</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">Net_Sales - Total_Operating_Expenses</code>
+            </td>
+            <td>Quarterly & Annual</td>
+            <td>Operational Baseline</td>
+            <td>
+              <b>Manufacturing Integrity:</b> Strips out non-operating treasury gains (interest income, mutual fund mark-to-market) so companies cannot mask operational manufacturing decay with treasury yields.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">Operating Profit Margin (OPM) Spread</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">Current_OPM - Prior_YoY_OPM</code>
+            </td>
+            <td>Quarterly YoY (Q vs Q-4)</td>
+            <td>Stable (+/- 50 bps)</td>
+            <td>
+              <b>Operating Cost Leverage:</b> Isolates true seasonal operating efficiency by comparing identical quarters YoY in percentage points (pp) and basis points (bps).
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">Debtor Days (DSO)</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">(Trade_Receivables / Audited_Sales) * 365</code>
+            </td>
+            <td>Audited Annual Balance Sheet</td>
+            <td>15 – 30 Days (FMCG)</td>
+            <td>
+              <b>Distributor Credit Discipline:</b> Measures how many days distributors take to settle dues. Rising DSO indicates trade partners struggling to pay or channel stuffing.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">Inventory Days (DIO)</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">(Inventories / Audited_Sales) * 365</code>
+            </td>
+            <td>Audited Annual Balance Sheet</td>
+            <td>35 – 55 Days</td>
+            <td>
+              <b>Warehouse Liquidity:</b> Average days stock sits before being sold. A steady rise indicates slowing consumer takeaway or product lines stagnating on retail shelves.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">Days Payable Outstanding (DPO)</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">(Trade_Payables / Audited_Sales) * 365</code>
+            </td>
+            <td>Audited Annual Balance Sheet</td>
+            <td>100 – 150 Days</td>
+            <td>
+              <b>Vendor Bargaining Power:</b> Average days taken to pay raw material suppliers. High DPO demonstrates immense pricing and credit leverage over suppliers.
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <strong style="color: var(--text-primary);">Cash Conversion Cycle (CCC)</strong><br/>
+              <code style="color: var(--accent-blue); font-size: 11px;">DSO + DIO - DPO</code>
+            </td>
+            <td>Audited Annual Balance Sheet</td>
+            <td><strong style="color: var(--accent-blue);">&lt; 0 Days (Negative)</strong></td>
+            <td>
+              <b>Net Working Capital Cycle:</b> A deeply negative cycle (e.g. -89 days for HUL) proves vendors are funding operational inventory for free, generating massive float.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 4: BEGINNER'S FINANCIAL FORENSIC GLOSSARY -->
+  <div id="financial-glossary" class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-yellow);">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>4. Financial & Business Forensic Glossary for Beginners</span>
+      </div>
+      <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow);">Plain English Masterclass</span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 20px; line-height: 1.6;">
+      New to corporate finance and business analysis? Here is everything you need to know about the terms, concepts, and forensic checks used throughout ALPHA-DECAY:
+    </p>
+
+    <!-- Category 1: Cash vs Profit -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="font-size: 15px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-blue);"></span>
+        Category A: The Difference Between "Cash" and "Accounting Profit"
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+        
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <strong style="color: var(--text-primary); font-size: 14px;">EBITDA</strong>
+            <span class="badge" style="font-size: 10px;">Profitability</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+            <b>What it means:</b> <i>Earnings Before Interest, Taxes, Depreciation, and Amortization</i>. It measures pure operating profit from core factory operations before accounting adjustments like taxes or how fast machinery depreciates.
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <strong style="color: var(--text-primary); font-size: 14px;">CFO (Cash Flow from Operations)</strong>
+            <span class="badge badge-succeeded" style="font-size: 10px;">Liquid Cash</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+            <b>What it means:</b> The actual cash collected from customers minus actual cash paid out to workers and raw material suppliers. Unlike EBITDA (which counts unpaid bills as revenue), CFO only counts <i>hard money in the bank</i>.
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <strong style="color: var(--text-primary); font-size: 14px;">CFO-to-EBITDA Decoupling</strong>
+            <span class="badge badge-failed" style="font-size: 10px;">Forensic Anomaly</span>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+            <b>What it means:</b> When a company's accounting EBITDA rises on paper, but its actual bank cash flow (CFO) shrinks. In healthy companies, CFO conversion is &gt;80%. When it drops to 70%, money is being tied up in unpaid invoices or unsold inventory.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Category 2: Working Capital Ratios -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="font-size: 15px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green);"></span>
+        Category B: Working Capital & The Supply Chain Trio
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+        
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">Debtor Days (DSO)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            <b>The Collection Speed:</b> How many days distributors take to pay for goods shipped. If DSO increases from 18 to 28 days, it means wholesale distributors are struggling or the company is extending easy credit to artificially boost sales.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">Inventory Days (DIO)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            <b>Warehouse Velocity:</b> How many days shampoo, soap, or biscuits sit in company depots before being sold. A sudden spike indicates consumer retail demand has slowed down.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">Payable Days (DPO)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            <b>Supplier Credit Terms:</b> How many days the company takes to pay raw material vendors (e.g. palm oil, chemicals, packaging). A high DPO (120+ days) shows high market clout over suppliers.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border); grid-column: span 1;">
+          <strong style="color: var(--accent-blue); font-size: 14px;">Negative Cash Conversion Cycle (The FMCG Secret)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            In normal industries, companies must invest cash to build inventory and wait for customers to pay (positive cycle). But elite FMCG firms like Hindustan Unilever operate with a <b>negative Cash Conversion Cycle (-89 days)</b>. They collect cash from distributors in ~19 days, but wait ~138 days to pay suppliers. Suppliers are literally funding the company's daily operations interest-free!
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Category 3: Financial Jargon & Ratios -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="font-size: 15px; font-weight: 700; color: var(--accent-yellow); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-yellow);"></span>
+        Category C: Margins, Basis Points & Statutory Filings
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+        
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">Basis Points (bps) vs Percentage Points (pp)</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            In finance, <b>1% equals 100 basis points</b>. If operating profit margin expands from 23.2% to 24.6%, it increased by <b>+1.4 percentage points</b> or <b>+140 basis points (bps)</b>. Traders use basis points to avoid confusion when discussing changes in percentages.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">Volume Growth vs Realization Growth</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            If revenue grew +4% but prices were hiked +6%, the company actually sold <b>-2% fewer physical bottles or packages</b> (negative volume). Pure revenue growth can hide dying consumer demand during inflationary periods.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">SEBI LODR Regulation 33</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            The statutory law enacted by the Securities and Exchange Board of India (SEBI) mandating that every listed public company must submit audited quarterly financial results within 45 days of the quarter-end. This is the primary legally binding data source parsed by ALPHA-DECAY.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <strong style="color: var(--text-primary); font-size: 14px;">Karl Popper's Falsification Condition</strong>
+          <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;">
+            In science, an assertion is only valid if you can state what empirical evidence would prove you wrong. In every ALPHA-DECAY brief, the agent must define a <b>Falsification Condition</b>: an explicit future audited disclosure (e.g. CFO recovering &gt;82%) that would refute its conclusion.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION 5: REAL-WORLD FMCG CASE STUDY (HUL) -->
+  <div id="fmcg-case-study" class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-blue);">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        <span>5. Real-World Track C Case Study: Hindustan Unilever (HINDUNILVR)</span>
+      </div>
+      <span class="badge badge-succeeded" style="font-family: var(--font-mono);">Tested & Verified In Live Testing</span>
+    </div>
+
+    <div style="background: var(--bg-surface-elevated); padding: 18px; border-radius: var(--radius-md); border-left: 3px solid var(--accent-blue); margin-bottom: 16px;">
+      <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">The Discovered Signal:</h3>
+      <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6;">
+        <b>"Hindustan Unilever Limited exhibits an operational divergence where reported operating profit expanded while Cash Flow from Operations (CFO) contracted by -8.9%, driven by accelerated supplier credit settlements rather than distributor default."</b>
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+      <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+        <strong style="color: var(--text-primary); font-size: 13.5px;">1. The Mathematical Evidence</strong>
+        <ul style="font-size: 12.5px; color: var(--text-secondary); margin-top: 6px; padding-left: 18px; line-height: 1.5;">
+          <li><b>CFO Conversion:</b> Dropped from 80.9% to 73.1% YoY (below 80% threshold).</li>
+          <li><b>Trade Payables:</b> Days Payable contracted by 12 days as vendor terms shortened.</li>
+          <li><b>DSO Velocity:</b> Improved from 23 to 19 days, proving distributors were healthy.</li>
+        </ul>
+      </div>
+
+      <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+        <strong style="color: var(--text-primary); font-size: 13.5px;">2. The Adversarial Test</strong>
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
+          The Disproving Agent challenged the initial claim that HUL was suffering from retail distress. It proved HUL’s negative CCC (-89 days) gave it massive liquidity buffer. The Investigative Agent refined Attempt 2 to establish that cash was intentionally deployed to vendor settlements for procurement discounts.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: HACKATHON BRIEF DELIVERABLE COMPLIANCE -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-green);">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>6. Official 8-Point Hackathon Deliverable Compliance Matrix</span>
+      </div>
+      <span class="badge badge-succeeded">Strictly Adherent to ATMOS 2026 Brief</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 25%;">Brief Requirement</th>
+            <th style="width: 75%;">ALPHA-DECAY Implementation & Safeguards</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. The Discovery</strong></td>
+            <td>One unambiguous, non-trivial sentence identifying the exact operational divergence.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Why It Matters</strong></td>
+            <td>3 to 5 analytical bullets detailing commercial, liquidity, and operational significance.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Evidence</strong></td>
+            <td>Direct statutory citations with clickable URLs to official SEBI filings and BSE concall transcripts.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Timeline</strong></td>
+            <td>Chronological evolution detailing when the divergence began and how it progressed across quarters.</td>
+          </tr>
+          <tr>
+            <td><strong>5. Numbers</strong></td>
+            <td>Deterministic arithmetic showing exact values, formulas, periods, and calculation steps.</td>
+          </tr>
+          <tr>
+            <td><strong>6. Counterargument</strong></td>
+            <td>The strongest alternative explanation stress-tested and overcome by the Disproving Agent.</td>
+          </tr>
+          <tr>
+            <td><strong>7. Falsification Condition</strong></td>
+            <td>Explicit future empirical disclosure that would prove the conclusion invalid (Popperian criteria).</td>
+          </tr>
+          <tr>
+            <td><strong>8. Evidence Strength</strong></td>
+            <td>Audited rating of <b>Strong</b>, <b>Moderate</b>, or <b>Weak</b> accompanied by justification.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -9,17 +9,23 @@ load_dotenv(BASE_DIR / ".env")
 # --- API Keys & Remote Endpoints ---
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_THINKING_LEVEL = os.getenv("GEMINI_THINKING_LEVEL", "HIGH")
 
-# --- Local Ollama Configuration ---
+# --- Local Ollama Configuration (Fallback Only) ---
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-
-# Unified Local Model (DeepSeek-R1-7B fits 100% inside 8GB VRAM with ~3.2 GB context headroom)
-LOCAL_MODEL = os.getenv("LOCAL_MODEL", "deepseek-r1:7b")
+OLLAMA_FALLBACK_MODEL = os.getenv("OLLAMA_FALLBACK_MODEL", os.getenv("LOCAL_MODEL", "deepseek-r1:7b"))
+LOCAL_MODEL = OLLAMA_FALLBACK_MODEL  # Backwards compatibility alias
 
 # --- Operational Toggles ---
-# Offline Failsafe Switch: If True, bypasses all cloud calls (Gemini/Tavily) and runs 100% locally
+# Offline Failsafe Switch: If True, bypasses cloud calls and routes to Ollama
 USE_OFFLINE_MODE = os.getenv("USE_OFFLINE_MODE", "false").lower() in ("true", "1", "yes")
+
+# Reproducible Investigation Cutoff Date (YYYY-MM-DD); empty means no cutoff
+INVESTIGATION_CUTOFF_DATE = os.getenv("INVESTIGATION_CUTOFF_DATE", "")
+
+# Investigation Limits
+MAX_ANOMALIES_TO_INVESTIGATE = int(os.getenv("MAX_ANOMALIES_TO_INVESTIGATE", "2"))
 
 # --- Track C Universe (NIFTY 50 FMCG / Consumer / Retail) ---
 TRACK_C_NIFTY50 = [
@@ -33,7 +39,7 @@ TRACK_C_NIFTY50 = [
     "TRENT"
 ]
 
-# Direct Listed Peers for Triangulation & Tie-Breaks
+# Direct Listed Peers for Triangulation & Comparative Context
 PEER_MAPPING = {
     "HINDUNILVR": ["DABUR", "MARICO", "GODREJCP"],
     "ITC": ["HINDUNILVR", "GODREJCP", "VBL"],
@@ -45,11 +51,18 @@ PEER_MAPPING = {
     "TRENT": ["DMART", "ABFRL"]
 }
 
-# --- Forensic Anomaly Thresholds ---
+# --- Forensic Anomaly Screening Thresholds (Documented Heuristics) ---
+# Note: These represent screening trigger boundaries, not statistical proofs of misconduct.
 THRESHOLDS = {
-    "delta_debtor_days_yoy_warning": 15.0,  # Spiking >= 15 days is high priority
-    "cfo_to_ebitda_min": 0.65,              # Below 65% indicates paper profit
-    "uvg_consecutive_negative_quarters": 2, # Volume contraction for 2+ quarters
-    "margin_wedge_bps": 150.0,              # >150 bps gross vs ebitda wedge (Quick Commerce drag)
-    "peer_spread_delta_days": 15.0          # Company debtor days stretch vs peer median
+    # Working Capital: debtor days widening YoY
+    "delta_debtor_days_yoy_warning": float(os.getenv("THRESH_DEBTOR_DAYS", "3.0")),
+    # Cash Conversion: CFO / Operating Profit benchmark
+    "cfo_to_op_profit_min": float(os.getenv("THRESH_CFO_CONV", "0.70")),
+    "cfo_to_ebitda_min": float(os.getenv("THRESH_CFO_CONV", "0.70")),  # Compatibility alias
+    # Heuristic Cost Residual Divergence: reported sales growth minus expense-adjusted residual
+    "residual_divergence_warning": float(os.getenv("THRESH_RESIDUAL_DIV", "3.0")),
+    # Operating Margin Compression / Wedge
+    "margin_wedge_bps": float(os.getenv("THRESH_MARGIN_WEDGE", "50.0")),
+    # Multi-Peer Spread: Target metric shift vs Peer median shift
+    "peer_spread_delta_days": float(os.getenv("THRESH_PEER_SPREAD", "3.0"))
 }

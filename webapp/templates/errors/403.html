@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}403 FORBIDDEN{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="padding: 60px 20px;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+  </svg>
+  <h2>Access Prohibited</h2>
+  <p>{{ message or "Access to the requested resource or path was denied." }}</p>
+  <div style="display: flex; gap: 10px; justify-content: center; margin-top: 18px;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Dashboard</a>
+  </div>
+</div>
+{% endblock %}

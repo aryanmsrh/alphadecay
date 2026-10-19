@@ -9,6 +9,7 @@ from langgraph.graph import StateGraph, START, END
 from agent.state import InvestigationState
 from agent.nodes import (
     anomaly_triage_node,
+    triage_router,
     hypothesis_generator_node,
     evidence_harvester_node,
     peer_triangulation_node,
@@ -19,7 +20,8 @@ from agent.nodes import (
 
 def build_investigation_graph():
     """
-    Constructs the cyclic state graph implementing the Courtroom model.
+    Constructs the cyclic state graph implementing the Courtroom model with
+    no-anomaly bypass, multi-candidate traversal, and reflection cycle.
     """
     workflow = StateGraph(InvestigationState)
 
@@ -31,9 +33,20 @@ def build_investigation_graph():
     workflow.add_node("adversarial_critic", adversarial_critic_node)
     workflow.add_node("compiler", compiler_node)
 
-    # Standard Sequential Edges
+    # Start Edge
     workflow.add_edge(START, "anomaly_triage")
-    workflow.add_edge("anomaly_triage", "hypothesis_generator")
+
+    # Conditional Triage Edge: Bypass hypotheses & courtroom on zero-anomaly state
+    workflow.add_conditional_edges(
+        "anomaly_triage",
+        triage_router,
+        {
+            "proceed_to_hypotheses": "hypothesis_generator",
+            "bypass_to_compiler": "compiler"
+        }
+    )
+
+    # Standard Sequential Edges for candidate analysis
     workflow.add_edge("hypothesis_generator", "evidence_harvester")
     workflow.add_edge("evidence_harvester", "peer_triangulation")
     workflow.add_edge("peer_triangulation", "adversarial_critic")

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}SETTINGS & SYSTEM DIAGNOSTICS{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+  <!-- Overview Status Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Model Provider Architecture & Diagnostics</span>
+      </div>
+
+      <a href="{{ url_for('settings_page', live='true') }}" id="live-check-btn" class="btn btn-secondary btn-sm" onclick="this.innerHTML='Pinging Providers...';">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Run Live Health Ping</span>
+      </a>
+    </div>
+
+    <!-- Provider Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      <!-- Gemini Card -->
+      <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--accent-blue);"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 16 12 12 8"></polygon></svg>
+            <strong style="font-size: 14px; color: var(--text-primary);">Primary: Google Gemini</strong>
+          </div>
+          <span class="badge {% if diagnostics.gemini_status == 'OK' %}badge-succeeded{% elif diagnostics.gemini_key_present %}badge-queued{% else %}badge-failed{% endif %}">
+            {{ diagnostics.gemini_status }}
+          </span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+          <div><span style="color: var(--text-muted);">Configured Model:</span> <code style="color: var(--accent-blue); font-weight: 600;">{{ diagnostics.gemini_model_configured }}</code></div>
+          <div><span style="color: var(--text-muted);">API Key Presence:</span> <strong>{{ diagnostics.gemini_key_masked }}</strong></div>
+          <div><span style="color: var(--text-muted);">Thinking Level:</span> <code>{{ diagnostics.gemini_thinking_level }}</code></div>
+          {% if diagnostics.gemini_latency_s is not none %}
+            <div><span style="color: var(--text-muted);">Ping Latency:</span> <strong style="color: var(--accent-green);">{{ diagnostics.gemini_latency_s }}s</strong></div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Ollama Card -->
+      <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--accent-yellow);"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            <strong style="font-size: 14px; color: var(--text-primary);">Fallback: Local Ollama</strong>
+          </div>
+          <span class="badge {% if diagnostics.ollama_status == 'OK' %}badge-succeeded{% elif diagnostics.ollama_status == 'CONFIGURED' %}badge-queued{% else %}badge-cancelled{% endif %}">
+            {{ diagnostics.ollama_status }}
+          </span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+          <div><span style="color: var(--text-muted);">Fallback Model:</span> <code style="color: var(--text-primary);">{{ diagnostics.ollama_fallback_model }}</code></div>
+          <div><span style="color: var(--text-muted);">Endpoint URL:</span> <code>{{ diagnostics.ollama_base_url }}</code></div>
+          <div><span style="color: var(--text-muted);">Offline Mode Active:</span> <strong>{{ 'YES' if diagnostics.offline_mode_active else 'NO' }}</strong></div>
+          {% if diagnostics.ollama_latency_s is not none %}
+            <div><span style="color: var(--text-muted);">Ping Latency:</span> <strong style="color: var(--accent-green);">{{ diagnostics.ollama_latency_s }}s</strong></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Security & Architecture Parameters Table -->
+    <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+      Operational Environment Parameters
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <tbody>
+          <tr>
+            <td><strong>Server Host Binding</strong></td>
+            <td><code>127.0.0.1 (Localhost Only)</code></td>
+            <td style="color: var(--text-muted); font-size: 11.5px;">Isolated to local machine</td>
+          </tr>
+          <tr>
+            <td><strong>CSRF Protection</strong></td>
+            <td><span style="color: var(--accent-green); font-weight: 600;">ACTIVE</span></td>
+            <td style="color: var(--text-muted); font-size: 11.5px;">Session token validated on all mutations</td>
+          </tr>
+          <tr>
+            <td><strong>Artifact Sandboxing</strong></td>
+            <td><span style="color: var(--accent-green); font-weight: 600;">ENFORCED</span></td>
+            <td style="color: var(--text-muted); font-size: 11.5px;">Path traversal strictly blocked</td>
+          </tr>
+          <tr>
+            <td><strong>Global Point-in-Time Cutoff</strong></td>
+            <td><code>{{ diagnostics.active_investigation_cutoff or 'None (Latest Disclosures)' }}</code></td>
+            <td style="color: var(--text-muted); font-size: 11.5px;">Set via INVESTIGATION_CUTOFF_DATE</td>
+          </tr>
+          <tr>
+            <td><strong>Background Execution</strong></td>
+            <td><code>ThreadPoolExecutor (1 Worker Serialized)</code></td>
+            <td style="color: var(--text-muted); font-size: 11.5px;">Zero concurrency races</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 20px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
+      <strong>Security & Architecture Note:</strong> API credentials are loaded from environment variables and never rendered into the browser DOM, serialized in JSON responses, or stored in browser localStorage.
+    </div>
+  </div>
+</div>
+{% endblock %}

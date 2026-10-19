@@ -35,6 +35,10 @@ env/
 # Scraper & pipeline disk cache
 data/cache/
 data/*.png
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/runs/
 *.json.cache
 *.log
 *.pdf

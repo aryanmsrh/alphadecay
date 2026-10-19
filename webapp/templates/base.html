@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if page_title %}{{ page_title }} // {% endif %}ALPHA-DECAY Financial Intelligence</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Navigation Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <a href="{{ url_for('index') }}" class="brand-link">
+          <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="brand-title">ALPHA-DECAY</span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Overview</span>
+        </a>
+
+        <a href="{{ url_for('new_investigation_page') }}" class="nav-item {% if request.endpoint == 'new_investigation_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>New Investigation</span>
+        </a>
+
+        <a href="{{ url_for('investigations_history_page') }}" class="nav-item {% if request.endpoint == 'investigations_history_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polyline points="12 8 12 12 14 14"></polyline>
+            <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
+          </svg>
+          <span>Investigation History</span>
+        </a>
+
+        <a href="{{ url_for('settings_page') }}" class="nav-item {% if request.endpoint == 'settings_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Settings & Diagnostics</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div><strong>ALPHA-DECAY v2.0</strong></div>
+        <div>Track C: FMCG & Retail</div>
+        <div>Strictly Forensic // No Buy/Sell</div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <div class="app-main">
+      <!-- Compact Topbar -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <span class="page-title">{% block topbar_title %}FINANCIAL FORENSICS{% endblock %}</span>
+          <span class="tag-badge">FINANCIAL INTELLIGENCE</span>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Provider Health Indicator -->
+          <div class="provider-pill" title="Configured Model Provider Status">
+            <span class="status-dot {% if system_health.gemini_ready %}healthy{% else %}warning{% endif %}"></span>
+            <span>Gemini: <strong>{{ system_health.gemini_model }}</strong></span>
+            <span style="color: var(--border-light)">|</span>
+            <span style="color: var(--text-muted)">Fallback: {{ system_health.ollama_model }}</span>
+          </div>
+
+          <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>New Investigation</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="content-body">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Shared Toast Notification Container -->
+  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

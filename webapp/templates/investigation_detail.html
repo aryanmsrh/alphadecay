@@ -1,0 +1,743 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}INVESTIGATION WORKSPACE // {{ run.ticker }}{% endblock %}
+
+{% block content %}
+<div id="investigation-workspace" data-run-id="{{ run.run_id }}" data-status="{{ run.status }}">
+  <!-- Workspace Header Card -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+          <h1 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;">
+            {{ run.company_name or run.ticker }}
+          </h1>
+          <code style="font-size: 14px; background-color: var(--bg-elevated); padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            {{ run.ticker }}
+          </code>
+          <span id="run-status-badge" class="badge badge-{{ run.status.lower() }}">{{ run.status }}</span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-secondary);">
+          <div>Run ID: <code style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.run_id }}</code></div>
+          <div>Cutoff: <strong style="color: var(--text-primary);">{{ run.cutoff_date or 'Latest Disclosures' }}</strong></div>
+          <div>Started: <span style="color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }} UTC</span></div>
+          {% if run.duration_seconds %}
+            <div>Duration: <strong style="color: var(--text-primary);">{{ run.duration_seconds }}s</strong></div>
+          {% endif %}
+          <div>Provider: <strong style="color: var(--accent-blue);">{{ run.model_used or run.model_configured }} ({{ run.provider_used or 'gemini' }})</strong></div>
+        </div>
+      </div>
+
+      <!-- Action Controls -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        {% if run.status in ('QUEUED', 'RUNNING') %}
+          <button id="cancel-run-btn" class="btn btn-danger btn-sm" onclick="cancelCurrentInvestigation('{{ run.run_id }}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            <span>Cancel Run</span>
+          </button>
+        {% endif %}
+
+        {% if run.pdf_path %}
+          <a href="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name=run.ticker + '_forensic_report.pdf') }}" class="btn btn-primary btn-sm" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download PDF</span>
+          </a>
+        {% endif %}
+
+        <a href="{{ url_for('new_investigation_page') }}" class="btn btn-secondary btn-sm">
+          <span>New Run</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-Time Progress Section (Visible when QUEUED or RUNNING) -->
+  <div id="live-progress-container" style="{% if run.status not in ('QUEUED', 'RUNNING') %}display: none;{% endif %}">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="status-dot healthy" style="animation: pulse 1.2s infinite;"></span>
+          <span>Autonomous Execution Pipeline</span>
+        </div>
+        <span id="active-stage-label" class="tag-badge">STAGE: {{ run.current_stage or 'Initializing' }}</span>
+      </div>
+
+      <!-- 9 Canonical Stages Pipeline Grid -->
+      <div class="pipeline-progress">
+        {% set stages_dict = {
+          'data_ingestion': '1. Data Ingestion',
+          'financial_analytics': '2. Financial Analytics',
+          'anomaly_triage': '3. Anomaly Triage',
+          'hypothesis_generation': '4. Hypothesis Generation',
+          'evidence_retrieval': '5. Evidence Retrieval',
+          'peer_analysis': '6. Peer Analysis',
+          'adversarial_assessment': '7. Adversarial Assessment',
+          'report_validation': '8. Report Validation',
+          'pdf_generation': '9. PDF Generation'
+        } %}
+
+        {% for stage_key, stage_title in stages_dict.items() %}
+          <div id="stage-card-{{ stage_key }}" class="pipeline-stage pending">
+            <div class="stage-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="12" height="12">
+                <circle cx="12" cy="12" r="10"></circle>
+              </svg>
+            </div>
+            <div class="stage-meta">
+              <div class="stage-name">{{ stage_title }}</div>
+              <div class="stage-desc" id="stage-desc-{{ stage_key }}">Pending execution</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Real-Time Event Audit Log -->
+      <div style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Real-Time Audit Trail Events</div>
+          <div style="font-size: 11px; color: var(--text-muted);" id="sse-connection-status">Connecting live stream...</div>
+        </div>
+
+        <div id="timeline-events-container" class="timeline">
+          {% for ev in events %}
+            <div class="timeline-event">
+              <div class="timeline-time">{{ ev.timestamp[11:19] if ev.timestamp else '' }}</div>
+              <div class="timeline-msg">
+                <span class="badge badge-queued" style="font-size: 10px; margin-right: 6px;">{{ ev.stage }}</span>
+                <span>{{ ev.message }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failure Alert Container -->
+  {% if run.status == 'FAILED' %}
+    <div class="alert-banner alert-danger">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div style="flex: 1;">
+        <strong>Investigation Failed:</strong> {{ run.error_message or 'Execution terminated prematurely.' }}
+        {% if run.error_trace %}
+          <details style="margin-top: 8px;">
+            <summary style="cursor: pointer; font-size: 11.5px; color: var(--accent-yellow);">View Sanitized Diagnostic Trace</summary>
+            <pre style="margin-top: 6px; padding: 10px; background-color: var(--bg-primary); border-radius: var(--radius-sm); font-size: 11px; overflow-x: auto; color: var(--text-secondary); max-height: 240px;">{{ run.error_trace }}</pre>
+          </details>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Cancellation Notice Container -->
+  {% if run.status == 'CANCELLED' %}
+    <div class="alert-banner alert-warning">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <line x1="9" y1="9" x2="15" y2="15"></line>
+      </svg>
+      <div>
+        <strong>Investigation Cancelled:</strong> The execution of this investigation was cancelled by the user. Subsequent pipeline stages were halted.
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Completed Investigation Workspace Tabs (Available when completed or partial) -->
+  <div id="completed-workspace" style="{% if run.status in ('QUEUED', 'RUNNING') %}display: none;{% endif %}">
+    <!-- Tabs Header -->
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="switchTab('tab-overview')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        <span>Tab A: Overview & Verdict</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('tab-analytics')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>Tab B: Interactive Analytics</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('tab-hypotheses')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Tab C: Courtroom Adjudication</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('tab-evidence')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>Tab D: Evidence Explorer</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('tab-financial-data')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        <span>Tab E: Normalized Data & Provenance</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('tab-artifacts')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Tab F: Artifacts & Export</span>
+      </button>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB A: OVERVIEW & VERDICT -->
+    <!-- ===================================================================== -->
+    <div id="tab-overview" class="tab-content active">
+      <!-- Hero Adjudication Verdict Card -->
+      {% set verdict = run.adjudication_verdict or 'NOT_ESTABLISHED' %}
+      <div class="card" style="border-left: 4px solid {% if verdict == 'SUPPORTED' %}var(--accent-green){% elif verdict == 'REFUTED' %}var(--accent-red){% else %}var(--accent-yellow){% endif %};">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">Adjudication Verdict</span>
+            <span class="badge badge-{{ verdict.lower() }}" style="font-size: 13px; padding: 4px 10px;">
+              {{ verdict }}
+            </span>
+            <span class="badge" style="background-color: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border);">
+              {{ run.data_sufficiency or 'SUFFICIENT' }} DATA
+            </span>
+          </div>
+
+          <div style="font-size: 12px; color: var(--text-muted);">
+            DETERMINISTIC VALIDATION GATE: 
+            <strong style="color: {% if run.validation_passed %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+              {% if run.validation_passed %}PASSED{% else %}FAILED{% endif %}
+            </strong>
+          </div>
+        </div>
+
+        <div style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; line-height: 1.4;">
+          {{ run.primary_finding or data.discovery.get('1_The_Discovery', 'Observation recorded in statutory disclosures.') }}
+        </div>
+
+        {% if data.adjudication and data.adjudication.get('rationale') %}
+          <div style="font-size: 13px; color: var(--text-secondary); background-color: var(--bg-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-top: 10px;">
+            <strong style="color: var(--text-primary);">Adjudication Rationale:</strong> {{ data.adjudication.get('rationale') }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Mandatory 8-Point Institutional Schema Section -->
+      {% if data.discovery %}
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              <span>{{ data.discovery.get('finding_heading', 'Verified Forensic Research Deliverable') }} (Mandatory 8-Point Schema)</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Point 1 -->
+            <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 4px;">1. The Discovery (Audited Accounting Divergence)</div>
+              <div style="font-size: 13.5px; color: var(--text-primary); font-weight: 500;">
+                {{ data.discovery.get('1_The_Discovery', '—') }}
+              </div>
+            </div>
+
+            <!-- Point 2 -->
+            <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">2. Why It Matters (Channel, Working Capital & Peer Context)</div>
+              <ul style="padding-left: 20px; font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+                {% for item in data.discovery.get('2_Why_It_Matters', []) %}
+                  <li>{{ item }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+
+            <!-- Point 3 & 4 Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">3. Verified Evidentiary Sources</div>
+                <ul style="padding-left: 20px; font-size: 12px; color: var(--text-secondary);">
+                  {% for url in data.discovery.get('3_Evidence', []) %}
+                    <li style="margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ url }}</a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+
+              <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">4. Statutory Timeline & Emergence</div>
+                <div style="font-size: 13px; color: var(--text-primary);">
+                  {{ data.discovery.get('4_Timeline', 'Trailing reporting periods') }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Point 5 & 6 Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">5. Deterministic Numbers & Canonical Ratios</div>
+                <div style="font-size: 13px; font-family: var(--font-mono); color: var(--text-primary);">
+                  {{ data.discovery.get('5_Numbers', '—') }}
+                </div>
+              </div>
+
+              <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">6. Defense Case & Alternative Explanations</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">
+                  {{ data.discovery.get('6_Counterargument', 'Operational variance absorbed.') }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Point 7 & 8 Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">7. Objective Falsification Criteria</div>
+                <div style="font-size: 13px; color: var(--text-secondary);">
+                  {{ data.discovery.get('7_Falsification_Condition', 'Disproven if metrics normalize.') }}
+                </div>
+              </div>
+
+              <div style="background-color: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 6px;">8. Evidence Strength & Calibrated Verdict</div>
+                <div style="font-size: 13px; color: var(--text-primary); font-weight: 500;">
+                  {{ data.discovery.get('8_Evidence_Strength', verdict) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Disclosed Data Limitations & Epistemic Boundaries Card -->
+      <div class="card" style="background-color: var(--bg-secondary); border-color: var(--border);">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+          Methodological Disclosures & Epistemic Limitations
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+          All financial calculations are executed by the deterministic math sandbox strictly using period-aligned statutory disclosures. The expense residual is a screening heuristic proxy, not company-reported unit volume. All observations represent historical backward-looking analysis. Zero forward investment recommendations or price targets provided.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB B: INTERACTIVE ANALYTICS & CHARTS -->
+    <!-- ===================================================================== -->
+    <div id="tab-analytics" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>Interactive Historical Ratio & Trajectory Charts</span>
+          </div>
+
+          <!-- Chart Metric Selector Controls -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="metric-btn-sales" class="btn btn-secondary btn-sm active" onclick="selectChartMetric('sales_residual')">
+              Sales YoY vs Cost Residual
+            </button>
+            <button id="metric-btn-debtor" class="btn btn-secondary btn-sm" onclick="selectChartMetric('debtor_days')">
+              Debtor Days Velocity
+            </button>
+            <button id="toggle-table-btn" class="btn btn-secondary btn-sm" onclick="toggleAnalyticsTableView()">
+              Data Table View
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Chart Canvas -->
+        <div id="chart-wrapper" style="position: relative; height: 380px; width: 100%;">
+          <canvas id="forensic-interactive-chart"></canvas>
+        </div>
+
+        <!-- Data Table Alternative -->
+        <div id="analytics-table-view" style="display: none; margin-top: 18px;">
+          <div class="table-responsive">
+            <table class="data-table" id="analytics-data-table">
+              <thead>
+                <tr>
+                  <th>Statutory Quarter</th>
+                  <th>Net Sales Growth YoY (%)</th>
+                  <th>Expense Residual (Heuristic %)</th>
+                  <th>Divergence Spread (%)</th>
+                  <th>Debtor Days (d)</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-table-body">
+                <!-- Dynamically populated from metrics API -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; font-size: 11.5px; color: var(--text-muted); display: flex; justify-content: space-between;">
+          <span>Hover data points to inspect exact value, comparison baseline, and classification. Missing periods preserved without false zeros.</span>
+          <span>Source: Consolidated BSE/NSE Filings</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB C: HYPOTHESES & COURTROOM ADJUDICATION -->
+    <!-- ===================================================================== -->
+    <div id="tab-hypotheses" class="tab-content">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <!-- Adverse Hypothesis Card -->
+        <div class="card" style="border-top: 3px solid var(--accent-red); margin-bottom: 0;">
+          <div class="card-header" style="padding-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--accent-red); text-transform: uppercase;">Adverse / Structural Hypothesis</span>
+            <span class="tag-badge" style="background-color: var(--accent-red-subtle); color: var(--accent-red); border-color: rgba(255,89,100,0.3);">PROSECUTION</span>
+          </div>
+          <div style="font-size: 13.5px; color: var(--text-primary); line-height: 1.5; font-weight: 500;">
+            {{ (data.hypotheses|selectattr('type', 'equalto', 'ADVERSE_STRUCTURAL')|map(attribute='claim')|first) or data.adjudication.get('prosecution_case', 'Company extended credit terms to maintain headline top-line growth.') }}
+          </div>
+          {% if data.adjudication and data.adjudication.get('prosecution_case') %}
+            <div style="margin-top: 12px; padding: 10px; background-color: var(--bg-elevated); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary);">
+              <strong style="color: var(--text-primary);">Prosecution Argument:</strong> {{ data.adjudication.get('prosecution_case') }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Benign Hypothesis Card -->
+        <div class="card" style="border-top: 3px solid var(--accent-green); margin-bottom: 0;">
+          <div class="card-header" style="padding-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--accent-green); text-transform: uppercase;">Benign / Operational Hypothesis</span>
+            <span class="tag-badge" style="background-color: var(--accent-green-subtle); color: var(--accent-green); border-color: rgba(57,217,138,0.3);">DEFENSE</span>
+          </div>
+          <div style="font-size: 13.5px; color: var(--text-primary); line-height: 1.5; font-weight: 500;">
+            {{ (data.hypotheses|selectattr('type', 'equalto', 'OPERATIONAL_CHANGE')|map(attribute='claim')|first) or data.adjudication.get('defense_case', 'Divergence reflects normal festive shifts, quick commerce channel listing terms, or input cost absorption.') }}
+          </div>
+          {% if data.adjudication and data.adjudication.get('defense_case') %}
+            <div style="margin-top: 12px; padding: 10px; background-color: var(--bg-elevated); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary);">
+              <strong style="color: var(--text-primary);">Defense Argument:</strong> {{ data.adjudication.get('defense_case') }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Full Adjudication Determination -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            <span>Adjudicator's Formal Adjudication Ruling</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Adjudication Rationale</span>
+            <div style="font-size: 13.5px; color: var(--text-primary); margin-top: 4px; line-height: 1.5;">
+              {{ data.adjudication.get('rationale', 'Available evidence does not justify an affirmative causal finding.') }}
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 4px;">
+            <div style="padding: 12px; background-color: var(--bg-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent-yellow); text-transform: uppercase;">Objective Falsification Condition</span>
+              <div style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                {{ data.adjudication.get('falsification_condition', 'Disproven if debtor days compress across consecutive trailing quarters.') }}
+              </div>
+            </div>
+
+            <div style="padding: 12px; background-color: var(--bg-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase;">Concrete Follow-Up Observation</span>
+              <div style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">
+                {{ data.adjudication.get('next_investigation_step', 'Inspect subsequent statutory filings for channel normalization.') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB D: EVIDENCE EXPLORER -->
+    <!-- ===================================================================== -->
+    <div id="tab-evidence" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <span>Verified Evidentiary Vault Records ({{ (data.evidence|length) if data.evidence else 0 }} Items)</span>
+          </div>
+        </div>
+
+        {% if data.evidence and data.evidence|length > 0 %}
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Evidence ID</th>
+                  <th>Source Title</th>
+                  <th>Publisher</th>
+                  <th>Source Type</th>
+                  <th>Relevant Period</th>
+                  <th>Tier</th>
+                  <th style="text-align: right;">Inspect</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ev in data.evidence %}
+                  <tr class="clickable-row" onclick="openEvidenceModal({{ loop.index0 }})">
+                    <td><code>{{ ev.evidence_id }}</code></td>
+                    <td><strong>{{ ev.source_title }}</strong></td>
+                    <td style="color: var(--text-secondary);">{{ ev.publisher or 'Exchange Filing' }}</td>
+                    <td>
+                      <span class="badge" style="background-color: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border);">
+                        {{ ev.source_type }}
+                      </span>
+                    </td>
+                    <td>{{ ev.relevant_period or 'Trailing' }}</td>
+                    <td>
+                      <span class="tag-badge">Tier {{ ev.credibility_tier or 2 }}</span>
+                    </td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openEvidenceModal({{ loop.index0 }});">
+                        Inspect Excerpt
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <h3>No External Qualitative Evidence Harvested</h3>
+            <p>This investigation completed on deterministic numerical audit or no external exchange filings met qualification criteria.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB E: NORMALIZED FINANCIAL DATA & FORMULA PROVENANCE -->
+    <!-- ===================================================================== -->
+    <div id="tab-financial-data" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+            <span>Normalized Accounting Observations & Formula Inspection</span>
+          </div>
+
+          <input 
+            type="text" 
+            id="filter-observations-input" 
+            class="form-control" 
+            placeholder="Filter metrics (e.g. Sales, Debtor, Margin)..." 
+            style="max-width: 260px;"
+            oninput="filterObservationsTable()"
+          >
+        </div>
+
+        {% if data.observations and data.observations|length > 0 %}
+          <div class="table-responsive" style="max-height: 520px;">
+            <table class="data-table" id="observations-table">
+              <thead>
+                <tr>
+                  <th>Metric Name</th>
+                  <th>Statutory Period</th>
+                  <th>Normalized Value</th>
+                  <th>Unit</th>
+                  <th>Classification</th>
+                  <th>Reporting Frequency</th>
+                  <th>Accounting Formula & Inputs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for o in data.observations %}
+                  <tr>
+                    <td><strong>{{ o.metric_name }}</strong></td>
+                    <td><code>{{ o.period }}</code></td>
+                    <td style="font-family: var(--font-mono); font-weight: 600;">
+                      {% if o.value is not none %}
+                        {{ o.value }}
+                      {% else %}
+                        <span style="color: var(--accent-yellow)">N/A</span>
+                      {% endif %}
+                    </td>
+                    <td><span style="color: var(--text-muted);">{{ o.unit or '—' }}</span></td>
+                    <td>
+                      <span class="badge" style="background-color: var(--bg-elevated); color: {% if o.classification == 'Reported' %}var(--text-primary){% elif 'Heuristic' in o.classification %}var(--accent-yellow){% else %}var(--accent-blue){% endif %}; border: 1px solid var(--border);">
+                        {{ o.classification }}
+                      </span>
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 11.5px;">{{ o.frequency }}</td>
+                    <td style="font-size: 12px; color: var(--text-secondary);" title="{{ o.formula or '' }}">
+                      {% if o.is_derived %}
+                        <span style="color: var(--accent-blue); font-family: var(--font-mono); cursor: help;">{{ o.formula }}</span>
+                      {% else %}
+                        <span>{{ o.source_locator or 'Direct Table Ingestion' }}</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <h3>No Normalized Observations Available</h3>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB F: ARTIFACTS & EXPORT -->
+    <!-- ===================================================================== -->
+    <div id="tab-artifacts" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Durable Run Artifacts & Reproducibility Package</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          <!-- 1. PDF Research Note -->
+          <div class="card" style="margin-bottom: 0; background-color: var(--bg-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--accent-red);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              <strong style="color: var(--text-primary); font-size: 13.5px;">Institutional PDF Research Note</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+              Two-page dark-theme publication note containing audited 8-point schema, canonical ratios, and dual-panel forensic chart.
+            </p>
+            {% if run.pdf_path %}
+              <a href="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name=run.ticker + '_forensic_report.pdf') }}" class="btn btn-primary btn-sm" download>
+                Download PDF Note
+              </a>
+            {% else %}
+              <span class="badge" style="color: var(--text-muted);">PDF not generated</span>
+            {% endif %}
+          </div>
+
+          <!-- 2. Structured JSON Bundle -->
+          <div class="card" style="margin-bottom: 0; background-color: var(--bg-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--accent-blue);"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              <strong style="color: var(--text-primary); font-size: 13.5px;">Structured State Bundle (JSON)</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+              Complete machine-readable audit bundle containing metrics, anomalies, hypotheses, and evidence.
+            </p>
+            <a href="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name='investigation_' + run.ticker + '.json') }}" class="btn btn-secondary btn-sm" download>
+              Download State JSON
+            </a>
+          </div>
+
+          <!-- 3. Audit Manifest -->
+          <div class="card" style="margin-bottom: 0; background-color: var(--bg-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--accent-green);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <strong style="color: var(--text-primary); font-size: 13.5px;">Run Audit Manifest (JSON)</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+              Deterministic execution provenance, timestamps, model metadata, and validation verdict.
+            </p>
+            <a href="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name='run_manifest.json') }}" class="btn btn-secondary btn-sm" download>
+              Download Manifest
+            </a>
+          </div>
+
+          <!-- 4. Source Data Snapshot -->
+          <div class="card" style="margin-bottom: 0; background-color: var(--bg-elevated);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--accent-yellow);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+              <strong style="color: var(--text-primary); font-size: 13.5px;">Raw Disclosures Snapshot (JSON)</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+              Raw ingested quarterly tables and balance sheet cells captured at point of audit.
+            </p>
+            <a href="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name='source_snapshot_' + run.ticker + '.json') }}" class="btn btn-secondary btn-sm" download>
+              Download Snapshot
+            </a>
+          </div>
+        </div>
+
+        {% if run.chart_path %}
+          <div style="margin-top: 20px; padding: 16px; background-color: var(--bg-elevated); border-radius: var(--radius-md); border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <strong style="color: var(--text-primary); font-size: 13px;">High-Resolution Forensic Dual-Panel Chart</strong>
+              <a href="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name='forensic_chart_' + run.ticker + '.png') }}" class="btn btn-secondary btn-sm" download>
+                Download Chart Image
+              </a>
+            </div>
+            <div style="text-align: center;">
+              <img 
+                src="{{ url_for('api_download_artifact', run_id=run.run_id, artifact_name='forensic_chart_' + run.ticker + '.png', download='false') }}" 
+                alt="Forensic Dual-Panel Chart" 
+                style="max-width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border);"
+              >
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Evidence Detail Inspection Modal -->
+<div id="evidence-modal" class="modal-overlay" onclick="closeEvidenceModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="tag-badge" id="modal-ev-tier">Tier 2</span>
+        <h3 id="modal-ev-title" style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin: 0;">Evidence Detail</h3>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="closeEvidenceModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px; margin-bottom: 12px;">
+        <div><strong>Evidence ID:</strong> <code id="modal-ev-id">EV-001</code></div>
+        <div><strong>Publisher:</strong> <span id="modal-ev-publisher" style="color: var(--text-secondary);">BSE Filing</span></div>
+        <div><strong>Period:</strong> <span id="modal-ev-period" style="color: var(--text-secondary);">Q4 FY25</span></div>
+        <div><strong>Locator:</strong> <span id="modal-ev-location" style="color: var(--text-secondary);">Page 14</span></div>
+      </div>
+
+      <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Verbatim Source Excerpt</div>
+      <div id="modal-ev-excerpt" class="excerpt-box"></div>
+
+      <div style="margin-top: 12px;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Core Extracted Observation</div>
+        <div id="modal-ev-fact" style="font-size: 12.5px; color: var(--text-primary); margin-top: 4px;"></div>
+      </div>
+
+      <div style="margin-top: 14px; padding: 10px; background-color: var(--bg-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 11.5px; color: var(--text-muted);">
+        <strong>Provenance Note:</strong> Outbound link leads to external regulatory disclosure or exchange filing.
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <a id="modal-ev-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+        <span>Open Source Filing &rarr;</span>
+      </a>
+      <button class="btn btn-secondary btn-sm" onclick="closeEvidenceModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Expose data to client JS
+window.INVESTIGATION_DATA = {
+  runId: "{{ run.run_id }}",
+  status: "{{ run.status }}",
+  ticker: "{{ run.ticker }}",
+  evidence: {{ (data.evidence|tojson) if data.evidence else '[]' }}
+};
+</script>
+<script src="{{ url_for('static', filename='js/investigation_progress.js') }}"></script>
+<script src="{{ url_for('static', filename='js/investigation_charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/evidence_explorer.js') }}"></script>
+{% endblock %}

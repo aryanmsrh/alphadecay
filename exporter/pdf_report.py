@@ -2,13 +2,14 @@ import os
 import sys
 import re
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
+import config
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import (
@@ -19,41 +20,37 @@ from reportlab.pdfgen import canvas
 from xml.sax.saxutils import escape
 from exporter.forensic_chart import generate_forensic_chart
 from engine.models import ForensicSummary
+from exporter.theme import (
+    HEX_BG_PRIMARY, HEX_BG_SECONDARY, HEX_BG_CARD, HEX_BG_CARD_ALT,
+    HEX_TEXT_PRIMARY, HEX_TEXT_SECONDARY, HEX_TEXT_MUTED,
+    HEX_ACCENT_GREEN, HEX_ACCENT_RED, HEX_ACCENT_BLUE, HEX_ACCENT_YELLOW,
+    HEX_BORDER, HEX_BORDER_LIGHT, HEX_BORDER_ACCENT,
+    COLOR_BG_PRIMARY, COLOR_BG_SECONDARY, COLOR_BG_CARD, COLOR_BG_CARD_ALT,
+    COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY, COLOR_TEXT_MUTED,
+    COLOR_ACCENT_GREEN, COLOR_ACCENT_RED, COLOR_ACCENT_BLUE, COLOR_ACCENT_YELLOW,
+    COLOR_BORDER, COLOR_BORDER_LIGHT, COLOR_BORDER_ACCENT,
+    VERDICT_THEME, DATA_SUFFICIENCY_THEME,
+    get_semantic_color, format_signed_metric_html
+)
+
 
 def safe_text(val: Any) -> str:
-    """
-    Sanitize dynamic text for ReportLab Paragraphs:
-    Strips markdown bold/italic asterisks and escapes XML special entities (&, <, >).
-    """
+    """Sanitizes dynamic text for ReportLab Paragraphs."""
     if val is None:
         return ""
     s = re.sub(r"\*+", "", str(val)).strip()
     return escape(s)
 
-def format_signed_metric(val: Any, unit: str = "") -> str:
-    """
-    Format signed metric indicators cleanly (+120 bps, -2.0d) without printing +N/Ad or +-2.0d.
-    """
-    if val is None or str(val).strip() in ("", "N/A", "None", "nan"):
-        return "N/A"
-    try:
-        f_val = float(val)
-        if unit == "d":
-            return f"{f_val:+.1f}d"
-        elif unit == "bps":
-            return f"{f_val:+.0f} bps" if f_val.is_integer() else f"{f_val:+.1f} bps"
-        elif unit == "%":
-            return f"{f_val:+.1f}%"
-        else:
-            sep = " " if unit and not unit.startswith(" ") else ""
-            return f"{f_val:+.2f}{sep}{unit}".strip()
-    except (ValueError, TypeError):
-        s = str(val).strip()
-        return s if s else "N/A"
 
-class ResearchNoteCanvas(canvas.Canvas):
+class DarkTerminalCanvas(canvas.Canvas):
+    """
+    Custom two-pass canvas that paints a deep terminal black background on every page,
+    renders technical running headers, footers with page counts, and prevents white flashes.
+    """
+    default_track = "Consumer, FMCG & Retail"
+
     def __init__(self, *args, **kwargs):
-        super(ResearchNoteCanvas, self).__init__(*args, **kwargs)
+        super(DarkTerminalCanvas, self).__init__(*args, **kwargs)
         self._saved_page_states = []
 
     def showPage(self):
@@ -65,459 +62,558 @@ class ResearchNoteCanvas(canvas.Canvas):
         for state in self._saved_page_states:
             self.__dict__.update(state)
             self.draw_decorations(num_pages)
-            super(ResearchNoteCanvas, self).showPage()
-        super(ResearchNoteCanvas, self).save()
+            super(DarkTerminalCanvas, self).showPage()
+        super(DarkTerminalCanvas, self).save()
 
     def draw_decorations(self, page_count):
         self.saveState()
         w, h = A4
         margin = 28
-        
-        # Header accent bar
-        self.setFillColor(colors.HexColor("#1E3A8A"))
-        self.rect(margin, h - 16, w - (2 * margin), 3, fill=1, stroke=0)
-        
+
+        # Running Top Accent Rule (Electric Blue)
+        self.setFillColor(COLOR_BORDER_ACCENT)
+        self.rect(margin, h - 16, w - (2 * margin), 1.8, fill=1, stroke=0)
+
         # Running Header
-        self.setFont("Helvetica-Bold", 7.5)
-        self.setFillColor(colors.HexColor("#0F172A"))
-        self.drawString(margin, h - 26, "ALPHA-DECAY | Forensic Financial Discovery Note")
-        
-        self.setFont("Helvetica", 7.5)
-        self.setFillColor(colors.HexColor("#64748B"))
-        self.drawRightString(w - margin, h - 26, "Track C: Consumer, FMCG & Retail (ATMOS 2026)")
-        
-        # Footer
-        self.setStrokeColor(colors.HexColor("#CBD5E1"))
-        self.setLineWidth(0.5)
-        self.line(margin, 26, w - margin, 26)
-        
-        self.setFont("Helvetica", 7.0)
-        self.setFillColor(colors.HexColor("#64748B"))
-        self.drawString(margin, 16, "CONFIDENTIAL & FORENSIC ONLY — Zero investment recommendations, price targets, or buy/sell calls.")
-        
-        page_str = f"Page {self._pageNumber} of {page_count}"
         self.setFont("Helvetica-Bold", 7.2)
-        self.setFillColor(colors.HexColor("#334155"))
-        self.drawRightString(w - margin, 16, page_str)
+        self.setFillColor(COLOR_TEXT_PRIMARY)
+        self.drawString(margin, h - 25, "ALPHA-DECAY // FINANCIAL FORENSIC INTELLIGENCE NOTE")
+
+        self.setFont("Helvetica", 7.2)
+        self.setFillColor(COLOR_TEXT_SECONDARY)
+        track_str = getattr(self, "track_name", self.default_track)
+        self.drawRightString(w - margin, h - 25, f"TRACK: {track_str.upper()}")
+
+        # Running Footer Divider
+        self.setStrokeColor(COLOR_BORDER)
+        self.setLineWidth(0.6)
+        self.line(margin, 24, w - margin, 24)
+
+        # Footer Notes
+        self.setFont("Helvetica", 6.8)
+        self.setFillColor(COLOR_TEXT_MUTED)
+        self.drawString(margin, 14, "CONFIDENTIAL & FORENSIC ONLY — Zero investment recommendations, price targets, or buy/sell calls.")
+
+        page_str = f"PAGE {self._pageNumber} OF {page_count}"
+        self.setFont("Helvetica-Bold", 7.0)
+        self.setFillColor(COLOR_TEXT_SECONDARY)
+        self.drawRightString(w - margin, 14, page_str)
         self.restoreState()
 
+
+def draw_dark_background(canvas_obj, doc_obj):
+    """Callback passed to SimpleDocTemplate to ensure background is painted before flowables."""
+    canvas_obj.saveState()
+    w, h = A4
+    canvas_obj.setFillColor(COLOR_BG_PRIMARY)
+    canvas_obj.rect(0, 0, w, h, fill=1, stroke=0)
+    canvas_obj.restoreState()
+
+
+def get_canvas_maker(track_name: str):
+    class ConfiguredCanvas(DarkTerminalCanvas):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.track_name = track_name
+    return ConfiguredCanvas
+
+
 def find_value(data: Dict[str, Any], *patterns, default=None):
-    """
-    Case-insensitive, symbol-agnostic key lookup to match keys like
-    '1_The_Discovery', 'The Discovery', 'Discovery', '1. The Discovery'.
-    """
+    """Case-insensitive, symbol-agnostic key lookup."""
     for p in patterns:
-        p_clean = re.sub(r"[^a-zA-Z]", "", p).lower()
+        norm_p = re.sub(r"[^a-zA-Z0-9]", "", p).lower()
         for k, v in data.items():
-            k_clean = re.sub(r"[^a-zA-Z]", "", k).lower()
-            if p_clean in k_clean or k_clean in p_clean:
+            norm_k = re.sub(r"[^a-zA-Z0-9]", "", k).lower()
+            if norm_p in norm_k or norm_k in norm_p:
                 return v
     return default
+
 
 def export_forensic_pdf(
     ticker: str,
     company_name: str,
     summary_data: Any,
     discovery: Dict[str, Any],
-    output_path: str = "forensic_report.pdf",
-    chart_path: Optional[str] = None
+    output_path: str
 ) -> str:
     """
-    Compiles the mandatory 8-point schema, quantitative indicators, and embedded historical chart into a publication-grade PDF research note.
+    Renders an institutional 2-page dark financial terminal PDF research note.
     """
-    output_file = Path(output_path).resolve()
-    output_file.parent.mkdir(parents=True, exist_ok=True)
+    ticker = ticker.upper()
+    track_name = getattr(summary_data, "sector", "Consumer, FMCG & Retail") or "Consumer, FMCG & Retail"
 
     doc = SimpleDocTemplate(
-        str(output_file),
+        output_path,
         pagesize=A4,
         leftMargin=28,
         rightMargin=28,
         topMargin=32,
-        bottomMargin=30
+        bottomMargin=32
     )
 
     styles = getSampleStyleSheet()
 
-    # Brand Palette
-    c_primary = colors.HexColor("#0F172A")
-    c_accent = colors.HexColor("#1E3A8A")
-    c_crimson = colors.HexColor("#DC2626")
-    c_teal = colors.HexColor("#0D9488")
-    c_border = colors.HexColor("#E2E8F0")
-    c_bg_head = colors.HexColor("#F8FAFC")
-    c_bg_callout = colors.HexColor("#EFF6FF")
-
-    # Typography Styles
-    title_style = ParagraphStyle(
-        'DocTitle',
+    # Base Dark Styles
+    style_entity = ParagraphStyle(
+        'DarkEntityHeader',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
         fontSize=13,
         leading=16,
-        textColor=c_primary
+        textColor=COLOR_TEXT_PRIMARY
     )
-
-    meta_style = ParagraphStyle(
-        'MetaStyle',
+    style_meta = ParagraphStyle(
+        'DarkMetaText',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=7.5,
-        leading=10.5,
-        textColor=colors.HexColor("#475569")
+        fontSize=7.2,
+        leading=9.5,
+        textColor=COLOR_TEXT_SECONDARY
     )
-
-    h2_style = ParagraphStyle(
-        'SectionHeading',
+    style_sec_title = ParagraphStyle(
+        'DarkSectionTitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
         fontSize=8.5,
         leading=11,
-        textColor=c_accent
+        textColor=COLOR_ACCENT_BLUE
     )
-
-    body_style = ParagraphStyle(
-        'BodyDark',
+    style_body = ParagraphStyle(
+        'DarkBodyText',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=7.8,
+        leading=10.5,
+        textColor=COLOR_TEXT_PRIMARY
+    )
+    style_body_secondary = ParagraphStyle(
+        'DarkBodySecondary',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=7.2,
+        leading=9.5,
+        textColor=COLOR_TEXT_SECONDARY
+    )
+    style_bullet = ParagraphStyle(
+        'DarkBulletText',
         parent=styles['Normal'],
         fontName='Helvetica',
         fontSize=7.5,
-        leading=10.5,
-        textColor=c_primary
+        leading=10.0,
+        textColor=COLOR_TEXT_PRIMARY,
+        leftIndent=10
     )
-
-    table_header = ParagraphStyle(
-        'TableHeader',
+    style_table_head = ParagraphStyle(
+        'DarkTableHead',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
         fontSize=7.2,
-        leading=9.5,
-        textColor=c_primary
+        leading=8.5,
+        textColor=COLOR_ACCENT_BLUE
     )
-
-    table_text = ParagraphStyle(
-        'TableText',
+    style_table_cell = ParagraphStyle(
+        'DarkTableCell',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=7.0,
-        leading=9.0,
-        textColor=c_primary
+        fontSize=7.2,
+        leading=8.5,
+        textColor=COLOR_TEXT_PRIMARY
     )
-
-    discovery_text_style = ParagraphStyle(
-        'DiscoveryText',
+    style_card_title = ParagraphStyle(
+        'DarkCardTitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=8.5,
-        leading=12,
-        textColor=colors.HexColor("#1E293B")
+        fontSize=6.8,
+        leading=8.0,
+        textColor=COLOR_TEXT_SECONDARY
     )
 
     story = []
 
-    def make_section(title_text):
-        p = Paragraph(f"<b>{safe_text(title_text).upper()}</b>", h2_style)
-        t = Table([[p]], colWidths=[539])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,-1), c_bg_head),
-            ('BOX', (0,0), (-1,-1), 0.5, c_border),
-            ('LINELEFT', (0,0), (0,0), 2.5, c_accent),
-            ('TOPPADDING', (0,0), (-1,-1), 2.5),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
-            ('LEFTPADDING', (0,0), (-1,-1), 5),
-            ('RIGHTPADDING', (0,0), (-1,-1), 5),
-        ]))
-        return t
+    # --------------------------------------------------------------------------
+    # 1. HEADER STRIP (Terminal Metadata)
+    # --------------------------------------------------------------------------
+    now_utc = datetime.now(timezone.utc).strftime("%B %d, %Y (UTC)")
+    model_name = getattr(summary_data, "model_used", None) or config.GEMINI_MODEL
+    provider_used = getattr(summary_data, "provider_used", None) or ("Ollama" if config.USE_OFFLINE_MODE else "Gemini Cloud")
+    as_of_date = getattr(summary_data, "as_of_date", None)
+    thinking_level = getattr(summary_data, "thinking_level", None) or config.GEMINI_THINKING_LEVEL
 
-    curr_date = datetime.now().strftime("%B %d, %Y")
+    cutoff_str = f" // As-Of Cutoff: <font color='{HEX_ACCENT_YELLOW}'><b>{as_of_date}</b></font>" if as_of_date else ""
 
-    # Header block
-    head_data = [
+    header_data = [
         [
-            Paragraph(f"<b>{safe_text(company_name).upper()}</b><br/>"
-                      f"<font size=8.5 color='#1E40AF'><b>Ticker: {safe_text(ticker)} | Track C: FMCG & Retail</b></font>", title_style),
-            Paragraph(f"<b>Generated:</b> {curr_date}<br/>"
-                      f"<b>Engine:</b> AlphaDecay v1.2 (Autonomous Forensic)<br/>"
-                      f"<b>Mandate:</b> Non-Obvious Forensic Divergence", meta_style)
+            Paragraph(f"<b>{safe_text(company_name.upper())}</b>", style_entity),
+            Paragraph(f"<b>ENGINE:</b> AlphaDecay v2.0 // Execution: {safe_text(provider_used.upper())}<br/>"
+                      f"<b>MODEL:</b> {safe_text(model_name)} ({safe_text(thinking_level).capitalize()} Thinking){cutoff_str}",
+                      style_meta)
+        ],
+        [
+            Paragraph(f"<font color='{HEX_ACCENT_BLUE}'><b>TICKER: {ticker}</b></font> | SECTOR: {track_name} | GENERATED: {now_utc}", style_meta),
+            ""
         ]
     ]
-    t_head = Table(head_data, colWidths=[350, 189])
-    t_head.setStyle(TableStyle([
+    t_header = Table(header_data, colWidths=[310, 229])
+    t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+        ('TOPPADDING', (0,0), (-1,-1), 1),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('SPAN', (0,1), (1,1))
     ]))
-    story.append(t_head)
+    story.append(t_header)
     story.append(Spacer(1, 4))
 
-    # 1. THE DISCOVERY (Callout Box)
-    discovery_sentence = find_value(discovery, "discovery", default="No discovery recorded.")
-    disc_box = [
+    # --------------------------------------------------------------------------
+    # 2. HERO FINDING PANEL
+    # --------------------------------------------------------------------------
+    finding_heading = find_value(discovery, "finding_heading", default="Verified Finding")
+    disc_text = find_value(discovery, "discovery", "1_The_Discovery", default="Quantitative analysis complete.")
+    timeline = find_value(discovery, "timeline", "4_Timeline", default="Trailing Reporting Cycle")
+
+    # Extract primary anomaly metrics for hero badge
+    selected_anom = None
+    if getattr(summary_data, "anomalies", None):
+        selected_anom = summary_data.anomalies[0]
+
+    delta_val = selected_anom.delta if selected_anom else None
+    delta_unit = selected_anom.unit if selected_anom else ""
+    delta_basis = selected_anom.comparison_basis if selected_anom else "YoY"
+    delta_dir = selected_anom.direction if selected_anom else "adverse"
+    anom_metric = selected_anom.metric_name if selected_anom else "Financial Velocity"
+
+    hero_delta_html = format_signed_metric_html(delta_val, delta_unit, anom_metric, delta_dir)
+
+    hero_content = [
         [
-            Paragraph("<font size=7.5 color='#1E3A8A'><b>1. THE DISCOVERY (NON-OBVIOUS REALITY)</b></font><br/>"
-                      f"{safe_text(discovery_sentence)}", discovery_text_style)
+            Paragraph(f"<font color='{HEX_ACCENT_BLUE}'><b>// {safe_text(finding_heading).upper()}</b></font> "
+                      f"<font color='{HEX_TEXT_SECONDARY}'>({safe_text(timeline)})</font>", style_sec_title),
+            Paragraph(f"DELTA: {hero_delta_html} <font color='{HEX_TEXT_SECONDARY}'>({delta_basis})</font>", ParagraphStyle('R_Align', parent=style_body, alignment=2))
+        ],
+        [
+            Paragraph(f"<b>{safe_text(disc_text)}</b>", style_body),
+            ""
         ]
     ]
-    t_disc = Table(disc_box, colWidths=[539])
-    t_disc.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), c_bg_callout),
-        ('BOX', (0,0), (-1,-1), 1.2, c_accent),
-        ('TOPPADDING', (0,0), (-1,-1), 5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-        ('LEFTPADDING', (0,0), (-1,-1), 8),
-        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+    t_hero = Table(hero_content, colWidths=[380, 149])
+    t_hero.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), COLOR_BG_CARD),
+        ('BOX', (0,0), (-1,-1), 0.8, COLOR_BORDER_LIGHT),
+        ('LINEBEFORE', (0,0), (0,-1), 2.5, COLOR_BORDER_ACCENT),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('SPAN', (0,1), (1,1))
     ]))
-    story.append(t_disc)
-    story.append(Spacer(1, 5))
-
-    # 2. WHY IT MATTERS
-    story.append(make_section("2. Why It Matters (Business & Operational Implications)"))
-    story.append(Spacer(1, 2))
-    why_matters = find_value(discovery, "whymatters", "why_it_matters", default=[])
-    if isinstance(why_matters, list):
-        bullets = "".join([f"• <b>{safe_text(item)}</b><br/>" for item in why_matters])
-    else:
-        bullets = safe_text(why_matters)
-    story.append(Paragraph(bullets, body_style))
+    story.append(t_hero)
     story.append(Spacer(1, 4))
 
-    # Handle summary data dictionary or object
-    if isinstance(summary_data, dict):
-        quarters = summary_data.get("quarters_analyzed", [])
-        sales_growth = summary_data.get("sales_growth_yoy", {})
-        debtor_days = summary_data.get("debtor_days", {})
-        dsri_val = summary_data.get("beneish_dsri", "N/A")
-        sgi_val = summary_data.get("beneish_sgi", "N/A")
-        gmi_val = summary_data.get("beneish_gmi", "N/A")
-        wedge_val = summary_data.get("margin_wedge_bps", 0.0)
-        drag_val = summary_data.get("distribution_drag_bps", 0.0)
-        spread_val = summary_data.get("peer_spread_days", "N/A")
-    else:
-        quarters = summary_data.quarters_analyzed
-        sales_growth = summary_data.sales_growth_yoy
-        debtor_days = summary_data.debtor_days
-        dsri_val = summary_data.beneish_dsri if summary_data.beneish_dsri is not None else "N/A"
-        sgi_val = summary_data.beneish_sgi if summary_data.beneish_sgi is not None else "N/A"
-        gmi_val = summary_data.beneish_gmi if summary_data.beneish_gmi is not None else "N/A"
-        wedge_val = summary_data.margin_wedge_bps if summary_data.margin_wedge_bps is not None else 0.0
-        drag_val = summary_data.distribution_drag_bps if summary_data.distribution_drag_bps is not None else 0.0
-        spread_val = summary_data.peer_spread_days if summary_data.peer_spread_days is not None else "N/A"
+    # --------------------------------------------------------------------------
+    # 3. KEY METRICS MATRIX (Compact Terminal KPI Panels)
+    # --------------------------------------------------------------------------
+    quarters = getattr(summary_data, "quarters_analyzed", [])
+    latest_q = quarters[-1] if quarters else "Latest"
 
-    # Determine unit for peer relative spread
-    spread_unit = "d"
-    if hasattr(summary_data, "anomalies") and summary_data.anomalies:
-        spread_unit = getattr(summary_data.anomalies[0], "unit", "d")
-    elif isinstance(summary_data, dict) and summary_data.get("anomalies"):
-        first_a = summary_data["anomalies"][0]
-        if isinstance(first_a, dict):
-            spread_unit = first_a.get("unit", "d")
-        elif hasattr(first_a, "unit"):
-            spread_unit = getattr(first_a, "unit", "d")
+    sales_growth = getattr(summary_data, "sales_growth_yoy", {})
+    debtor_days = getattr(summary_data, "debtor_days", {})
+    expense_residual = getattr(summary_data, "expense_adjusted_residual", {})
+    
+    latest_sales_g = sales_growth.get(latest_q)
+    opm_delta = getattr(summary_data, "operating_margin_delta_bps", None)
+    cfo_ratio = getattr(summary_data, "cfo_to_operating_profit", None)
+    peer_spread = getattr(summary_data, "peer_spread_days", None)
 
-    # Embedded Historical Dual-Panel Forensic Chart (Feature D)
-    if not chart_path or not os.path.exists(chart_path):
-        try:
-            if isinstance(summary_data, ForensicSummary):
-                chart_path = generate_forensic_chart(summary_data)
-            else:
-                dummy_summary = ForensicSummary(
-                    ticker=ticker,
-                    company_name=company_name,
-                    quarters_analyzed=quarters,
-                    debtor_days=debtor_days,
-                    sales_growth_yoy=sales_growth,
-                    derived_volume_growth={q: round(sales_growth.get(q, 4.0)*0.3, 1) for q in quarters},
-                    anomalies=[]
-                )
-                chart_path = generate_forensic_chart(dummy_summary)
-        except Exception:
-            chart_path = None
+    # Calculate statutory debtor days delta across valid observations
+    valid_dd = [(q, debtor_days[q]) for q in quarters if debtor_days.get(q) is not None]
+    dd_change = None
+    if len(valid_dd) >= 2:
+        dd_change = round(valid_dd[-1][1] - valid_dd[-2][1], 1)
+    elif selected_anom and selected_anom.metric_type == "debtor_days":
+        dd_change = selected_anom.delta
 
-    if chart_path and os.path.exists(chart_path):
-        story.append(make_section("3. Historical Forensic Audit Visualizer (Trailing 8 Quarters)"))
-        story.append(Spacer(1, 2))
-        story.append(Image(chart_path, width=539, height=225))
-        story.append(Paragraph(
-            "<font size=6.5 color='#64748B'><i>Figure 1: Dual-panel historical forensic audit trail. Top: Reported Sales YoY (%) vs Derived Underlying Volume Growth (P x Q decomposition). Bottom: Historical Debtor Days working capital velocity against FMCG benchmark threshold (22d). Strictly backward-looking historical audit data (Zero future predictions).</i></font>",
-            meta_style
-        ))
-        story.append(Spacer(1, 4))
+    # Format 4 Key Metric Cards
+    card_sales = format_signed_metric_html(latest_sales_g, "%", "sales growth")
+    card_opm = format_signed_metric_html(opm_delta, "bps", "operating margin")
+    card_dd = format_signed_metric_html(dd_change, "d", "debtor days")
+    card_cfo = f"<font color='{HEX_ACCENT_GREEN}'><b>{cfo_ratio*100.0:.1f}%</b></font>" if cfo_ratio is not None else f"<font color='{HEX_ACCENT_YELLOW}'><b>N/A</b></font>"
 
-    # 4. FORENSIC RATIOS & MULTI-PEER SPREAD MATRIX
-    story.append(make_section("4. Forensic Ratios & Multi-Peer Spread Matrix"))
-    story.append(Spacer(1, 2))
-
-    indicator_table = [
+    kpi_matrix = [
         [
-            Paragraph("<b>Beneish DSRI:</b>", table_header),
-            Paragraph(f"<b>{safe_text(dsri_val)}</b> (Threshold: &gt;1.20)", table_text),
-            Paragraph("<b>QC Margin Wedge:</b>", table_header),
-            Paragraph(f"<b>{format_signed_metric(wedge_val, 'bps')}</b> (Gross vs OPM)", table_text),
+            Paragraph("<b>NET SALES YoY</b>", style_card_title),
+            Paragraph("<b>OPERATING MARGIN Δ</b>", style_card_title),
+            Paragraph("<b>DEBTOR DAYS Δ</b>", style_card_title),
+            Paragraph("<b>CFO CONVERSION</b>", style_card_title)
         ],
         [
-            Paragraph("<b>Beneish SGI:</b>", table_header),
-            Paragraph(f"<b>{safe_text(sgi_val)}</b> (Growth under stress)", table_text),
-            Paragraph("<b>Distribution Drag:</b>", table_header),
-            Paragraph(f"<b>{format_signed_metric(drag_val, 'bps')}</b> (Other Exp/Sales)", table_text),
+            Paragraph(card_sales, style_body),
+            Paragraph(card_opm, style_body),
+            Paragraph(card_dd, style_body),
+            Paragraph(card_cfo, style_body)
         ],
         [
-            Paragraph("<b>Beneish GMI:</b>", table_header),
-            Paragraph(f"<b>{safe_text(gmi_val)}</b> (Gross Margin decay)", table_text),
-            Paragraph("<b>Peer Relative Spread:</b>", table_header),
-            Paragraph(f"<b>{format_signed_metric(spread_val, spread_unit)}</b> (vs Sector Median)", table_text),
+            Paragraph(f"<font color='{HEX_TEXT_MUTED}'>{latest_q} vs Prior Year</font>", style_meta),
+            Paragraph(f"<font color='{HEX_TEXT_MUTED}'>Trailing YoY Shift</font>", style_meta),
+            Paragraph(f"<font color='{HEX_TEXT_MUTED}'>Annual Audit Basis</font>", style_meta),
+            Paragraph(f"<font color='{HEX_TEXT_MUTED}'>CFO / Operating Profit</font>", style_meta)
         ]
     ]
-    t_indicators = Table(indicator_table, colWidths=[105, 164, 115, 155])
-    t_indicators.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, c_border),
+    t_kpis = Table(kpi_matrix, colWidths=[134.7, 134.7, 134.7, 134.7])
+    t_kpis.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), COLOR_BG_CARD),
+        ('BOX', (0,0), (-1,-1), 0.6, COLOR_BORDER),
+        ('INNERGRID', (0,0), (-1,-1), 0.4, COLOR_BORDER),
         ('TOPPADDING', (0,0), (-1,-1), 2),
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BACKGROUND', (0,0), (0,-1), c_bg_head),
-        ('BACKGROUND', (2,0), (2,-1), c_bg_head),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER')
     ]))
-    story.append(t_indicators)
+    story.append(t_kpis)
     story.append(Spacer(1, 4))
 
-    # Page Break for clean 2-page institutional layout
+    # --------------------------------------------------------------------------
+    # 4. SECTION 2: WHY IT MATTERS (Business & Operational Implications)
+    # --------------------------------------------------------------------------
+    story.append(Paragraph("<font color='#58A6FF'><b>2. WHY IT MATTERS (OPERATIONAL & WORKING CAPITAL IMPACT)</b></font>", style_sec_title))
+    story.append(Spacer(1, 1.5))
+    why_matters = find_value(discovery, "why_it_matters", "2_Why_It_Matters", default=[])
+    if isinstance(why_matters, list):
+        for idx, item in enumerate(why_matters[:3], 1):
+            story.append(Paragraph(f"<font color='{HEX_ACCENT_BLUE}'>◆</font> {safe_text(item)}", style_bullet))
+    story.append(Spacer(1, 3))
+
+    # --------------------------------------------------------------------------
+    # 5. SECTION 3: DUAL-PANEL FORENSIC AUDIT VISUALIZER (Dark Matplotlib Chart)
+    # --------------------------------------------------------------------------
+    chart_path = None
+    try:
+        chart_path = generate_forensic_chart(summary_data)
+    except Exception as e:
+        print(f"[PDF Exporter Warning] Chart generation failed: {e}")
+
+    if chart_path and os.path.exists(chart_path):
+        story.append(Paragraph("<font color='#58A6FF'><b>3. HISTORICAL FORENSIC AUDIT VISUALIZER (TRAILING REPORTING CYCLES)</b></font>", style_sec_title))
+        story.append(Spacer(1, 1.5))
+        story.append(Image(chart_path, width=539, height=205))
+        story.append(Paragraph(
+            f"<font color='{HEX_TEXT_MUTED}'><i>Figure 1: Dual-panel quantitative audit trail. "
+            f"Top: Reported Net Sales YoY (%) vs Expense-Adjusted Residual ({HEX_ACCENT_YELLOW} Heuristic screening metric). "
+            f"Bottom: Audited Debtor Days channel credit velocity against sector reference threshold. Strictly backward-looking historical audit data.</i></font>",
+            style_meta
+        ))
+        story.append(Spacer(1, 4))
+
+    # --------------------------------------------------------------------------
+    # 6. SECTION 4: FORENSIC RATIOS & DIAGNOSTIC MATRIX
+    # --------------------------------------------------------------------------
+    story.append(Paragraph("<font color='#58A6FF'><b>4. FORENSIC RATIOS & MULTI-PEER SPREAD MATRIX</b></font>", style_sec_title))
+    story.append(Spacer(1, 1.5))
+
+    dsri_val = getattr(summary_data, "beneish_dsri", None)
+    dd_proxy_val = getattr(summary_data, "debtor_days_ratio_proxy", None)
+    sgi_val = getattr(summary_data, "beneish_sgi", None)
+    gmi_val = getattr(summary_data, "beneish_gmi", None)
+    drag_val = getattr(summary_data, "expense_to_sales_ratio_change_bps", None)
+    wedge_val = getattr(summary_data, "margin_wedge_bps", None)
+    is_canonical_wedge = getattr(summary_data, "margin_wedge_is_canonical", False)
+
+    wedge_title = "<b>QC Margin Wedge:</b>" if is_canonical_wedge else "<b>Operating Margin Δ:</b>"
+    wedge_desc = "(Gross vs OPM)" if is_canonical_wedge else "(OPM Trailing Shift)"
+    wedge_display_val = wedge_val if is_canonical_wedge else opm_delta
+    wedge_html = format_signed_metric_html(wedge_display_val, "bps", "operating margin")
+
+    dsri_html = f"<font color='{HEX_TEXT_PRIMARY}'><b>{dsri_val:.3f}</b></font>" if dsri_val is not None else f"<font color='{HEX_ACCENT_YELLOW}'><b>N/A</b></font>"
+    dd_proxy_html = f"<font color='{HEX_TEXT_PRIMARY}'><b>{dd_proxy_val:.3f}</b></font>" if dd_proxy_val is not None else f"<font color='{HEX_ACCENT_YELLOW}'><b>N/A</b></font>"
+    sgi_html = f"{sgi_val:.3f}" if sgi_val is not None else "N/A"
+    gmi_html = f"{gmi_val:.3f}" if gmi_val is not None else "N/A"
+    drag_html = format_signed_metric_html(drag_val, "bps", "expense drag")
+    peer_sp_html = format_signed_metric_html(peer_spread, "d", "peer spread")
+
+    matrix_rows = [
+        [
+            Paragraph("<b>Beneish DSRI (Canonical):</b>", style_table_head),
+            Paragraph(f"{dsri_html} (Receivables/Sales YoY)", style_table_cell),
+            Paragraph(wedge_title, style_table_head),
+            Paragraph(f"{wedge_html} {wedge_desc}", style_table_cell)
+        ],
+        [
+            Paragraph("<b>Debtor Days Ratio Proxy:</b>", style_table_head),
+            Paragraph(f"{dd_proxy_html} (Debtor Days_t / Days_t-1)", style_table_cell),
+            Paragraph("<b>Distribution Drag:</b>", style_table_head),
+            Paragraph(f"{drag_html} (Exp/Sales Shift)", style_table_cell)
+        ],
+        [
+            Paragraph("<b>Beneish SGI / GMI:</b>", style_table_head),
+            Paragraph(f"SGI: <b>{sgi_html}</b> | GMI: <b>{gmi_html}</b>", style_table_cell),
+            Paragraph("<b>Peer Relative Spread:</b>", style_table_head),
+            Paragraph(f"{peer_sp_html} (vs Sector Median)", style_table_cell)
+        ]
+    ]
+    t_matrix = Table(matrix_rows, colWidths=[120, 149.5, 120, 149.5])
+    t_matrix.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), COLOR_BG_CARD),
+        ('BACKGROUND', (0,0), (0,-1), COLOR_BG_CARD_ALT),
+        ('BACKGROUND', (2,0), (2,-1), COLOR_BG_CARD_ALT),
+        ('BOX', (0,0), (-1,-1), 0.5, COLOR_BORDER),
+        ('INNERGRID', (0,0), (-1,-1), 0.4, COLOR_BORDER),
+        ('TOPPADDING', (0,0), (-1,-1), 1.8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1.8),
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+    ]))
+    story.append(t_matrix)
+
+    # --------------------------------------------------------------------------
+    # PAGE BREAK FOR CRISP 2-PAGE INSTITUTIONAL LAYOUT
+    # --------------------------------------------------------------------------
     story.append(PageBreak())
 
-    # 5. NUMBERS & QUANTITATIVE BREAKDOWN (Trailing 8 Quarters Table)
-    story.append(make_section("5. Statutory Financial Trailing 8-Quarter Metrics"))
-    story.append(Spacer(1, 2))
+    # --------------------------------------------------------------------------
+    # 7. SECTION 5: STATUTORY FINANCIAL TRAILING METRICS (Period-Aligned Table)
+    # --------------------------------------------------------------------------
+    story.append(Paragraph("<font color='#58A6FF'><b>5. STATUTORY FINANCIAL TRAILING METRICS (PERIOD-ALIGNED)</b></font>", style_sec_title))
+    story.append(Spacer(1, 1.5))
 
     if quarters:
         cols_count = min(6, len(quarters))
         display_q = quarters[-cols_count:]
-        
-        num_header = [Paragraph("<b>Metric / Quarter</b>", table_header)] + [
-            Paragraph(f"<b>{safe_text(q)}</b>", table_header) for q in display_q
-        ]
-        
-        row_growth = [Paragraph("<b>Net Sales YoY (%)</b>", table_text)] + [
-            Paragraph(f"{safe_text(sales_growth.get(q))}%" if sales_growth.get(q) is not None and str(sales_growth.get(q)) != 'N/A' else "N/A", table_text) for q in display_q
-        ]
-        
-        row_debtor = [Paragraph("<b>Debtor Days</b>", table_text)] + [
-            Paragraph(f"{safe_text(debtor_days.get(q))}d" if debtor_days.get(q) is not None and str(debtor_days.get(q)) != 'N/A' else "N/A", table_text) for q in display_q
+
+        header_row = [Paragraph("<b>Metric / Quarter</b>", style_table_head)] + [
+            Paragraph(f"<b>{safe_text(q)}</b>", style_table_head) for q in display_q
         ]
 
-        col_w = [149] + [390 / cols_count] * cols_count
-        t_numbers = Table([num_header, row_growth, row_debtor], colWidths=col_w)
-        t_numbers.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), c_bg_head),
-            ('GRID', (0,0), (-1,-1), 0.5, c_border),
+        row_sales = [Paragraph("<b>Net Sales YoY (%)</b>", style_table_cell)] + [
+            Paragraph(format_signed_metric_html(sales_growth.get(q), "%", "sales growth"), style_table_cell) for q in display_q
+        ]
+
+        row_debtor = [Paragraph("<b>Debtor Days (d)</b>", style_table_cell)] + [
+            Paragraph(f"<font color='{HEX_TEXT_PRIMARY}'><b>{debtor_days.get(q):.1f}d</b></font>" if debtor_days.get(q) is not None else f"<font color='{HEX_ACCENT_YELLOW}'>N/A</font>", style_table_cell) for q in display_q
+        ]
+
+        row_residual = [Paragraph("<b>Expense Residual (%)</b>", style_table_cell)] + [
+            Paragraph(f"<font color='{HEX_ACCENT_YELLOW}'><b>{expense_residual.get(q):+.2f}%</b></font>" if expense_residual.get(q) is not None else f"<font color='{HEX_ACCENT_YELLOW}'>N/A</font>", style_table_cell) for q in display_q
+        ]
+
+        col_w = [140] + [399 / cols_count] * cols_count
+        t_trailing = Table([header_row, row_sales, row_debtor, row_residual], colWidths=col_w)
+        t_trailing.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), COLOR_BG_SECONDARY),
+            ('BACKGROUND', (0,1), (-1,-1), COLOR_BG_CARD),
+            ('BOX', (0,0), (-1,-1), 0.5, COLOR_BORDER),
+            ('INNERGRID', (0,0), (-1,-1), 0.4, COLOR_BORDER),
             ('TOPPADDING', (0,0), (-1,-1), 2),
             ('BOTTOMPADDING', (0,0), (-1,-1), 2),
             ('LEFTPADDING', (0,0), (-1,-1), 4),
             ('RIGHTPADDING', (0,0), (-1,-1), 4),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
         ]))
-        story.append(t_numbers)
-        story.append(Spacer(1, 3))
+        story.append(t_trailing)
+        story.append(Spacer(1, 2))
 
-    num_summary = find_value(discovery, "numbers", default="")
+    num_summary = find_value(discovery, "numbers", "5_Numbers", default="")
     if num_summary:
-        story.append(Paragraph(f"<b>Forensic Calculation Summary:</b> {safe_text(num_summary)}", body_style))
-        story.append(Spacer(1, 4))
+        story.append(Paragraph(f"<font color='{HEX_TEXT_SECONDARY}'><b>Forensic Calculation Summary:</b> {safe_text(num_summary)}</font>", style_meta))
+    story.append(Spacer(1, 3))
 
-    # 6. TIMELINE & TRACEABLE EVIDENCE TRAIL (Including BSE Concall Transcripts)
-    story.append(make_section("6. Timeline & Traceable Evidence Trail (Statutory Filings)"))
-    story.append(Spacer(1, 2))
-    timeline_desc = find_value(discovery, "timeline", default="Timeline established across trailing cycles.")
-    evidence_urls = find_value(discovery, "evidence", default=[])
+    # --------------------------------------------------------------------------
+    # 8. SECTION 6: TIMELINE & AUDITABLE EVIDENCE TRAIL (Statutory Filings)
+    # --------------------------------------------------------------------------
+    story.append(Paragraph("<font color='#58A6FF'><b>6. TIMELINE & TRACEABLE EVIDENCE TRAIL (STATUTORY FILINGS)</b></font>", style_sec_title))
+    story.append(Spacer(1, 1.5))
+
+    evidence_urls = find_value(discovery, "evidence", "3_Evidence", default=[])
+    story.append(Paragraph(f"<font color='{HEX_TEXT_SECONDARY}'><b>Divergence Timeline:</b> {safe_text(timeline)}</font>", style_body))
+    story.append(Paragraph(f"<font color='{HEX_TEXT_SECONDARY}'><b>Auditable Regulatory Filings & Excerpt Sources:</b></font>", style_body_secondary))
     if isinstance(evidence_urls, list):
-        ev_str = "<br/>".join([f"• <font color='#1E40AF'><u>{safe_text(u)}</u></font>" for u in evidence_urls])
-    else:
-        ev_str = safe_text(evidence_urls)
+        for u in evidence_urls[:4]:
+            u_clean = safe_text(u)
+            story.append(Paragraph(f"<font color='{HEX_ACCENT_BLUE}'>🔗 <a href='{u_clean}' color='{HEX_ACCENT_BLUE}'><u>{u_clean}</u></a></font>", style_meta))
+    story.append(Spacer(1, 3))
 
-    time_ev_table = [
+    # --------------------------------------------------------------------------
+    # 9. SECTION 7: ADVERSARIAL COUNTERARGUMENT (Defense / Alternative Explanations)
+    # --------------------------------------------------------------------------
+    story.append(Paragraph("<font color='#58A6FF'><b>7. ADVERSARIAL COUNTERARGUMENT (DEFENSE / ALTERNATIVE EXPLANATIONS)</b></font>", style_sec_title))
+    story.append(Spacer(1, 1.5))
+    counter_text = find_value(discovery, "counterargument", "6_Counterargument", default="Operational variance within screening tolerances.")
+    story.append(Paragraph(f"<font color='{HEX_TEXT_SECONDARY}'><b>Strongest Plausible Macro / Operational Explanation:</b></font> {safe_text(counter_text)}", style_body))
+    story.append(Spacer(1, 3))
+
+    # --------------------------------------------------------------------------
+    # 10. SECTION 8: OBJECTIVE FALSIFICATION & FINAL ADJUDICATION VERDICT
+    # --------------------------------------------------------------------------
+    story.append(Paragraph("<font color='#58A6FF'><b>8. OBJECTIVE FALSIFICATION CONDITION & ADJUDICATION VERDICT</b></font>", style_sec_title))
+    story.append(Spacer(1, 1.5))
+
+    falsify_text = find_value(discovery, "falsification", "7_Falsification_Condition", default="Normalization across trailing periods.")
+    ev_strength_text = find_value(discovery, "strength", "8_Evidence_Strength", default="NOT_ESTABLISHED")
+
+    # Resolve structured verdict and styling tokens
+    verdict_raw = "NOT_ESTABLISHED"
+    data_suff_raw = "SUFFICIENT"
+    for v_key in ("SUPPORTED", "REFUTED", "NOT_ESTABLISHED"):
+        if v_key in str(ev_strength_text).upper():
+            verdict_raw = v_key
+            break
+
+    for s_key in ("INSUFFICIENT", "LIMITED", "SUFFICIENT"):
+        if s_key in str(ev_strength_text).upper():
+            data_suff_raw = s_key
+            break
+
+    v_theme = VERDICT_THEME.get(verdict_raw, VERDICT_THEME["NOT_ESTABLISHED"])
+    s_theme = DATA_SUFFICIENCY_THEME.get(data_suff_raw, DATA_SUFFICIENCY_THEME["SUFFICIENT"])
+
+    verdict_panel = [
         [
-            Paragraph("<b>Divergence Timeline:</b>", table_header),
-            Paragraph(safe_text(timeline_desc), body_style)
+            Paragraph(f"<font color='{v_theme['hex']}'><b>VERDICT: {v_theme['label']}</b></font> "
+                      f"<font color='{s_theme['hex']}'>// [{s_theme['label']}]</font>", style_sec_title)
         ],
         [
-            Paragraph("<b>Auditable Evidence Links:</b>", table_header),
-            Paragraph(ev_str, body_style)
+            Paragraph(f"<font color='{HEX_TEXT_SECONDARY}'><b>Falsification Criteria:</b> Disproven if: {safe_text(falsify_text)}</font>", style_body)
+        ],
+        [
+            Paragraph(f"<font color='{HEX_TEXT_SECONDARY}'><b>Adjudication Rationale:</b> {safe_text(ev_strength_text)}</font>", style_body)
         ]
     ]
-    t_time_ev = Table(time_ev_table, colWidths=[120, 419])
-    t_time_ev.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, c_border),
+    t_verdict = Table(verdict_panel, colWidths=[539])
+    t_verdict.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), COLOR_BG_CARD),
+        ('BOX', (0,0), (-1,-1), 0.8, colors.HexColor(v_theme["border_hex"])),
+        ('LINEBEFORE', (0,0), (0,-1), 3.0, colors.HexColor(v_theme["hex"])),
         ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 4),
-        ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('BACKGROUND', (0,0), (0,-1), c_bg_head),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6)
     ]))
-    story.append(t_time_ev)
-    story.append(Spacer(1, 4))
+    story.append(t_verdict)
+    story.append(Spacer(1, 3))
 
-    # 7. ADVERSARIAL COUNTERARGUMENT (Devil's Advocate)
-    story.append(make_section("7. Adversarial Counterargument (The Defense / Devil's Advocate)"))
-    story.append(Spacer(1, 2))
-    counter = find_value(discovery, "counterargument", default="None recorded.")
-    story.append(Paragraph(f"<b>Strongest Alternative Macro Explanation:</b> {safe_text(counter)}", body_style))
-    story.append(Spacer(1, 4))
+    # --------------------------------------------------------------------------
+    # 11. METHODOLOGY & LIMITATIONS NOTE
+    # --------------------------------------------------------------------------
+    methodology_note = find_value(discovery, "methodology", "limitations", default=None)
+    if not methodology_note:
+        methodology_note = (
+            "Audited using deterministic accounting math sandbox. All financial calculations strictly period-aligned. "
+            "Expense residual is a screening proxy, not statutory unit volume. Zero predictive buy/sell recommendations."
+        )
+    story.append(Paragraph(
+        f"<font color='{HEX_TEXT_MUTED}'><b>Methodological Caveat & Audit Parameters:</b> {safe_text(methodology_note)}</font>",
+        style_meta
+    ))
 
-    # 8. OBJECTIVE FALSIFICATION CONDITION & EVIDENCE RATING
-    story.append(make_section("8. Objective Falsification Condition & Evidence Rating"))
-    story.append(Spacer(1, 2))
-    falsify_cond = find_value(discovery, "falsification", default="None recorded.")
-    ev_strength = find_value(discovery, "strength", default="Strong")
+    # Build PDF Document with custom dark background on all pages
+    canvas_maker = get_canvas_maker(track_name)
+    doc.build(
+        story,
+        canvasmaker=canvas_maker,
+        onFirstPage=draw_dark_background,
+        onLaterPages=draw_dark_background
+    )
 
-    falsify_table = [
-        [
-            Paragraph("<b>Falsification Criteria:</b>", table_header),
-            Paragraph(f"<b>Disproven if:</b> {safe_text(falsify_cond)}", body_style)
-        ],
-        [
-            Paragraph("<b>Evidence Strength:</b>", table_header),
-            Paragraph(f"<b>{safe_text(ev_strength)}</b> (Triangulated across BSE statutory filings & peer spread)", body_style)
-        ]
-    ]
-    t_falsify = Table(falsify_table, colWidths=[120, 419])
-    t_falsify.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, c_border),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 4),
-        ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BACKGROUND', (0,0), (0,-1), c_bg_head),
-    ]))
-    story.append(t_falsify)
-
-    doc.build(story, canvasmaker=ResearchNoteCanvas)
-    print(f"Successfully generated PDF report: {output_file}")
-    return str(output_file)
-
-if __name__ == "__main__":
-    from ingestion.screener import ScreenerScraper
-    from engine.forensics import ForensicEngine
-
-    scraper = ScreenerScraper()
-    raw = scraper.fetch_company_data("HINDUNILVR")
-    summary = ForensicEngine.audit_company(raw)
-    
-    test_disc = {
-        "1_The_Discovery": "Hindustan Unilever Ltd's +180 bps margin wedge reveals quick commerce distributor dilution masking underlying demand deceleration.",
-        "2_Why_It_Matters": [
-            "Quick Commerce take-rates (18-22%) and dark-store listing allowances are eroding operating profit.",
-            "Working capital elongation signals traditional GT distributor inventory push.",
-            "Operating cash flow conversion deteriorated to 62% of EBITDA."
-        ],
-        "3_Evidence": [
-            "https://www.bseindia.com/stockinfo/AnnPdfOpen.aspx?Pname=f8bf7fdd-0f7d-4440-a443-08ea9a8e6d04.pdf",
-            "https://www.screener.in/company/HINDUNILVR/consolidated/"
-        ],
-        "4_Timeline": "Trailing 8 statutory reporting quarters (Ended June 2026)",
-        "5_Numbers": "Margin Wedge: +180 bps | Distribution Drag: +102 bps | Beneish DSRI: 1.118 | Debtor Days: 19d vs 12d baseline.",
-        "6_Counterargument": "Input raw material deflation prompted tactical price corrections while modern trade rebate timing created seasonal noise.",
-        "7_Falsification_Condition": "Disproven if HUL achieves >=2 consecutive quarters of positive UVG with OPM expanding without other expenses rising.",
-        "8_Evidence_Strength": "Strong: Confirmed by statutory BSE concall cross-examination and peer debtor spread."
-    }
-    export_forensic_pdf("HINDUNILVR", "Hindustan Unilever Ltd", summary, test_disc, "test_note_hindunilvr.pdf")
+    print(f"Successfully generated dark-theme PDF report: {output_path}")
+    return output_path

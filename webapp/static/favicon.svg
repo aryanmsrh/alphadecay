@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="favGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#818CF8"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#000000"/>
+  <rect x="0.6" y="0.6" width="30.8" height="30.8" rx="6.4" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.2"/>
+  <!-- Stylized Alpha Decay Wave -->
+  <path d="M21.5 8.5C18.2 8.5 15.4 11.2 13.8 14.2C12.2 17.2 10.2 20.2 8 22.5M9.8 15.8C9.8 19.5 12.2 22.5 15.8 22.5C19.5 22.5 22.2 19.2 22.5 14.8C22.6 12.5 22.5 8.5 22.5 8.5M22.5 17L24.5 22.5" 
+        stroke="url(#favGrad)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

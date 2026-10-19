@@ -1,5 +1,5 @@
 """
-ALPHA-DECAY Period Alignment & Financial Observation Representation.
+Alpha Decay Period Alignment & Financial Observation Representation.
 Provides deterministic, audited alignment across fiscal and calendar quarters.
 Strictly parses period representations, prevents silent substitutions, detects missing quarters,
 and enforces reproducible point-in-time investigation cutoff dates.

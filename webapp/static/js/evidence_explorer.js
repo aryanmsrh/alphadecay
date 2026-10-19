@@ -1,5 +1,5 @@
 /**
- * ALPHA-DECAY Evidence Explorer & Observation Table Filtering
+ * Alpha Decay Evidence Explorer & Observation Table Filtering
  * Verbatim modal inspector with XSS prevention & table search.
  */
 

@@ -82,6 +82,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         return render_template("new_investigation.html")
 
     @app.route("/history")
+    @app.route("/investigations/history")
     def investigations_history_page():
         search_query = request.args.get("search", "").strip().lower()
         status_filter = request.args.get("status", "").strip().upper()

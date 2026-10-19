@@ -16,7 +16,7 @@ from webapp.run_store import run_store
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ALPHA-DECAY: Autonomous Financial Forensic Engine")
+    parser = argparse.ArgumentParser(description="Alpha Decay: Autonomous Financial Research Agent")
     parser.add_argument("--ticker", type=str, default="HINDUNILVR", help="Listed company ticker symbol (default: HINDUNILVR)")
     parser.add_argument("--hypothesis", type=str, default=None, help="Forensic hypothesis to investigate (optional)")
     parser.add_argument("--export-pdf", action="store_true", default=False, help="Export 2-page investigation PDF report")
@@ -33,7 +33,7 @@ def main():
     run_id = uuid.uuid4().hex[:8]
 
     print("=" * 80)
-    print("  ALPHA-DECAY // FINDING THE NEXT SIGNAL: AUTONOMOUS RESEARCH AGENT")
+    print("  Alpha Decay // Finding the Next Signal: Autonomous Research Agent")
     print(f"  Target Entity:       {ticker}")
     print(f"  Run Identifier:      {run_id}")
     print(f"  Sector Track:        Track C — Consumer, FMCG & Retail")

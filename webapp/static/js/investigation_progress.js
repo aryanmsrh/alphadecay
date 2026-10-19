@@ -1,5 +1,5 @@
 /**
- * ALPHA-DECAY Real-Time Investigation Progress & Event Listener
+ * Alpha Decay Real-Time Investigation Progress & Event Listener
  * Supports Server-Sent Events (SSE) with automatic polling fallback.
  */
 

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}INVESTIGATION AUDIT HISTORY{% endblock %}
+{% block topbar_title %}Past Reports{% endblock %}
 
 {% block content %}
 <div class="card">
   <div class="card-header">
     <div class="card-title">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 14 14"></polyline>
       </svg>
-      <span>Historical Investigations Directory ({{ total }} Total)</span>
+      <span>Directory of Past Reports ({{ total }} Total)</span>
     </div>
 
     <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
@@ -18,19 +18,19 @@
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
-      <span>New Investigation</span>
+      <span>New Analysis</span>
     </a>
   </div>
 
   <!-- Filter Toolbar -->
-  <form method="GET" action="{{ url_for('investigations_history_page') }}" class="filter-toolbar">
+  <form method="GET" action="{{ url_for('investigations_history_page') }}" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
     <!-- Search Query -->
     <div style="flex: 2; min-width: 200px;">
       <input 
         type="text" 
         name="search" 
         class="form-control" 
-        placeholder="Search company, ticker, or finding..." 
+        placeholder="Search by company name, ticker symbol, or keywords..." 
         value="{{ search_query }}"
       >
     </div>
@@ -41,19 +41,17 @@
         <option value="">All Statuses</option>
         <option value="QUEUED" {% if status_filter == 'QUEUED' %}selected{% endif %}>QUEUED</option>
         <option value="RUNNING" {% if status_filter == 'RUNNING' %}selected{% endif %}>RUNNING</option>
-        <option value="SUCCEEDED" {% if status_filter == 'SUCCEEDED' %}selected{% endif %}>SUCCEEDED</option>
+        <option value="SUCCEEDED" {% if status_filter == 'SUCCEEDED' %}selected{% endif %}>COMPLETED</option>
         <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>FAILED</option>
-        <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>CANCELLED</option>
       </select>
     </div>
 
     <!-- Verdict Filter -->
-    <div style="flex: 1; min-width: 150px;">
+    <div style="flex: 1; min-width: 160px;">
       <select name="verdict" class="form-control" onchange="this.form.submit()">
-        <option value="">All Verdicts</option>
-        <option value="SUPPORTED" {% if verdict_filter == 'SUPPORTED' %}selected{% endif %}>SUPPORTED</option>
-        <option value="REFUTED" {% if verdict_filter == 'REFUTED' %}selected{% endif %}>REFUTED</option>
-        <option value="NOT_ESTABLISHED" {% if verdict_filter == 'NOT_ESTABLISHED' %}selected{% endif %}>NOT ESTABLISHED</option>
+        <option value="">All Results</option>
+        <option value="HYPOTHESIS PASSED" {% if verdict_filter == 'HYPOTHESIS PASSED' or verdict_filter == 'SUPPORTED' %}selected{% endif %}>Verified Finding</option>
+        <option value="HYPOTHESIS FAILED" {% if verdict_filter == 'HYPOTHESIS FAILED' or verdict_filter == 'REFUTED' %}selected{% endif %}>Explained by Context</option>
       </select>
     </div>
 
@@ -63,7 +61,7 @@
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <span>Filter</span>
+        <span>Search</span>
       </button>
 
       {% if search_query or status_filter or verdict_filter or ticker_filter %}
@@ -80,10 +78,10 @@
             <th>Company</th>
             <th>Ticker</th>
             <th>Status</th>
-            <th>Verdict</th>
-            <th>Primary Finding</th>
+            <th>Result</th>
+            <th>Main Finding</th>
             <th>Cutoff</th>
-            <th>Started</th>
+            <th>Date</th>
             <th>Duration</th>
             <th style="text-align: right;">Action</th>
           </tr>
@@ -92,9 +90,9 @@
           {% for r in runs %}
             <tr class="clickable-row" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
               <td>
-                <strong>{{ r.company_name or r.ticker }}</strong>
+                <strong style="color: #FFFFFF;">{{ r.company_name or r.ticker }}</strong>
                 {% if r.no_material_anomaly %}
-                  <span style="font-size: 10px; color: var(--accent-green); display: block;">[Normal Baseline]</span>
+                  <span style="font-size: 11px; color: var(--accent-green); display: block;">[Normal Trends]</span>
                 {% endif %}
               </td>
               <td><code>{{ r.ticker }}</code></td>
@@ -104,13 +102,13 @@
               <td>
                 {% set v = r.verdict or r.adjudication_verdict %}
                 {% if v in ('HYPOTHESIS PASSED', 'SUPPORTED') %}
-                  <span class="badge badge-passed">HYPOTHESIS PASSED</span>
+                  <span class="badge badge-passed">Verified Finding</span>
                 {% elif v in ('HYPOTHESIS FAILED', 'REFUTED') %}
-                  <span class="badge badge-failed">HYPOTHESIS FAILED</span>
+                  <span class="badge badge-failed">Explained by Context</span>
                 {% elif r.no_material_anomaly %}
-                  <span class="badge badge-passed">HYPOTHESIS PASSED</span>
+                  <span class="badge badge-passed">Verified Finding</span>
                 {% else %}
-                  <span style="color: var(--text-muted); font-size: 11px;">{{ r.status }}</span>
+                  <span style="color: var(--text-muted); font-size: 12px;">{{ r.status }}</span>
                 {% endif %}
               </td>
               <td style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_finding or '' }}">
@@ -123,15 +121,15 @@
                   <span style="color: var(--text-muted);">Latest</span>
                 {% endif %}
               </td>
-              <td style="color: var(--text-muted); font-size: 11.5px; white-space: nowrap;">
+              <td style="color: var(--text-muted); font-size: 12.5px; white-space: nowrap;">
                 {{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }} UTC
               </td>
-              <td style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary);">
+              <td style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">
                 {{ r.duration_seconds }}s
               </td>
               <td style="text-align: right;" onclick="event.stopPropagation();">
                 <a href="{{ url_for('investigation_detail_page', run_id=r.run_id) }}" class="btn btn-secondary btn-sm">
-                  <span>Inspect</span>
+                  <span>View Details</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
@@ -145,9 +143,9 @@
 
     <!-- Pagination Controls -->
     {% if total_pages > 1 %}
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border);">
-        <div style="font-size: 12px; color: var(--text-muted);">
-          Showing Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong> ({{ total }} investigations total)
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border);">
+        <div style="font-size: 13px; color: var(--text-muted);">
+          Showing Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong> ({{ total }} reports total)
         </div>
         <div style="display: flex; gap: 8px;">
           {% if page > 1 %}
@@ -171,12 +169,12 @@
 
   {% else %}
     <div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
-      <h3>No Matching Investigations Found</h3>
-      <p>Adjust your search query or filter options to locate historical research notes.</p>
+      <h3>No Reports Found</h3>
+      <p>Try adjusting your search terms or clearing your filters to view past company reports.</p>
       <a href="{{ url_for('investigations_history_page') }}" class="btn btn-secondary">Clear All Filters</a>
     </div>
   {% endif %}

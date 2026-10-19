@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% if page_title %}{{ page_title }} // {% endif %}ALPHA-DECAY Financial Intelligence</title>
+  <title>{% if page_title %}{{ page_title }} · {% endif %}Alpha Decay</title>
   <meta name="csrf-token" content="{{ csrf_token }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v=2.2">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Space+Grotesk:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v=3.0">
   <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
   {% block extra_head %}{% endblock %}
 </head>
@@ -18,10 +19,23 @@
     <aside class="app-sidebar">
       <div class="sidebar-header">
         <a href="{{ url_for('index') }}" class="brand-link">
-          <svg class="brand-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-          <span class="brand-title">ALPHA-DECAY</span>
+          <div class="brand-logo-wrap">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="brandLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#38BDF8"/>
+                  <stop offset="100%" stop-color="#818CF8"/>
+                </linearGradient>
+              </defs>
+              <rect width="32" height="32" rx="8" fill="#121218" stroke="rgba(255,255,255,0.14)" stroke-width="1.2"/>
+              <path d="M21.5 8.5C18.2 8.5 15.4 11.2 13.8 14.2C12.2 17.2 10.2 20.2 8 22.5M9.8 15.8C9.8 19.5 12.2 22.5 15.8 22.5C19.5 22.5 22.2 19.2 22.5 14.8C22.6 12.5 22.5 8.5 22.5 8.5M22.5 17L24.5 22.5" 
+                    stroke="url(#brandLogoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="brand-text-wrap">
+            <span class="brand-title">Alpha <span class="brand-highlight">Decay</span></span>
+            <span class="brand-sub">Financial Research</span>
+          </div>
         </a>
       </div>
 
@@ -42,7 +56,7 @@
             <line x1="12" y1="8" x2="12" y2="16"></line>
             <line x1="8" y1="12" x2="16" y2="12"></line>
           </svg>
-          <span>New Investigation</span>
+          <span>New Analysis</span>
         </a>
 
         <a href="{{ url_for('investigations_history_page') }}" class="nav-item {% if request.endpoint == 'investigations_history_page' %}active{% endif %}">
@@ -50,7 +64,7 @@
             <polyline points="12 8 12 12 14 14"></polyline>
             <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
           </svg>
-          <span>Investigation History</span>
+          <span>Past Reports</span>
         </a>
 
         <a href="{{ url_for('architecture_page') }}" class="nav-item {% if request.endpoint == 'architecture_page' %}active{% endif %}">
@@ -67,15 +81,15 @@
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
-          <span>Settings & Diagnostics</span>
+          <span>Settings & Status</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
-        <div><strong style="color: var(--accent-blue);">ALPHA-DECAY v2.0</strong></div>
+        <div><strong style="color: var(--accent-blue);">Alpha Decay v2.0</strong></div>
         <div style="color: var(--text-primary); font-weight: 500;">ATMOS 2026 · BITS Pilani</div>
-        <div>Track C: FMCG & Retail</div>
-        <div style="font-size: 10px; color: var(--text-muted);">Automated Financial Research</div>
+        <div>Consumer & Retail Stocks</div>
+        <div style="font-size: 11px; color: var(--text-muted);">Automated Financial Research</div>
       </div>
     </aside>
 
@@ -84,7 +98,7 @@
       <!-- Compact Topbar -->
       <header class="app-topbar">
         <div class="topbar-left">
-          <span class="page-title">{% block topbar_title %}FINANCIAL RESEARCH{% endblock %}</span>
+          <span class="page-title">{% block topbar_title %}Alpha Decay{% endblock %}</span>
           <span class="tag-badge">RESEARCH DASHBOARD</span>
         </div>
 
@@ -102,7 +116,7 @@
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            <span>New Investigation</span>
+            <span>New Analysis</span>
           </a>
         </div>
       </header>

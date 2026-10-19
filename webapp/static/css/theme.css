@@ -1,26 +1,26 @@
 /*
- * ALPHA-DECAY: Modern Quant Workstation
- * Deep Carbon Black (#09090b), Subtle Thin Borders (1px rgba(255,255,255,0.08)),
- * Refined Micro Box-Shadows, Elegant Spacing, Zero Text Overflow/Overlap,
- * Space Grotesk + Plus Jakarta Sans + JetBrains Mono Typography.
+ * Alpha Decay: Modern Financial Research Dashboard
+ * True Pitch Black (#000000), Elegant Deep Surfaces, Crisp Micro-Borders,
+ * Modern Typography (Space Grotesk + Plus Jakarta Sans + JetBrains Mono),
+ * Smooth Fluid Animations & High-Legibility Scaled Typography.
  */
 
 :root {
-  /* Dark Carbon Surface Hierarchy */
-  --bg-primary: #070709;
-  --bg-secondary: #0d0d11;
-  --bg-surface: #131318;
-  --bg-surface-elevated: #1a1a22;
-  --bg-surface-hover: #22222c;
-  --bg-input: #09090d;
+  /* True Pitch Black & Modern Dark Hierarchy */
+  --bg-primary: #000000;
+  --bg-secondary: #08080a;
+  --bg-surface: #101015;
+  --bg-surface-elevated: #181820;
+  --bg-surface-hover: #20202c;
+  --bg-input: #060608;
 
-  /* Refined High-Contrast Typography */
-  --text-primary: #F4F4F6;
+  /* High-Contrast Modern Typography */
+  --text-primary: #F9FAFB;
   --text-secondary: #A1A1AA;
   --text-muted: #71717A;
   --text-dim: #52525B;
 
-  /* Modern Quant Accents (Clean, Restrained, No AI-Slop) */
+  /* Refined Modern Accents */
   --accent-blue: #38BDF8;
   --accent-blue-dim: #0284C7;
   --accent-green: #22C55E;
@@ -30,33 +30,34 @@
   --accent-yellow: #F59E0B;
   --accent-purple: #A855F7;
 
-  /* Subtle Thin Borders (Modern & Elegant) */
+  /* Crisp Micro Borders */
   --border: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.12);
-  --border-highlight: rgba(255, 255, 255, 0.20);
+  --border-light: rgba(255, 255, 255, 0.14);
+  --border-highlight: rgba(255, 255, 255, 0.24);
   --border-focus: #38BDF8;
 
-  /* Refined Micro Elevation Shadows (No Neon Glow) */
-  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  /* Modern Ambient Elevation Shadows */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.7);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.5);
 
-  /* Geometry & Dimensions */
+  /* Modern Geometry & Rounded Radii */
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 68px;
   --topbar-height: 64px;
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-pill: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
 
-  /* Distinctive Typography Stacks */
+  /* Modern Typography Stacks */
+  --font-brand: "Outfit", "Space Grotesk", -apple-system, sans-serif;
   --font-display: "Space Grotesk", -apple-system, sans-serif;
   --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", Menlo, Consolas, monospace;
 }
 
-/* Reset & Deep Dark Base */
+/* Reset & Global Canvas */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -67,15 +68,15 @@ html, body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 14.5px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* Typography Defaults & Word-Break Hygiene */
+/* Typography Defaults */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
@@ -84,6 +85,11 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.3px;
   overflow-wrap: break-word;
 }
+
+h1 { font-size: 26px; }
+h2 { font-size: 21px; }
+h3 { font-size: 18px; }
+h4 { font-size: 16px; }
 
 p, li, span, div {
   overflow-wrap: break-word;
@@ -97,14 +103,14 @@ code, pre {
 a {
   color: var(--accent-blue);
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: all 0.2s ease;
 }
 a:hover {
   color: #7DD3FC;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
-/* Minimalist Scrollbars */
+/* Custom Minimalist Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -114,7 +120,7 @@ a:hover {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-light);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-highlight);
@@ -124,9 +130,10 @@ a:hover {
 .app-container {
   display: flex;
   min-height: 100vh;
+  background-color: var(--bg-primary);
 }
 
-/* Modern Quant Sidebar */
+/* Left Sidebar */
 .app-sidebar {
   width: var(--sidebar-width);
   background: var(--bg-secondary);
@@ -138,45 +145,82 @@ a:hover {
   bottom: 0;
   left: 0;
   z-index: 100;
-  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--shadow-subtle);
 }
 
 .sidebar-header {
   height: var(--topbar-height);
-  padding: 0 24px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
 }
 
+/* Distinctive Alpha Decay Brand Header */
 .brand-link {
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--text-primary);
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: 0.5px;
   text-decoration: none;
+  transition: transform 0.2s ease;
 }
 .brand-link:hover {
   text-decoration: none;
-}
-.brand-logo {
-  color: var(--accent-blue);
-  width: 22px;
-  height: 22px;
+  transform: translateY(-1px);
 }
 
+.brand-logo-wrap {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.brand-logo-wrap svg {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-text-wrap {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-title {
+  font-family: var(--font-brand);
+  font-weight: 800;
+  font-size: 20.5px;
+  letter-spacing: -0.5px;
+  color: #FFFFFF;
+}
+
+.brand-highlight {
+  color: var(--accent-blue);
+  background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+  margin-top: 2px;
+}
+
+/* Navigation Links */
 .sidebar-nav {
-  padding: 22px 14px;
+  padding: 20px 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .nav-item {
@@ -184,27 +228,32 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 11px 16px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 500;
   border: 1px solid transparent;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
 }
 .nav-item svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   stroke-width: 1.9;
   opacity: 0.75;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 .nav-item:hover {
   background: var(--bg-surface);
-  color: var(--text-primary);
+  color: #FFFFFF;
   border-color: var(--border-light);
+  transform: translateX(3px);
   text-decoration: none;
+}
+.nav-item:hover svg {
+  opacity: 1;
+  color: var(--accent-blue);
 }
 .nav-item.active {
   background: var(--bg-surface-elevated);
@@ -219,14 +268,14 @@ a:hover {
 }
 
 .sidebar-footer {
-  padding: 20px 24px;
+  padding: 18px 20px;
   border-top: 1px solid var(--border);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-muted);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  background: var(--bg-primary);
+  gap: 4px;
+  background: var(--bg-secondary);
 }
 
 /* Main Workspace */
@@ -239,7 +288,7 @@ a:hover {
   background: var(--bg-primary);
 }
 
-/* Minimalist Topbar */
+/* Topbar */
 .app-topbar {
   height: var(--topbar-height);
   background: var(--bg-primary);
@@ -262,10 +311,10 @@ a:hover {
 }
 
 .page-title {
-  font-size: 14.5px;
+  font-size: 16.5px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: 0.3px;
+  letter-spacing: -0.2px;
   font-family: var(--font-display);
   white-space: nowrap;
   overflow: hidden;
@@ -273,15 +322,14 @@ a:hover {
 }
 
 .tag-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.8px;
-  padding: 3px 9px;
+  letter-spacing: 0.6px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
   color: var(--accent-blue);
   border: 1px solid var(--border-light);
-  text-transform: uppercase;
   font-family: var(--font-mono);
   white-space: nowrap;
 }
@@ -297,27 +345,38 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-secondary);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
 }
 
 .status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 0px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
 }
 .status-dot.healthy {
   background-color: var(--accent-green);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  animation: statusPulse 2.5s infinite;
 }
 .status-dot.warning {
   background-color: var(--accent-yellow);
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(34, 197, 94, 0);
+  }
 }
 
 .content-body {
@@ -326,71 +385,117 @@ a:hover {
   max-width: 1520px;
   margin: 0 auto;
   width: 100%;
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Tactile Animated Buttons (Clean, Fast, Responsive) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modern Buttons (Perfect Alignment & Slick Modern Hover) */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
   gap: 8px;
-  padding: 9px 18px;
+  padding: 10px 20px;
   border-radius: var(--radius-sm);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
   font-family: var(--font-sans);
-  letter-spacing: 0.1px;
-  box-shadow: var(--shadow-subtle);
   white-space: nowrap;
 }
+
 .btn svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
+  max-width: 16px;
+  max-height: 16px;
+  margin: 0 !important;
   flex-shrink: 0;
+  stroke-width: 2;
+  vertical-align: middle;
+  transition: transform 0.2s ease;
 }
 
+.btn span {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* Primary Button: Crisp Modern White with Soft Glow & Lift */
 .btn-primary {
   background: #FFFFFF;
-  color: #000000;
+  color: #050508;
   border: 1px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
 .btn-primary:hover {
-  background: #000000;
-  color: #FFFFFF;
+  background: #F4F4F5;
+  color: #000000;
   border-color: #FFFFFF;
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.24);
+  transform: translateY(-2px);
   text-decoration: none;
-  transform: translateY(-1px);
+}
+.btn-primary:hover svg {
+  transform: scale(1.1);
 }
 .btn-primary:active {
-  transform: translateY(1px);
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 4px rgba(255, 255, 255, 0.1);
 }
 
+/* Secondary Button: Deep Dark Surface with Subtle Sky Border Glow */
 .btn-secondary {
   background: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border-light);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 .btn-secondary:hover {
   background: var(--bg-surface-elevated);
-  border-color: var(--border-highlight);
+  border-color: var(--accent-blue);
   color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.16);
+  transform: translateY(-2px);
   text-decoration: none;
-  transform: translateY(-1px);
+}
+.btn-secondary:hover svg {
+  transform: scale(1.08);
 }
 .btn-secondary:active {
-  transform: translateY(1px);
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-sm {
-  padding: 6px 14px;
-  font-size: 12px;
+  padding: 7px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+}
+.btn-sm svg {
+  width: 14px;
+  height: 14px;
+  max-width: 14px;
+  max-height: 14px;
 }
 
-/* Modern Quant Card (Spacious, Thin Borders, Subtle Shadow) */
+/* Modern Pitch-Black Card */
 .card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -398,7 +503,9 @@ a:hover {
   padding: 28px 32px;
   margin-bottom: 28px;
   box-shadow: var(--shadow-card);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease,
+              box-shadow 0.25s ease;
 }
 .card:hover {
   border-color: var(--border-light);
@@ -416,7 +523,7 @@ a:hover {
 }
 
 .card-title {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   color: var(--text-primary);
   display: flex;
@@ -429,7 +536,7 @@ a:hover {
   flex-shrink: 0;
 }
 
-/* Metric Overview Cards */
+/* Metric Overview Cards Grid */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -441,22 +548,30 @@ a:hover {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 22px 24px;
+  padding: 24px 26px;
   box-shadow: var(--shadow-card);
-  transition: all 0.15s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+.metric-card:nth-child(1) { animation-delay: 0.04s; }
+.metric-card:nth-child(2) { animation-delay: 0.08s; }
+.metric-card:nth-child(3) { animation-delay: 0.12s; }
+.metric-card:nth-child(4) { animation-delay: 0.16s; }
+.metric-card:nth-child(5) { animation-delay: 0.20s; }
+
 .metric-card:hover {
   border-color: var(--border-light);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
 }
 
 .metric-card-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   font-weight: 700;
   margin-bottom: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   font-family: var(--font-mono);
 }
 
@@ -471,7 +586,7 @@ a:hover {
 }
 
 .metric-card-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   margin-top: 8px;
   line-height: 1.45;
@@ -490,7 +605,7 @@ a:hover {
   border-left: 3px solid var(--accent-yellow);
 }
 
-/* Data Tables (No Cutoffs, Clean Padding, Responsive Scroll) */
+/* Data Tables */
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -503,7 +618,7 @@ a:hover {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 14.5px;
   text-align: left;
   min-width: 680px;
 }
@@ -514,7 +629,7 @@ a:hover {
   font-weight: 700;
   padding: 14px 20px;
   border-bottom: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   font-family: var(--font-mono);
@@ -533,6 +648,10 @@ a:hover {
   border-bottom: none;
 }
 
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
 .data-table tbody tr:hover {
   background: var(--bg-surface);
 }
@@ -541,14 +660,14 @@ a:hover {
   cursor: pointer;
 }
 
-/* Verdict Badges (Crisp, High Contrast) */
+/* Badges */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
   border-radius: var(--radius-sm);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.5px;
   font-family: var(--font-mono);
@@ -556,25 +675,13 @@ a:hover {
   white-space: nowrap;
 }
 
-.badge-passed {
+.badge-passed, .badge-supported {
   background: #052e16;
   color: #4ade80;
   border: 1px solid #16a34a;
 }
 
-.badge-failed {
-  background: #450a0a;
-  color: #f87171;
-  border: 1px solid #dc2626;
-}
-
-.badge-supported {
-  background: #052e16;
-  color: #4ade80;
-  border: 1px solid #16a34a;
-}
-
-.badge-refuted {
+.badge-failed, .badge-refuted {
   background: #450a0a;
   color: #f87171;
   border: 1px solid #dc2626;
@@ -586,7 +693,7 @@ a:hover {
   border: 1px solid #0284c7;
 }
 
-/* Quant Verdict Header Banner */
+/* Verdict Header Banner */
 .verdict-banner {
   display: flex;
   flex-wrap: wrap;
@@ -643,7 +750,7 @@ a:hover {
 
 .strength-label-small {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -658,43 +765,44 @@ a:hover {
   line-height: 1.2;
 }
 
-/* Quant Form Controls */
+/* Form Controls */
 .form-group {
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .form-label {
   display: block;
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
   font-family: var(--font-display);
-  letter-spacing: 0.2px;
+  letter-spacing: -0.1px;
 }
 
 .form-help {
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--text-muted);
   margin-top: 6px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .form-control {
   width: 100%;
-  padding: 13px 18px;
+  padding: 14px 18px;
   background: var(--bg-input);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14.5px;
+  font-size: 15px;
   font-family: var(--font-mono);
-  transition: border-color 0.15s ease;
+  transition: all 0.2s ease;
   box-shadow: none !important;
 }
 .form-control:focus {
   outline: none;
   border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
 }
 
 .ticker-suggestions {
@@ -708,22 +816,23 @@ a:hover {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  padding: 6px 14px;
+  padding: 7px 15px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .suggestion-chip:hover {
   background: #FFFFFF;
   color: #000000;
   border-color: #FFFFFF;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
 
-/* Quant Math Calculation Cards (Detailed, Structured, Rigorous, No Overflow) */
+/* Financial Math Cards */
 .math-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -733,12 +842,13 @@ a:hover {
   flex-direction: column;
   gap: 12px;
   box-shadow: var(--shadow-subtle);
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   min-width: 0;
 }
 .math-card:hover {
   border-color: var(--border-light);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
 }
 
 .math-metric-header {
@@ -751,21 +861,21 @@ a:hover {
 
 .math-title {
   font-weight: 700;
-  font-size: 15.5px;
+  font-size: 16.5px;
   color: var(--text-primary);
   font-family: var(--font-display);
 }
 
 .math-period-tag {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .math-number-value {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
   color: var(--accent-blue);
   font-variant-numeric: tabular-nums;
@@ -774,7 +884,7 @@ a:hover {
 
 .math-formula-box {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   background: #000000;
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -788,7 +898,7 @@ a:hover {
   color: var(--text-muted);
   font-weight: 700;
   margin-bottom: 3px;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.5px;
 }
 
@@ -798,13 +908,13 @@ a:hover {
 }
 
 .math-meaning-block {
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--text-primary);
   line-height: 1.55;
 }
 
 .math-signifies-block {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text-secondary);
   line-height: 1.55;
   border-left: 2px solid var(--border-highlight);
@@ -822,10 +932,10 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -848,9 +958,9 @@ a:hover {
 /* Cyclic Scrutiny Log Cards */
 .badge-attempt {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
   text-transform: uppercase;
   background: #000000;
@@ -859,7 +969,7 @@ a:hover {
   white-space: nowrap;
 }
 
-/* Alert Banners (Sharp & Clean) */
+/* Alert Banners */
 .alert-banner {
   padding: 18px 22px;
   border-radius: var(--radius-md);
@@ -867,7 +977,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-size: 14px;
+  font-size: 14.5px;
   box-shadow: var(--shadow-card);
 }
 .alert-banner.alert-danger {
@@ -881,46 +991,59 @@ a:hover {
   color: #FFFFFF;
 }
 
-/* Empty State Component */
+/* Empty State Component - Perfectly Scoped to Prevent Icon Overflow */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 64px 24px;
+  padding: 68px 28px;
   background-color: var(--bg-surface);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  margin: 12px 0;
+  margin: 16px 0;
+  box-shadow: var(--shadow-card);
 }
 
-.empty-state svg {
-  width: 48px;
-  height: 48px;
-  max-width: 48px;
-  max-height: 48px;
+.empty-state > svg,
+.empty-state-icon {
+  width: 52px;
+  height: 52px;
+  max-width: 52px;
+  max-height: 52px;
   stroke: var(--text-muted);
   stroke-width: 1.5;
   margin-bottom: 18px;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 .empty-state h2,
 .empty-state h3 {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .empty-state p {
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--text-secondary);
-  max-width: 520px;
-  margin-bottom: 22px;
+  max-width: 540px;
+  margin-bottom: 24px;
   line-height: 1.6;
+}
+
+/* Force correct button icon sizing inside empty-state */
+.empty-state .btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  margin: 0 !important;
+  margin-bottom: 0 !important;
+  opacity: 1 !important;
 }
 
 @keyframes pulse {
@@ -934,6 +1057,7 @@ a:hover {
     width: var(--sidebar-collapsed-width);
   }
   .sidebar-header .brand-title,
+  .brand-sub,
   .nav-item span,
   .sidebar-footer {
     display: none;

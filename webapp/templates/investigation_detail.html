@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}RESEARCH REPORT // {{ run.ticker }}{% endblock %}
+{% block topbar_title %}Analysis Report · {{ run.ticker }}{% endblock %}
 
 {% block content %}
 <div id="investigation-workspace" data-run-id="{{ run.run_id }}" data-status="{{ run.status }}">
@@ -9,7 +9,7 @@
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 20px;">
       <div>
         <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 10px;">
-          <h1 style="font-family: var(--font-display); font-size: 28px; font-weight: 900; color: var(--text-primary); margin: 0; letter-spacing: -0.5px;">
+          <h1 style="font-family: var(--font-display); font-size: 28px; font-weight: 900; color: #FFFFFF; margin: 0; letter-spacing: -0.5px;">
             {{ run.company_name or run.ticker }}
           </h1>
           <code style="font-family: var(--font-mono); font-size: 14px; background-color: #000; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); color: var(--accent-blue); font-weight: 800;">
@@ -17,11 +17,11 @@
           </code>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 13.5px; color: var(--text-secondary);">
-          <div>Sector Track: <strong style="color: var(--text-primary); font-family: var(--font-display);">Track C — Consumer, FMCG & Retail</strong></div>
-          <div>Run Identifier: <code style="font-family: var(--font-mono); color: var(--accent-blue);">{{ run.run_id }}</code></div>
-          <div>Executed: <span style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }} UTC</span></div>
-          <div>Analysis Engine: <strong style="color: var(--accent-green); font-family: var(--font-display);">Python Calculations + 2-Agent Fact Checker</strong></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 14px; color: var(--text-secondary);">
+          <div>Sector: <strong style="color: var(--text-primary); font-family: var(--font-display);">Track C — Consumer, FMCG & Retail</strong></div>
+          <div>Report ID: <code style="font-family: var(--font-mono); color: var(--accent-blue);">{{ run.run_id }}</code></div>
+          <div>Analyzed: <span style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }} UTC</span></div>
+          <div>Engine: <strong style="color: var(--accent-green); font-family: var(--font-display);">Python Calculations + Two-Agent Fact Checker</strong></div>
         </div>
       </div>
 
@@ -33,12 +33,12 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span>Download 2-Page PDF Report</span>
+            <span>Download 2-Page PDF</span>
           </a>
         {% endif %}
 
         <a href="{{ url_for('new_investigation_page') }}" class="btn btn-secondary btn-sm">
-          <span>New Run</span>
+          <span>New Analysis</span>
         </a>
       </div>
     </div>
@@ -46,13 +46,13 @@
 
   {% if run.status in ('QUEUED', 'RUNNING') %}
     <div class="card" style="text-align: center; padding: 80px 24px;">
-      <div class="status-dot healthy" style="animation: pulse 1s infinite; width: 14px; height: 14px; margin: 0 auto 20px;"></div>
-      <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 10px;">Running Investigation</h3>
-      <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px; font-size: 14.5px; line-height: 1.6;">
-        Fetching filings from Screener.in, calculating financial ratios in Python, and running the two-agent fact-checking debate...
+      <div class="status-dot healthy" style="animation: pulse 1s infinite; width: 16px; height: 16px; margin: 0 auto 20px;"></div>
+      <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 10px; color: #FFFFFF;">Running Analysis...</h3>
+      <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px; font-size: 15px; line-height: 1.6;">
+        Downloading official filings from Screener.in, calculating financial ratios in Python, and conducting the two-agent fact-checking debate...
       </p>
-      <div style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-blue);">
-        Status: Active · Testing findings against the skeptic agent...
+      <div style="font-family: var(--font-mono); font-size: 13.5px; color: var(--accent-blue);">
+        Status: Testing candidate signals against the skeptic defense agent...
       </div>
     </div>
 
@@ -79,12 +79,12 @@
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
       <div>
-        <strong style="font-size: 15px; font-family: var(--font-display);">Investigation Aborted:</strong> {{ run.error or 'Pipeline encountered an unrecoverable exception.' }}
+        <strong style="font-size: 15.5px; font-family: var(--font-display);">Analysis Stopped:</strong> {{ run.error or 'Pipeline encountered an unexpected error.' }}
       </div>
     </div>
   {% else %}
 
-    <!-- 1. PROMINENT VERDICT & ULTRA-BOLD STRENGTH RATING BANNER -->
+    <!-- 1. FINAL RESULT & EVIDENCE CONFIDENCE BANNER -->
     {% set verdict = run.verdict or run.adjudication_verdict or 'PENDING' %}
     {% set is_passed = verdict in ('HYPOTHESIS PASSED', 'SUPPORTED') %}
     {% set ev_str = run.evidence_strength or run.report.get('8_Evidence_Strength') or 'Strong (8.5/10)' %}
@@ -92,59 +92,59 @@
     <div class="verdict-banner {% if is_passed %}verdict-banner-passed{% else %}verdict-banner-failed{% endif %}">
       <div>
         <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: {% if is_passed %}#4ade80{% else %}#f87171{% endif %}; margin-bottom: 8px;">
-          OFFICIAL ADJUDICATION VERDICT
+          FINAL ANALYSIS VERDICT
         </div>
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
           <span class="verdict-pill-huge {% if is_passed %}passed{% else %}failed{% endif %}">
-            {{ verdict }}
+            {% if is_passed %}VERIFIED FINDING{% else %}EXPLAINED BY CONTEXT{% endif %}
           </span>
-          <span style="font-size: 15.5px; color: var(--text-secondary); max-width: 520px; line-height: 1.45;">
+          <span style="font-size: 15.5px; color: var(--text-secondary); max-width: 540px; line-height: 1.5;">
             {% if is_passed %}
-              The tested financial divergence withstood adversarial disproving challenges; non-obvious operational anomaly confirmed.
+              The observed divergence held up under scrutiny; an evidence-backed operational shift was confirmed.
             {% else %}
-              Reported metrics and accounting shifts were broken down and explained by ordinary commercial FMCG cycles.
+              The observed numbers were explained away by ordinary commercial cycles (such as seasonal festive inventory).
             {% endif %}
           </span>
         </div>
       </div>
 
       <div class="strength-tag-block">
-        <span class="strength-label-small">AUDIT EVIDENCE STRENGTH:</span>
+        <span class="strength-label-small">EVIDENCE CONFIDENCE:</span>
         <div class="strength-score-huge" style="color: {% if is_passed %}#4ade80{% else %}#38bdf8{% endif %}; font-family: var(--font-display); font-size: 26px; font-weight: 900;">
           {{ ev_str }}
         </div>
       </div>
     </div>
 
-    <!-- 2. COMPLETE UNIFIED OFFICIAL 8-POINT HACKATHON DELIVERABLE BRIEF -->
+    <!-- 2. COMPLETE RESEARCH SUMMARY (8 KEY DELIVERABLES) -->
     <div class="card" style="border: 1px solid var(--border-highlight); margin-bottom: 28px;">
       <div class="card-header" style="background: #000000; margin: -26px -28px 24px -28px; padding: 20px 28px; border-bottom: 1px solid var(--border-highlight);">
-        <div class="card-title" style="font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.2px;">
+        <div class="card-title" style="font-family: var(--font-display); font-size: 19px; font-weight: 800; letter-spacing: -0.2px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-          <span>OFFICIAL 8-POINT HACKATHON RESEARCH DELIVERABLE BRIEF</span>
+          <span>Research Summary (8 Key Deliverables)</span>
         </div>
-        <span class="tag-badge">ALL 8 REQUIRED BRIEF ELEMENTS</span>
+        <span class="tag-badge">ATMOS 2026 BRIEF</span>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 20px;">
         <!-- Point 1: The Discovery -->
         {% set disc = run.report.get('1_The_Discovery') or run.report.verdict_summary or run.hypothesis %}
         <div class="math-card" style="border-left: 5px solid {% if is_passed %}var(--accent-green){% else %}var(--accent-red){% endif %};">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: {% if is_passed %}var(--accent-green){% else %}var(--accent-red){% endif %}; text-transform: uppercase; letter-spacing: 0.8px;">
-            1. The Discovery (One Clear Sentence Describing Non-Obvious Finding)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: {% if is_passed %}var(--accent-green){% else %}var(--accent-red){% endif %}; text-transform: uppercase; letter-spacing: 0.8px;">
+            1. The Discovery (One Clear Sentence Describing Finding)
           </div>
-          <div style="font-family: var(--font-display); font-size: 19px; font-weight: 800; color: var(--text-primary); line-height: 1.45;">
+          <div style="font-family: var(--font-display); font-size: 19px; font-weight: 800; color: #FFFFFF; line-height: 1.45;">
             "{{ disc }}"
           </div>
         </div>
 
         <!-- Point 2: Why It Matters -->
         <div class="math-card">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
-            2. Why It Matters (3 to 5 Analytical Explanations of Strategic Significance)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
+            2. Why It Matters (Strategic & Operational Significance)
           </div>
           {% set wm = run.report.get('2_Why_It_Matters') %}
-          <ul style="padding-left: 22px; font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; margin: 4px 0 0 0;">
+          <ul style="padding-left: 22px; font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 4px 0 0 0;">
             {% if wm is iterable and wm is not string %}
               {% for item in wm %}
                 <li style="margin-bottom: 8px;"><strong style="color: var(--text-primary);">{{ item }}</strong></li>
@@ -157,76 +157,76 @@
 
         <!-- Point 3: Evidence Sources -->
         <div class="math-card">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
-            3. Evidence (Multiple Independent Sources Supporting the Finding with Links)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
+            3. Evidence & Official Filings (Direct Public Sources)
           </div>
           <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
             {% set rep_ev = run.report.get('3_Evidence', []) %}
             {% if rep_ev and rep_ev is iterable and rep_ev is not string %}
               {% for e in rep_ev %}
-                <div style="font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); line-height: 1.4; padding: 6px 10px; background: #000; border: 1px solid var(--border);">
+                <div style="font-family: var(--font-mono); font-size: 13.5px; color: var(--text-primary); line-height: 1.4; padding: 7px 12px; background: #000; border: 1px solid var(--border); border-radius: var(--radius-sm);">
                   • {{ e }}
                 </div>
               {% endfor %}
             {% elif run.evidence_items %}
               {% for ev in run.evidence_items[:4] %}
-                <div style="font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); line-height: 1.4; padding: 6px 10px; background: #000; border: 1px solid var(--border);">
+                <div style="font-family: var(--font-mono); font-size: 13.5px; color: var(--text-primary); line-height: 1.4; padding: 7px 12px; background: #000; border: 1px solid var(--border); border-radius: var(--radius-sm);">
                   • <strong>{{ ev.source }}</strong>: {% if ev.url %}<a href="{{ ev.url }}" target="_blank" rel="noopener">{{ ev.url }}</a>{% else %}{{ ev.excerpt[:120] }}...{% endif %}
                 </div>
               {% endfor %}
             {% else %}
-              <div style="font-size: 13px; color: var(--text-muted);">Audited statutory statements via Screener.in and BSE India exchange filings.</div>
+              <div style="font-size: 13.5px; color: var(--text-muted);">Audited filings via Screener.in and BSE exchange disclosures.</div>
             {% endif %}
           </div>
         </div>
 
         <!-- Point 4: Timeline -->
         <div class="math-card">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
-            4. Timeline (When the Change Emerged and How It Developed Across Quarters)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
+            4. Timeline (How the Trend Developed Across Quarters)
           </div>
-          <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.55;">
+          <div style="font-size: 15px; color: var(--text-primary); line-height: 1.55;">
             {{ run.report.get('4_Timeline', 'Observed across recent quarters trailing up to latest statutory disclosures.') }}
           </div>
         </div>
 
         <!-- Point 5: Numbers -->
         <div class="math-card">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
-            5. Numbers (Calculations Backing the Finding)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
+            5. Numbers (Exact Calculations Backing the Finding)
           </div>
-          <div style="font-size: 14px; color: var(--text-primary); line-height: 1.55; font-family: var(--font-mono); background: #000; padding: 10px 14px; border: 1px solid var(--border);">
+          <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.55; font-family: var(--font-mono); background: #000; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);">
             {{ run.report.get('5_Numbers', 'Financial calculations computed.') }}
           </div>
         </div>
 
         <!-- Point 6: Counterargument -->
         <div class="math-card" style="border-left: 4px solid var(--accent-red);">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-red); text-transform: uppercase; letter-spacing: 0.8px;">
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-red); text-transform: uppercase; letter-spacing: 0.8px;">
             6. Counterargument (Alternative Explanation Tested by Skeptic Agent)
           </div>
-          <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.55;">
+          <div style="font-size: 15px; color: var(--text-primary); line-height: 1.55;">
             {{ run.report.get('6_Counterargument', 'Standard business cycle operations.') }}
           </div>
         </div>
 
         <!-- Point 7: Falsification Condition -->
         <div class="math-card" style="border-left: 4px solid var(--accent-yellow);">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-yellow); text-transform: uppercase; letter-spacing: 0.8px;">
-            7. Falsification Condition (What Future Data Would Disprove This)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-yellow); text-transform: uppercase; letter-spacing: 0.8px;">
+            7. What Would Disprove This Finding (Falsification Condition)
           </div>
-          <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.55;">
+          <div style="font-size: 15px; color: var(--text-primary); line-height: 1.55;">
             {{ run.report.get('7_Falsification_Condition', 'Subsequent normalization across trailing disclosures.') }}
           </div>
         </div>
 
         <!-- Point 8: Evidence Strength -->
         <div class="math-card" style="border-left: 4px solid var(--accent-green);">
-          <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.8px;">
-            8. Evidence Strength (Strong, Moderate, or Weak)
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 800; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.8px;">
+            8. Evidence Confidence Rating
           </div>
-          <div style="font-size: 15px; color: var(--text-primary); line-height: 1.55;">
-            <strong style="color: var(--accent-green); font-family: var(--font-display); font-size: 17px; font-weight: 900;">
+          <div style="font-size: 15.5px; color: var(--text-primary); line-height: 1.55;">
+            <strong style="color: var(--accent-green); font-family: var(--font-display); font-size: 18px; font-weight: 900;">
               {{ run.report.get('8_Evidence_Strength', run.evidence_strength or 'Strong (8.5/10)') }}
             </strong>
           </div>
@@ -234,18 +234,18 @@
       </div>
     </div>
 
-    <!-- 3. FINANCIAL RATIOS & CALCULATIONS -->
+    <!-- 3. HOW THE NUMBERS WERE CALCULATED -->
     <div class="card" style="margin-bottom: 28px;">
       <div class="card-header">
-        <div class="card-title" style="font-family: var(--font-display); font-size: 17px; font-weight: 800;">
+        <div class="card-title" style="font-family: var(--font-display); font-size: 19px; font-weight: 800;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          <span>Key Financial Ratios & Calculations</span>
+          <span>How the Numbers Were Calculated</span>
         </div>
-        <span class="tag-badge">OFFICIAL FILINGS · CALCULATED IN PYTHON</span>
+        <span class="tag-badge">PURE PYTHON · ZERO AI MATH MISTAKES</span>
       </div>
 
-      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
-        All metrics below are calculated directly in Python from official company filings (SEBI LODR). Annual Cash Flow numbers are matched against annual Operating Profit so there are no mismatch errors.
+      <p style="font-size: 14.5px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+        All financial metrics below are computed in pure Python from audited financial statements (SEBI LODR). Annual Cash Flow numbers are benchmarked strictly against annual operating profit to avoid quarterly mismatch errors.
       </p>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px;">
@@ -256,7 +256,7 @@
               <span class="math-period-tag">{{ kn.period }}</span>
             </div>
 
-            <div class="math-number-value" style="font-family: var(--font-display); font-size: 26px; font-weight: 900;">
+            <div class="math-number-value" style="font-family: var(--font-display); font-size: 28px; font-weight: 900;">
               {{ kn.value }}
             </div>
             
@@ -264,18 +264,18 @@
               <div class="math-formula-title">FORMULA:</div>
               <div style="color: var(--accent-blue); margin-bottom: 6px;">{{ kn.formula }}</div>
               {% if kn.calculation_steps %}
-                <div class="math-formula-title">AUDITED SUBSTITUTION:</div>
+                <div class="math-formula-title">PLUGGED IN NUMBERS:</div>
                 <div class="math-calc-line">{{ kn.calculation_steps }}</div>
               {% endif %}
             </div>
 
             <div class="math-meaning-block">
-              <strong style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-family: var(--font-mono); display: block; margin-bottom: 4px;">Plain Meaning:</strong>
+              <strong style="color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; font-family: var(--font-mono); display: block; margin-bottom: 4px;">What This Means:</strong>
               {{ kn.plain_english }}
             </div>
 
             <div class="math-signifies-block">
-              <strong style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-family: var(--font-mono); display: block; margin-bottom: 4px;">Significance:</strong>
+              <strong style="color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; font-family: var(--font-mono); display: block; margin-bottom: 4px;">Why It Matters:</strong>
               {{ kn.what_it_signifies }}
             </div>
           </div>
@@ -283,14 +283,14 @@
       </div>
     </div>
 
-    <!-- 4. TOP TESTED ANOMALIES RANKED BY SEVERITY / 10 -->
+    <!-- 4. TOP TESTED SIGNALS RANKED BY SEVERITY / 10 -->
     <div class="card" style="margin-bottom: 28px;">
       <div class="card-header">
-        <div class="card-title" style="font-family: var(--font-display); font-size: 17px; font-weight: 800;">
+        <div class="card-title" style="font-family: var(--font-display); font-size: 19px; font-weight: 800;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <span>Top Tested Financial Anomalies (Ranked by Severity / 10)</span>
+          <span>Key Signals Tested (Ranked by Severity / 10)</span>
         </div>
-        <span class="tag-badge">MAX 5 CANDIDATES EVALUATED</span>
+        <span class="tag-badge">TOP CANDIDATES EVALUATED</span>
       </div>
 
       <div class="table-responsive">
@@ -298,9 +298,9 @@
           <thead>
             <tr>
               <th style="width: 110px;">Severity</th>
-              <th style="width: 240px;">Anomaly Metric</th>
-              <th>Observed Divergence & Math Detail</th>
-              <th>Diagnostic Significance</th>
+              <th style="width: 240px;">Metric</th>
+              <th>Observed Divergence</th>
+              <th>What It Indicates</th>
             </tr>
           </thead>
           <tbody>
@@ -317,15 +317,15 @@
                   {% endif %}
                 </td>
                 <td>
-                  <strong style="color: var(--text-primary); font-size: 14px; font-family: var(--font-display);">{{ an.metric }}</strong>
+                  <strong style="color: var(--text-primary); font-size: 14.5px; font-family: var(--font-display);">{{ an.metric }}</strong>
                 </td>
-                <td style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">
+                <td style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
                   <div style="margin-bottom: 4px;">{{ an.summary }}</div>
                   {% if an.math_detail %}
-                    <div style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-blue);">{{ an.math_detail }}</div>
+                    <div style="font-family: var(--font-mono); font-size: 12.5px; color: var(--accent-blue);">{{ an.math_detail }}</div>
                   {% endif %}
                 </td>
-                <td style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+                <td style="font-size: 13.5px; color: var(--text-muted); line-height: 1.5;">
                   {{ an.significance }}
                 </td>
               </tr>
@@ -335,25 +335,25 @@
       </div>
     </div>
 
-    <!-- 5. CYCLIC PIPELINE AUDIT: PASSED VS FAILED HYPOTHESES -->
+    <!-- 5. TWO-AGENT FACT-CHECKING TRAIL -->
     <div class="card" style="margin-bottom: 28px;">
       <div class="card-header">
-        <div class="card-title" style="font-family: var(--font-display); font-size: 17px; font-weight: 800;">
+        <div class="card-title" style="font-family: var(--font-display); font-size: 19px; font-weight: 800;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-          <span>Cyclic Pipeline Audit (Formulate -> Disprove -> Retry)</span>
+          <span>Two-Agent Fact-Checking Trail</span>
         </div>
-        <span class="tag-badge">ADVERSARIAL STRESS-TEST</span>
+        <span class="tag-badge">RESEARCHER VS SKEPTIC DEBATE</span>
       </div>
 
-      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
-        For each candidate anomaly, the agent formulates an initial hypothesis and pits it against an adversarial Disproving Agent. If the defense breaks down the hypothesis, a refined 2nd attempt is formulated before delivering the final verdict.
+      <p style="font-size: 14.5px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+        For each candidate signal, Agent 1 (Researcher) formulates an operational hypothesis, which is then cross-examined by Agent 2 (Disproving Agent) using normal business explanations. If the skeptic successfully refutes it, a refined second attempt is tested.
       </p>
 
       <!-- Passed Section -->
       <div style="margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-          <span class="badge badge-passed" style="font-size: 12px; padding: 4px 10px;">HYPOTHESES PASSED ({{ run.passed_hypotheses|length }})</span>
-          <span style="font-size: 13px; color: var(--text-secondary);">Survived adversarial disproving challenges</span>
+          <span class="badge badge-passed" style="font-size: 12.5px; padding: 5px 12px;">FINDINGS THAT PASSED ({{ run.passed_hypotheses|length }})</span>
+          <span style="font-size: 13.5px; color: var(--text-secondary);">Withstood the skeptic agent's challenges</span>
         </div>
 
         {% if run.passed_hypotheses %}
@@ -361,19 +361,19 @@
             {% for p in run.passed_hypotheses %}
               <div style="background-color: var(--bg-surface); border: 1px solid var(--accent-green-dim); border-left: 4px solid var(--accent-green); border-radius: var(--radius-sm); padding: 18px 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <span style="font-size: 12.5px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; font-family: var(--font-mono);">
-                    Stemmed from: {{ p.anomaly_metric }} (Severity: {{ p.severity }}/10)
+                  <span style="font-size: 13px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; font-family: var(--font-mono);">
+                    Signal: {{ p.anomaly_metric }} (Severity: {{ p.severity }}/10)
                   </span>
                   <span class="badge-attempt">PASSED ON ATTEMPT #{{ p.attempt_passed }}</span>
                 </div>
-                <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; line-height: 1.45;">
+                <div style="font-size: 15.5px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px; line-height: 1.45;">
                   "{{ p.hypothesis }}"
                 </div>
-                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-                  <strong style="color: var(--text-primary);">Defense Overcome:</strong> {{ p.counterargument_overcome }}
+                <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+                  <strong style="color: var(--text-primary);">Why It Held Up:</strong> {{ p.counterargument_overcome }}
                 </div>
                 {% if p.falsification_condition %}
-                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; font-family: var(--font-mono);">
+                  <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px; font-family: var(--font-mono);">
                     <strong>Falsification Condition:</strong> {{ p.falsification_condition }}
                   </div>
                 {% endif %}
@@ -381,8 +381,8 @@
             {% endfor %}
           </div>
         {% else %}
-          <div style="background-color: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 18px; text-align: center; color: var(--text-muted); font-size: 13.5px;">
-            ✓ All adverse distortion hypotheses were refuted by legitimate operational execution.
+          <div style="background-color: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 18px; text-align: center; color: var(--text-muted); font-size: 14px;">
+            ✓ All tested hypotheses were explained away by legitimate commercial context.
           </div>
         {% endif %}
       </div>
@@ -390,8 +390,8 @@
       <!-- Failed Section -->
       <div>
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-          <span class="badge badge-failed" style="font-size: 12px; padding: 4px 10px;">HYPOTHESES FAILED ({{ run.failed_hypotheses|length }})</span>
-          <span style="font-size: 13px; color: var(--text-secondary);">Broken down by benign operational or sector context</span>
+          <span class="badge badge-failed" style="font-size: 12.5px; padding: 5px 12px;">FINDINGS REFUTED ({{ run.failed_hypotheses|length }})</span>
+          <span style="font-size: 13.5px; color: var(--text-secondary);">Explained away by normal business seasonality</span>
         </div>
 
         {% if run.failed_hypotheses %}
@@ -399,31 +399,31 @@
             {% for f in run.failed_hypotheses %}
               <div style="background-color: var(--bg-surface); border: 1px solid var(--border); border-left: 4px solid var(--accent-red); border-radius: var(--radius-sm); padding: 18px 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <span style="font-size: 12.5px; font-weight: 700; color: var(--accent-red); text-transform: uppercase; font-family: var(--font-mono);">
-                    Stemmed from: {{ f.anomaly_metric }} (Severity: {{ f.severity }}/10)
+                  <span style="font-size: 13px; font-weight: 700; color: var(--accent-red); text-transform: uppercase; font-family: var(--font-mono);">
+                    Signal: {{ f.anomaly_metric }} (Severity: {{ f.severity }}/10)
                   </span>
-                  <span class="badge-attempt">REFUTED AFTER 2 ATTEMPTS</span>
+                  <span class="badge-attempt">EXPLAINED BY CONTEXT</span>
                 </div>
-                <div style="font-size: 14px; color: var(--text-primary); margin-bottom: 6px; line-height: 1.45;">
-                  <strong>Attempt 1:</strong> "{{ f.attempt_1_hypothesis }}"
+                <div style="font-size: 14.5px; color: var(--text-primary); margin-bottom: 6px; line-height: 1.45;">
+                  <strong>Proposed Thesis:</strong> "{{ f.attempt_1_hypothesis }}"
                 </div>
-                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 8px;">
-                  <strong>Disproved By Defense:</strong> {{ f.attempt_1_counterargument }}
+                <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 8px;">
+                  <strong>Skeptic Explanation:</strong> {{ f.attempt_1_counterargument }}
                 </div>
                 {% if f.attempt_2_hypothesis %}
-                  <div style="font-size: 14px; color: var(--text-primary); margin-bottom: 4px; line-height: 1.45;">
-                    <strong>Attempt 2:</strong> "{{ f.attempt_2_hypothesis }}"
+                  <div style="font-size: 14.5px; color: var(--text-primary); margin-bottom: 4px; line-height: 1.45;">
+                    <strong>Second Attempt:</strong> "{{ f.attempt_2_hypothesis }}"
                   </div>
-                  <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.45;">
-                    <strong>Disproved By Defense:</strong> {{ f.attempt_2_counterargument }}
+                  <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.45;">
+                    <strong>Skeptic Explanation:</strong> {{ f.attempt_2_counterargument }}
                   </div>
                 {% endif %}
               </div>
             {% endfor %}
           </div>
         {% else %}
-          <div style="background-color: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 18px; text-align: center; color: var(--text-muted); font-size: 13.5px;">
-            No candidate hypotheses failed scrutiny.
+          <div style="background-color: var(--bg-surface); border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 18px; text-align: center; color: var(--text-muted); font-size: 14px;">
+            No candidate hypotheses were refuted.
           </div>
         {% endif %}
       </div>
@@ -432,13 +432,13 @@
     <!-- 6. TRAJECTORY CHART -->
     <div class="card" style="margin-bottom: 28px;">
       <div class="card-header">
-        <div class="card-title" style="font-family: var(--font-display); font-size: 17px; font-weight: 800;">
+        <div class="card-title" style="font-family: var(--font-display); font-size: 19px; font-weight: 800;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-          <span>Quarterly Net Sales & Operating Margin Trajectory</span>
+          <span>Quarterly Net Sales & Profit Margin Trend</span>
         </div>
       </div>
       <div style="text-align: center; padding: 16px 0;">
-        <img src="{{ url_for('api_investigation_chart', run_id=run.run_id) }}" alt="Trajectory Chart" style="max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+        <img src="{{ url_for('api_investigation_chart', run_id=run.run_id) }}" alt="Sales vs Margin Trajectory Chart" style="max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);">
       </div>
     </div>
 

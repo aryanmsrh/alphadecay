@@ -1,4 +1,4 @@
-# **ALPHA-DECAY: Autonomous Financial Research Agent**
+# **Alpha Decay: Autonomous Financial Research Agent**
 
 ### **ATMOS 2026 · BITS Pilani, Hyderabad Campus**
 * **Track:** **Track C — Consumer, FMCG & Retail (NIFTY 50 Universe)**
@@ -12,7 +12,7 @@
 
 Financial data is abundant, but the critical story is rarely contained within a single quarterly earnings release. A company's statutory filings, quarterly profit & loss accounts, annual balance sheets, cash flow statements, and earnings concall transcripts each reveal only fragments of operational change. Most financial AI tools just summarize news articles and often make math mistakes when calculating financial ratios.
 
-**ALPHA-DECAY** is an autonomous financial research agent built to uncover real operational shifts and accounting divergences in listed Indian FMCG companies.
+**Alpha Decay** is an autonomous financial research agent built to uncover real operational shifts and accounting divergences in listed Indian FMCG companies.
 
 ### **Core Capabilities:**
 1. **Autonomous Investigation:** Given any NIFTY 50 FMCG ticker symbol, the system decides what to check, downloads public filings from Screener.in and BSE India without manual prompting.
@@ -164,7 +164,7 @@ python run_web.py --port 5000
 You will see output indicating the server has booted:
 ```
 ========================================================================
-  ALPHA-DECAY // FINANCIAL RESEARCH WORKSTATION
+  Alpha Decay // Financial Research Workstation
   Serving on: http://127.0.0.1:5000
   Mode:       Production WSGI / Flask Dev Server
 ========================================================================
@@ -340,7 +340,7 @@ alphadecay/
 
 Developed for the **Finding the Next Signal** Autonomous Financial Research Hackathon at **ATMOS 2026, BITS Pilani Hyderabad Campus** by **Aryan Mishra**.
 
-This project is licensed under the custom **ALPHA-DECAY Source-Available Attribution & Non-Commercial Research License** (see full terms in [`LICENSE`](LICENSE)).
+This project is licensed under the custom **Alpha Decay Source-Available Attribution & Non-Commercial Research License** (see full terms in [`LICENSE`](LICENSE)).
 
 ### **Key License Restrictions:**
 - **Mandatory Attribution:** Any permitted reference, inspection, educational study, or demonstration must prominently credit **Aryan Mishra** as the original author and architect and link to the upstream repository ([`github.com/aryanmsrh/alphadecay`](https://github.com/aryanmsrh/alphadecay)).

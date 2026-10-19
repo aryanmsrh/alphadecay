@@ -1,21 +1,22 @@
-"""
-ALPHA-DECAY Flask Application Factory & Route Registration.
-Provides browser endpoints, REST APIs, SSE real-time streaming,
-safe artifact downloads, CSRF protection, and diagnostics.
-"""
-
 import os
 import sys
-import re
+import uuid
 import secrets
-import logging
+import threading
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
 from flask import (
-    Flask, render_template, request, jsonify, send_file,
-    redirect, url_for, session, abort, Response, stream_with_context
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    send_file,
+    redirect,
+    url_for,
+    session,
+    abort
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,18 +24,13 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 import config
-from config import TRACK_C_NIFTY50, PEER_MAPPING
-from webapp.run_store import run_store, RunStore
-from webapp.services import investigation_service, InvestigationService, INVESTIGATION_STAGES
-
-logger = logging.getLogger("alphadecay.webapp")
-
-# Safe artifact filename regex: alphanumeric, dash, underscore, dot ending in allowed extension
-SAFE_ARTIFACT_RE = re.compile(r"^[a-zA-Z0-9_\-\.]+\.(pdf|json|png|txt)$")
+from config import TRACK_C_NIFTY50
+from webapp.run_store import run_store
+from engine.investigator import investigate_company
+from engine.llm import call_gemini, call_ollama
 
 
 def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
-    """Application factory for ALPHA-DECAY Webapp."""
     app = Flask(
         __name__,
         template_folder="templates",
@@ -42,24 +38,19 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         static_url_path="/static"
     )
 
-    # Secret key for session management & CSRF
     app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
     app.config["JSON_SORT_KEYS"] = False
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     if test_config:
         app.config.update(test_config)
-
-    # --------------------------------------------------------------------------
-    # Security Headers & CSRF Middleware
-    # --------------------------------------------------------------------------
 
     @app.after_request
     def set_security_headers(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
         return response
 
     @app.context_processor
@@ -67,439 +58,215 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         if "csrf_token" not in session:
             session["csrf_token"] = secrets.token_hex(32)
 
-        health_quick = {
+        health = {
             "gemini_model": config.GEMINI_MODEL,
-            "gemini_ready": bool(config.GEMINI_API_KEY),
+            "gemini_ready": bool(config.GEMINI_API_KEY) and not config.USE_OFFLINE_MODE,
             "ollama_model": config.OLLAMA_FALLBACK_MODEL,
             "offline_mode": config.USE_OFFLINE_MODE
         }
         return {
             "csrf_token": session["csrf_token"],
-            "track_c_universe": TRACK_C_NIFTY50,
-            "system_health": health_quick,
-            "now_year": datetime.now(timezone.utc).year,
-            "investigation_stages": INVESTIGATION_STAGES
+            "system_health": health,
+            "track_c_universe": TRACK_C_NIFTY50
         }
-
-    @app.before_request
-    def validate_csrf():
-        # Skip CSRF check in test mode unless explicitly enforced
-        if app.config.get("TESTING") and not app.config.get("ENFORCE_CSRF", False):
-            return
-
-        # Only enforce on state-changing methods
-        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
-            # Exclude endpoints if explicitly flagged or public APIs if needed
-            token = (
-                request.headers.get("X-CSRF-Token") or
-                request.form.get("csrf_token") or
-                (request.is_json and request.get_json(silent=True) and request.get_json(silent=True).get("csrf_token"))
-            )
-            expected_token = session.get("csrf_token")
-
-            if not expected_token or not token or not secrets.compare_digest(token, expected_token):
-                if request.is_json or request.path.startswith("/api/"):
-                    return jsonify({"error": "Invalid or missing CSRF token"}), 403
-                abort(403, description="CSRF token verification failed. Please refresh the page and try again.")
-
-    # --------------------------------------------------------------------------
-    # Page Routes
-    # --------------------------------------------------------------------------
 
     @app.route("/")
     def index():
-        """Main landing dashboard: overview metrics & recent investigations."""
-        metrics = run_store.get_overview_metrics()
-        recent_runs, total_count = run_store.list_runs(page=1, per_page=10)
-        return render_template(
-            "index.html",
-            metrics=metrics,
-            recent_runs=recent_runs,
-            total_count=total_count,
-            page_title="Forensic Intelligence Terminal"
-        )
+        metrics = run_store.get_metrics()
+        recent_runs = run_store.list_runs(limit=10)
+        return render_template("index.html", metrics=metrics, recent_runs=recent_runs)
 
-    @app.route("/investigations/new")
+    @app.route("/new")
     def new_investigation_page():
-        """New investigation submission form."""
-        return render_template(
-            "new_investigation.html",
-            page_title="Launch New Investigation"
-        )
+        return render_template("new_investigation.html")
 
-    @app.route("/investigations")
+    @app.route("/history")
     def investigations_history_page():
-        """Investigation history list with search, filtering, and pagination."""
-        page = request.args.get("page", 1, type=int)
-        per_page = request.args.get("per_page", 15, type=int)
-        ticker = request.args.get("ticker", "").strip() or None
-        status = request.args.get("status", "").strip() or None
-        verdict = request.args.get("verdict", "").strip() or None
-        search = request.args.get("search", "").strip() or None
+        search_query = request.args.get("search", "").strip().lower()
+        status_filter = request.args.get("status", "").strip().upper()
+        verdict_filter = request.args.get("verdict", "").strip().upper()
+        ticker_filter = request.args.get("ticker", "").strip().upper()
 
-        runs, total = run_store.list_runs(
-            page=page,
-            per_page=per_page,
-            ticker=ticker,
-            status=status,
-            verdict=verdict,
-            search=search
-        )
+        page = max(1, int(request.args.get("page", 1)))
+        per_page = 15
+
+        all_runs = run_store.list_runs(limit=500)
+        filtered = []
+        for r in all_runs:
+            if status_filter and r.get("status") != status_filter:
+                continue
+            if verdict_filter and (r.get("verdict") != verdict_filter and r.get("adjudication_verdict") != verdict_filter):
+                continue
+            if ticker_filter and r.get("ticker") != ticker_filter:
+                continue
+            if search_query:
+                combined = f"{r.get('ticker', '')} {r.get('company_name', '')} {r.get('hypothesis', '')} {r.get('verdict', '')}".lower()
+                if search_query not in combined:
+                    continue
+            filtered.append(r)
+
+        total = len(filtered)
         total_pages = max(1, (total + per_page - 1) // per_page)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_runs = filtered[start_idx:end_idx]
 
         return render_template(
             "history.html",
-            runs=runs,
+            runs=page_runs,
             total=total,
             page=page,
-            per_page=per_page,
             total_pages=total_pages,
-            ticker_filter=ticker or "",
-            status_filter=status or "",
-            verdict_filter=verdict or "",
-            search_query=search or "",
-            page_title="Investigation History"
-        )
-
-    @app.route("/investigations/<run_id>")
-    def investigation_detail_page(run_id: str):
-        """Investigation detail workspace & real-time monitoring page."""
-        run = run_store.get_run(run_id)
-        if not run:
-            abort(404, description=f"Investigation run '{run_id}' not found.")
-
-        data = run_store.get_run_data(run_id) or {}
-        events = run_store.get_events(run_id, limit=200)
-
-        return render_template(
-            "investigation_detail.html",
-            run=run,
-            data=data,
-            events=events,
-            page_title=f"{run.get('ticker')} // {run.get('company_name')} Audit"
+            per_page=per_page,
+            search_query=search_query,
+            status_filter=status_filter,
+            verdict_filter=verdict_filter,
+            ticker_filter=ticker_filter
         )
 
     @app.route("/settings")
     def settings_page():
-        """Settings and Provider Diagnostics page."""
-        live = request.args.get("live", "false").lower() in ("true", "1", "yes")
-        diagnostics = investigation_service.get_system_diagnostics(live_check=live)
-        return render_template(
-            "settings.html",
-            diagnostics=diagnostics,
-            page_title="Settings & System Diagnostics"
-        )
+        do_live = request.args.get("live") == "true"
+        gemini_status = "CONFIGURED" if config.GEMINI_API_KEY else "MISSING_KEY"
+        gemini_latency = None
+        ollama_status = "CONFIGURED"
+        ollama_latency = None
 
-    # --------------------------------------------------------------------------
-    # API Routes
-    # --------------------------------------------------------------------------
+        if do_live:
+            if config.GEMINI_API_KEY and not config.USE_OFFLINE_MODE:
+                t0 = datetime.now()
+                try:
+                    res = call_gemini("Reply with OK")
+                    if res:
+                        gemini_status = "OK"
+                        gemini_latency = round((datetime.now() - t0).total_seconds(), 2)
+                    else:
+                        gemini_status = "FAILED"
+                except Exception:
+                    gemini_status = "FAILED"
 
-    @app.route("/api/investigations", methods=["POST"])
-    def api_create_investigation():
-        """Submits a new investigation to the background executor."""
-        data = request.get_json(silent=True) or request.form.to_dict() or {}
-
-        ticker = data.get("ticker", "").strip()
-        cutoff_date = data.get("cutoff_date", "").strip() or None
-        max_anomalies = data.get("max_anomalies", 2)
-        offline = str(data.get("offline", "")).lower() in ("true", "1", "yes")
-        export_pdf = str(data.get("export_pdf", "true")).lower() in ("true", "1", "yes")
-
-        try:
-            run_id = investigation_service.submit_investigation(
-                ticker=ticker,
-                cutoff_date_str=cutoff_date,
-                max_anomalies=max_anomalies,
-                offline=offline,
-                export_pdf=export_pdf
-            )
-            redirect_url = url_for("investigation_detail_page", run_id=run_id)
-            if request.is_json:
-                return jsonify({
-                    "success": True,
-                    "run_id": run_id,
-                    "status": "QUEUED",
-                    "redirect_url": redirect_url
-                }), 202
-            return redirect(redirect_url)
-        except ValueError as val_err:
-            if request.is_json:
-                return jsonify({"error": str(val_err)}), 400
-            abort(400, description=str(val_err))
-        except Exception as e:
-            logger.error(f"Failed to submit investigation: {e}", exc_info=True)
-            if request.is_json:
-                return jsonify({"error": f"Failed to submit investigation: {str(e)}"}), 500
-            abort(500, description="Internal server error launching investigation.")
-
-    @app.route("/api/investigations", methods=["GET"])
-    def api_list_investigations():
-        """Returns paginated list of investigations with query filters."""
-        page = request.args.get("page", 1, type=int)
-        per_page = request.args.get("per_page", 20, type=int)
-        ticker = request.args.get("ticker", "").strip() or None
-        status = request.args.get("status", "").strip() or None
-        verdict = request.args.get("verdict", "").strip() or None
-        search = request.args.get("search", "").strip() or None
-
-        runs, total = run_store.list_runs(
-            page=page,
-            per_page=per_page,
-            ticker=ticker,
-            status=status,
-            verdict=verdict,
-            search=search
-        )
-        return jsonify({
-            "runs": runs,
-            "total": total,
-            "page": page,
-            "per_page": per_page,
-            "total_pages": max(1, (total + per_page - 1) // per_page)
-        })
-
-    @app.route("/api/investigations/<run_id>", methods=["GET"])
-    def api_get_investigation(run_id: str):
-        """Returns single investigation summary."""
-        run = run_store.get_run(run_id)
-        if not run:
-            return jsonify({"error": f"Run '{run_id}' not found"}), 404
-        return jsonify({"run": run})
-
-    @app.route("/api/investigations/<run_id>/events", methods=["GET"])
-    def api_get_events(run_id: str):
-        """Returns list of events for a run, with optional since_id for polling."""
-        run = run_store.get_run(run_id)
-        if not run:
-            return jsonify({"error": f"Run '{run_id}' not found"}), 404
-
-        since_id = request.args.get("since_id", type=int)
-        events = run_store.get_events(run_id, since_id=since_id)
-        return jsonify({
-            "run_id": run_id,
-            "status": run.get("status"),
-            "current_stage": run.get("current_stage"),
-            "events": events
-        })
-
-    @app.route("/api/investigations/<run_id>/events/stream", methods=["GET"])
-    def api_stream_events(run_id: str):
-        """Server-Sent Events (SSE) endpoint for real-time progress updates."""
-        run = run_store.get_run(run_id)
-        if not run:
-            return jsonify({"error": f"Run '{run_id}' not found"}), 404
-
-        def event_stream():
-            import json
-            for ev in investigation_service.subscribe_events(run_id):
-                if ev.get("heartbeat"):
-                    yield f": heartbeat {ev.get('timestamp')}\n\n"
+            t0 = datetime.now()
+            try:
+                res = call_ollama("Reply with OK")
+                if res:
+                    ollama_status = "OK"
+                    ollama_latency = round((datetime.now() - t0).total_seconds(), 2)
                 else:
-                    yield f"data: {json.dumps(ev)}\n\n"
+                    ollama_status = "UNAVAILABLE"
+            except Exception:
+                ollama_status = "UNAVAILABLE"
 
-        return Response(
-            stream_with_context(event_stream()),
-            mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "Connection": "keep-alive"
-            }
-        )
+        masked_key = f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}" if len(config.GEMINI_API_KEY) > 8 else "NOT_SET"
 
-    @app.route("/api/investigations/<run_id>/report", methods=["GET"])
-    def api_get_report(run_id: str):
-        """Returns final 8-point forensic report discovery."""
-        run = run_store.get_run(run_id)
-        if not run:
-            return jsonify({"error": f"Run '{run_id}' not found"}), 404
-
-        data = run_store.get_run_data(run_id) or {}
-        return jsonify({
-            "run_id": run_id,
-            "ticker": run.get("ticker"),
-            "company_name": run.get("company_name"),
-            "status": run.get("status"),
-            "adjudication_verdict": run.get("adjudication_verdict"),
-            "data_sufficiency": run.get("data_sufficiency"),
-            "discovery": data.get("discovery", {})
-        })
-
-    @app.route("/api/investigations/<run_id>/metrics", methods=["GET"])
-    def api_get_metrics(run_id: str):
-        """Returns structured computed metrics and time-series for interactive Chart.js charts."""
-        run = run_store.get_run(run_id)
-        if not run:
-            return jsonify({"error": f"Run '{run_id}' not found"}), 404
-
-        data = run_store.get_run_data(run_id) or {}
-        summary = data.get("summary", {})
-        metrics = data.get("metrics", {})
-
-        quarters = summary.get("quarters_analyzed", [])
-        sales_growth = summary.get("sales_growth_yoy", {})
-        residual = summary.get("expense_adjusted_residual", {})
-        debtor_days = summary.get("debtor_days", {})
-
-        # Prepare chart series aligning with quarters
-        sales_series = [sales_growth.get(q) for q in quarters]
-        residual_series = [residual.get(q) for q in quarters]
-        debtor_series = [debtor_days.get(q) for q in quarters]
-
-        return jsonify({
-            "run_id": run_id,
-            "ticker": run.get("ticker"),
-            "company_name": run.get("company_name"),
-            "quarters": quarters,
-            "series": {
-                "sales_growth_yoy": sales_series,
-                "expense_adjusted_residual": residual_series,
-                "debtor_days": debtor_series
-            },
-            "metrics": metrics,
-            "canonical_dsri": summary.get("beneish_dsri"),
-            "debtor_days_proxy": summary.get("debtor_days_ratio_proxy"),
-            "margin_wedge_bps": summary.get("margin_wedge_bps"),
-            "peer_spread_days": summary.get("peer_spread_days"),
-            "cfo_to_operating_profit": summary.get("cfo_to_operating_profit")
-        })
-
-    @app.route("/api/investigations/<run_id>/evidence", methods=["GET"])
-    def api_get_evidence(run_id: str):
-        """Returns structured evidence records and provenance metadata."""
-        run = run_store.get_run(run_id)
-        if not run:
-            return jsonify({"error": f"Run '{run_id}' not found"}), 404
-
-        data = run_store.get_run_data(run_id) or {}
-        evidence_list = data.get("evidence", [])
-        return jsonify({
-            "run_id": run_id,
-            "count": len(evidence_list),
-            "evidence": evidence_list
-        })
-
-    @app.route("/api/investigations/<run_id>/artifacts/<artifact_name>", methods=["GET"])
-    def api_download_artifact(run_id: str, artifact_name: str):
-        """
-        Safely serves generated artifacts (PDF, JSON, PNG) strictly belonging to run_id.
-        Prevents directory traversal attacks and unauthorized file access.
-        """
-        # Validate run exists
-        run = run_store.get_run(run_id)
-        if not run:
-            abort(404, description=f"Run '{run_id}' not found.")
-
-        # Sanitize artifact filename
-        clean_name = artifact_name.strip()
-        if not SAFE_ARTIFACT_RE.match(clean_name) or ".." in clean_name or "/" in clean_name or "\\" in clean_name:
-            abort(400, description="Invalid artifact filename or path traversal detected.")
-
-        # Locate run directory
-        run_output_dir = Path(run.get("output_dir") or (BASE_DIR / "data" / "runs" / run_id)).resolve()
-        target_path = (run_output_dir / clean_name).resolve()
-
-        # Strict containment check
-        try:
-            target_path.relative_to(run_output_dir)
-        except ValueError:
-            abort(403, description="Access to requested file path is forbidden.")
-
-        if not target_path.exists() or not target_path.is_file():
-            abort(404, description=f"Artifact '{clean_name}' does not exist for run '{run_id}'.")
-
-        # Determine safe MIME type and disposition
-        mime_types = {
-            ".pdf": "application/pdf",
-            ".json": "application/json",
-            ".png": "image/png",
-            ".txt": "text/plain"
+        diagnostics = {
+            "gemini_status": gemini_status,
+            "gemini_key_present": bool(config.GEMINI_API_KEY),
+            "gemini_key_masked": masked_key,
+            "gemini_model_configured": config.GEMINI_MODEL,
+            "gemini_thinking_level": "HIGH",
+            "gemini_latency_s": gemini_latency,
+            "ollama_status": ollama_status,
+            "ollama_base_url": config.OLLAMA_BASE_URL,
+            "ollama_model": config.OLLAMA_FALLBACK_MODEL,
+            "ollama_latency_s": ollama_latency
         }
-        suffix = target_path.suffix.lower()
-        mimetype = mime_types.get(suffix, "application/octet-stream")
 
-        as_attachment = request.args.get("download", "true").lower() in ("true", "1")
-        return send_file(
-            target_path,
-            mimetype=mimetype,
-            as_attachment=as_attachment,
-            download_name=clean_name
-        )
+        return render_template("settings.html", diagnostics=diagnostics)
 
-    @app.route("/api/investigations/<run_id>/cancel", methods=["POST"])
-    def api_cancel_investigation(run_id: str):
-        """Cancels an in-progress investigation safely."""
-        success = investigation_service.cancel_investigation(run_id)
-        if not success:
-            run = run_store.get_run(run_id)
-            if not run:
-                return jsonify({"error": f"Run '{run_id}' not found"}), 404
-            return jsonify({
-                "error": f"Cannot cancel investigation in status '{run.get('status')}'."
-            }), 400
+    @app.route("/api/investigate", methods=["POST"])
+    @app.route("/api/investigation/create", methods=["POST"])
+    def api_create_investigation():
+        if request.is_json:
+            data = request.get_json() or {}
+            ticker = data.get("ticker", "").strip().upper()
+            hypothesis = data.get("hypothesis", "").strip()
+        else:
+            ticker = request.form.get("ticker", "").strip().upper()
+            hypothesis = request.form.get("hypothesis", "").strip()
 
-        return jsonify({
-            "success": True,
+        if not ticker:
+            return jsonify({"error": "Ticker symbol is required"}), 400
+
+        run_id = uuid.uuid4().hex[:8]
+        initial_record = {
             "run_id": run_id,
-            "status": "CANCELLED",
-            "message": "Cancellation request acknowledged. Stopping subsequent graph stages."
-        })
+            "ticker": ticker,
+            "company_name": ticker,
+            "hypothesis": hypothesis or f"Investigate financial indicators and anomalies for {ticker}",
+            "status": "RUNNING",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "provider": "gemini" if (config.GEMINI_API_KEY and not config.USE_OFFLINE_MODE) else "ollama"
+        }
+        run_store.save_run(initial_record)
 
-    @app.route("/api/health", methods=["GET"])
-    def api_health():
-        """Health check endpoint for application and model availability."""
-        diag = investigation_service.get_system_diagnostics(live_check=False)
+        def runner(t: str, h: str, r_id: str):
+            try:
+                res = investigate_company(t, hypothesis=h if h else None, run_id=r_id)
+                res["status"] = "COMPLETED"
+                res["adjudication_verdict"] = res.get("verdict")
+                res["primary_finding"] = (
+                    res.get("report", {}).get("1_The_Discovery")
+                    or res.get("report", {}).get("verdict_summary")
+                    or res.get("report", {}).get("1_Executive_Summary")
+                )
+                res["provider_used"] = res.get("provider", "gemini")
+                run_store.save_run(res)
+            except Exception as e:
+                run_store.update_status(r_id, "FAILED", error=str(e))
+
+        thread = threading.Thread(target=runner, args=(ticker, hypothesis, run_id), daemon=True)
+        thread.start()
+
+        if request.is_json:
+            return jsonify({"run_id": run_id, "status": "RUNNING", "ticker": ticker}), 202
+
+        return redirect(url_for("investigation_detail_page", run_id=run_id))
+
+    @app.route("/investigation/<run_id>")
+    def investigation_detail_page(run_id: str):
+        run = run_store.get_run(run_id)
+        if not run:
+            abort(404)
+        return render_template("investigation_detail.html", run=run)
+
+    @app.route("/api/investigation/<run_id>/status")
+    def api_investigation_status(run_id: str):
+        run = run_store.get_run(run_id)
+        if not run:
+            return jsonify({"error": "Run not found"}), 404
         return jsonify({
-            "status": "HEALTHY",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "gemini_model": diag.get("gemini_model_configured"),
-            "gemini_key_present": diag.get("gemini_key_present"),
-            "ollama_model": diag.get("ollama_fallback_model"),
-            "offline_mode": diag.get("offline_mode_active")
+            "run_id": run_id,
+            "status": run.get("status"),
+            "verdict": run.get("verdict"),
+            "provider": run.get("provider"),
+            "error": run.get("error")
         })
 
-    @app.route("/api/diagnostics", methods=["GET"])
-    def api_diagnostics():
-        """Detailed system diagnostics with optional live connectivity ping."""
-        live = request.args.get("live", "false").lower() in ("true", "1", "yes")
-        diag = investigation_service.get_system_diagnostics(live_check=live)
-        return jsonify(diag)
+    @app.route("/api/investigation/<run_id>/chart")
+    def api_investigation_chart(run_id: str):
+        run = run_store.get_run(run_id)
+        if not run:
+            abort(404)
+        raw_p = Path(run.get("chart_path") or f"data/runs/{run_id}/chart.png")
+        chart_p = raw_p.resolve() if raw_p.is_absolute() else (BASE_DIR / raw_p).resolve()
+        if not chart_p.exists():
+            abort(404)
+        return send_file(str(chart_p), mimetype="image/png")
 
-    # --------------------------------------------------------------------------
-    # Error Handlers
-    # --------------------------------------------------------------------------
-
-    @app.errorhandler(400)
-    def bad_request(error):
-        msg = getattr(error, "description", "Bad Request")
-        if request.is_json or request.path.startswith("/api/"):
-            return jsonify({"error": msg}), 400
-        return render_template("errors/400.html", message=msg), 400
-
-    @app.errorhandler(403)
-    def forbidden(error):
-        msg = getattr(error, "description", "Forbidden")
-        if request.is_json or request.path.startswith("/api/"):
-            return jsonify({"error": msg}), 403
-        return render_template("errors/403.html", message=msg), 403
-
-    @app.errorhandler(404)
-    def not_found(error):
-        msg = getattr(error, "description", "Resource Not Found")
-        if request.is_json or request.path.startswith("/api/"):
-            return jsonify({"error": msg}), 404
-        return render_template("errors/404.html", message=msg), 404
-
-    @app.errorhandler(500)
-    def internal_error(error):
-        logger.error(f"Internal server error on {request.path}: {error}", exc_info=True)
-        if request.is_json or request.path.startswith("/api/"):
-            return jsonify({"error": "Internal server error"}), 500
-        return render_template("errors/500.html", message="An unexpected error occurred."), 500
+    @app.route("/api/investigation/<run_id>/pdf")
+    def api_investigation_pdf(run_id: str):
+        run = run_store.get_run(run_id)
+        if not run:
+            abort(404)
+        raw_p = Path(run.get("pdf_path") or f"data/runs/{run_id}/report.pdf")
+        pdf_p = raw_p.resolve() if raw_p.is_absolute() else (BASE_DIR / raw_p).resolve()
+        if not pdf_p.exists():
+            abort(404)
+        return send_file(
+            str(pdf_p),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"{run.get('ticker')}_forensic_report.pdf"
+        )
 
     return app
-
-
-if __name__ == "__main__":
-    app = create_app()
-    app.run(host="127.0.0.1", port=5000, debug=False)

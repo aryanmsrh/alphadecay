@@ -102,12 +102,15 @@
                 <span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span>
               </td>
               <td>
-                {% if r.adjudication_verdict %}
-                  <span class="badge badge-{{ r.adjudication_verdict.lower() }}">{{ r.adjudication_verdict }}</span>
+                {% set v = r.verdict or r.adjudication_verdict %}
+                {% if v in ('HYPOTHESIS PASSED', 'SUPPORTED') %}
+                  <span class="badge badge-passed">HYPOTHESIS PASSED</span>
+                {% elif v in ('HYPOTHESIS FAILED', 'REFUTED') %}
+                  <span class="badge badge-failed">HYPOTHESIS FAILED</span>
                 {% elif r.no_material_anomaly %}
-                  <span class="badge badge-supported">BASELINE NORMAL</span>
+                  <span class="badge badge-passed">HYPOTHESIS PASSED</span>
                 {% else %}
-                  <span style="color: var(--text-muted); font-size: 11px;">Pending</span>
+                  <span style="color: var(--text-muted); font-size: 11px;">{{ r.status }}</span>
                 {% endif %}
               </td>
               <td style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_finding or '' }}">

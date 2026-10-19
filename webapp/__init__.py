@@ -1,4 +1,3 @@
-"""
-ALPHA-DECAY Web Application Package.
-Autonomous Financial Forensics Dashboard & Investigation Workspace.
-"""
+from .app import create_app
+
+__all__ = ["create_app"]

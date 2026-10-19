@@ -1,4 +1,4 @@
-# **ALPHA-DECAY: Autonomous Financial Forensic Research Agent**
+# **ALPHA-DECAY: Autonomous Financial Research Agent**
 
 ### **ATMOS 2026 · BITS Pilani, Hyderabad Campus**
 * **Track:** **Track C — Consumer, FMCG & Retail (NIFTY 50 Universe)**
@@ -10,20 +10,20 @@
 
 ## **1. Executive Summary & The Problem Brief**
 
-Financial data is abundant, but the critical story is rarely contained within a single quarterly earnings release. A company's statutory filings, quarterly profit & loss accounts, annual balance sheets, cash flow statements, and earnings concall transcripts each reveal only fragments of operational change. Most financial AI tools act as superficial news summarizers or chat wrappers that hallucinate arithmetic and exhibit confirmatory bias.
+Financial data is abundant, but the critical story is rarely contained within a single quarterly earnings release. A company's statutory filings, quarterly profit & loss accounts, annual balance sheets, cash flow statements, and earnings concall transcripts each reveal only fragments of operational change. Most financial AI tools just summarize news articles and often make math mistakes when calculating financial ratios.
 
-**ALPHA-DECAY** is an autonomous financial research agent designed for high-conviction accounting forensics and non-obvious story discovery in listed Indian Consumer & Retail entities.
+**ALPHA-DECAY** is an autonomous financial research agent built to uncover real operational shifts and accounting divergences in listed Indian FMCG companies.
 
 ### **Core Capabilities:**
-1. **Autonomous Investigation:** Given any NIFTY 50 FMCG ticker symbol, the system independently decides what to investigate and harvests public filings from Screener.in and BSE India exchange disclosures without manual prompt tuning.
-2. **Deterministic Calculations Only (*Zero LLM Arithmetic*):** Net sales YoY growth, core operating profit margins (EBITDA ex-Other Income), percentage point margin shifts, operating expense growth, distributor debtor days (DSO), inventory holding days (DIO), days payable (DPO), and operating cash flow (CFO) conversion ratios are computed deterministically in pure Python.
-3. **Period-Aligned Statutory Grounding:** Annual cash flows are benchmarked strictly against audited annual operating profits, eliminating quarterly extrapolation traps.
-4. **Adversarial Cyclic Falsification Loop:** Every candidate anomaly is pitted against an adversarial **Disproving Agent** representing company management and structural sector dynamics. Hypotheses that break down under defense scrutiny are marked as refuted or refined in a second attempt.
-5. **Strict Binary Final Verdict:** Every investigation terminates with an unambiguous adjudication:
-   * **`HYPOTHESIS PASSED`**: The hypothesis withstood adversarial scrutiny; an evidence-backed operational anomaly was verified.
-   * **`HYPOTHESIS FAILED`**: The hypothesis was broken down by defense cross-examination; observed shifts are fully explained by standard commercial cycles.
-6. **Mandatory 8-Point Hackathon Deliverable Brief:** Generates all 8 required deliverables in sequence (*The Discovery, Why It Matters, Evidence, Timeline, Numbers, Counterargument, Falsification Condition, Evidence Strength*).
-7. **Institutional Packaging:** Emits both an interactive **Pitch-Black Quant Terminal** web interface and an auditable, publication-grade **strict 2-page dark PDF research report**.
+1. **Autonomous Investigation:** Given any NIFTY 50 FMCG ticker symbol, the system decides what to check, downloads public filings from Screener.in and BSE India without manual prompting.
+2. **Pure Python Calculations (*No AI Math Mistakes*):** Sales growth, core operating profit margins (EBITDA ex-Other Income), debtor days (DSO), inventory days (DIO), days payable (DPO), and cash conversion ratios are calculated directly in Python.
+3. **Aligned Reporting Periods:** Annual cash flows are benchmarked against audited annual operating profits, avoiding quarterly mismatch errors.
+4. **Two-Agent Fact-Checking Loop:** Every finding is challenged by a skeptical **Disproving Agent** that looks for normal business explanations. If the claim doesn't hold up under scrutiny, it's either refined or dropped.
+5. **Clear Pass/Fail Verdict:** Every investigation ends with an unambiguous result:
+   * **`HYPOTHESIS PASSED`**: The finding held up under scrutiny; an evidence-backed operational divergence was verified.
+   * **`HYPOTHESIS FAILED`**: The finding was explained away by ordinary business context (e.g. seasonal inventory buffering).
+6. **Mandatory 8-Point Hackathon Deliverables:** Generates all 8 required deliverables in sequence (*The Discovery, Why It Matters, Evidence, Timeline, Numbers, Counterargument, Falsification Condition, Evidence Strength*).
+7. **Reports & Web Dashboard:** Generates an interactive web dashboard and a clean **2-page dark PDF research report**.
 
 ---
 
@@ -43,7 +43,7 @@ Financial data is abundant, but the critical story is rarely contained within a 
                         │
                         ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ 2. DETERMINISTIC FINANCIAL MATH SANDBOX (Zero LLM Arithmetic)          │
+│ 2. PURE PYTHON FINANCIAL CALCULATIONS (No AI Math Mistakes)            │
 │   • Core EBITDA (ex-Other Income) = Net Sales - Operating Expenses     │
 │   • CFO Conversion Ratio % = (Audited CFO / Audited EBITDA) * 100      │
 │   • Working Capital Trio: DSO (Debtors) + DIO (Inventory) - DPO (Pay)  │
@@ -53,13 +53,13 @@ Financial data is abundant, but the critical story is rarely contained within a 
                         │
                         ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ 3. CYCLIC ADVERSARIAL STRESS-TEST (Investigative vs Disproving Agent)  │
+│ 3. TWO-AGENT FACT-CHECKING LOOP (Investigative vs Disproving Agent)    │
 │   Loop through ranked anomalies:                                       │
 │     ├─ Attempt #1: Investigative Agent forms causal hypothesis         │
 │     ├─ Challenge: Disproving Agent attempts to refute using FMCG cycles│
 │     ├─ [PASSED] -> Confirmed anomaly, advances                         │
 │     └─ [REFUTED] -> Attempt #2: Formulates refined causal hypothesis   │
-│           ├─ Challenge: Secondary adversarial cross-examination        │
+│           ├─ Challenge: Secondary cross-examination                    │
 │           ├─ [PASSED] -> Confirmed anomaly on Attempt #2               │
 │           └─ [FAILED] -> Marked HYPOTHESIS FAILED                      │
 └────────────────────────────────────────────────────────────────────────┘
@@ -74,9 +74,9 @@ Financial data is abundant, but the critical story is rarely contained within a 
                         │
                         ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ 5. INSTITUTIONAL PACKAGING & EXPORT                                    │
-│   • Pitch-Black Quant Terminal Webapp: Space Grotesk / JetBrains Mono  │
-│   • 2-Page Institutional Research Note: ReportLab vector dark canvas   │
+│ 5. WEB DASHBOARD & REPORT EXPORT                                       │
+│   • Web Dashboard: Dark theme with Space Grotesk / JetBrains Mono      │
+│   • 2-Page Research Report: ReportLab vector dark canvas PDF           │
 │   • Dual-Axis Trajectory Chart: Matplotlib sales vs margin trajectory  │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -156,7 +156,7 @@ USE_OFFLINE_MODE=false
 
 ---
 
-### **Step 6: Launch the Pitch-Black Quant Web Terminal**
+### **Step 6: Launch the Web Dashboard**
 Start the local web application:
 ```bash
 python run_web.py --port 5000
@@ -164,7 +164,7 @@ python run_web.py --port 5000
 You will see output indicating the server has booted:
 ```
 ========================================================================
-  ALPHA-DECAY // QUANT FORENSIC WORKSTATION
+  ALPHA-DECAY // FINANCIAL RESEARCH WORKSTATION
   Serving on: http://127.0.0.1:5000
   Mode:       Production WSGI / Flask Dev Server
 ========================================================================
@@ -175,16 +175,16 @@ http://127.0.0.1:5000
 ```
 
 #### **What You Can Do in the Web App:**
-1. **Home / Dashboard (`/`):** View recent completed investigations, their binary verdicts (`HYPOTHESIS PASSED` / `HYPOTHESIS FAILED`), and their core discoveries.
-2. **New Investigation (`/investigations/new`):** Select pre-configured Track C FMCG stocks (`HINDUNILVR`, `ITC`, `NESTLEIND`, `BRITANNIA`, `TATACONSUM`, `DABUR`, `MARICO`) or enter any custom NSE ticker symbol, and click **Launch Autonomous Audit**.
+1. **Home / Dashboard (`/`):** View recent completed investigations, their pass/fail verdicts (`HYPOTHESIS PASSED` / `HYPOTHESIS FAILED`), and their core discoveries.
+2. **New Investigation (`/investigations/new`):** Select pre-configured Track C FMCG stocks (`HINDUNILVR`, `ITC`, `NESTLEIND`, `BRITANNIA`, `TATACONSUM`, `DABUR`, `MARICO`) or enter any custom NSE ticker symbol, and click **Run Investigation**.
 3. **Investigation Detail Workspace (`/investigation/<run_id>`):**
    * **The Discovery Banner:** Clear verdict tag and evidence strength rating.
    * **The 8-Point Hackathon Brief Card:** All 8 required elements numbered in exact order.
-   * **Deterministic Financial Math Cards:** Inspect the exact audited formulas and arithmetic substitution steps.
-   * **Top 5 Tested Anomalies Table:** Ranked by severity `/10` with math detail.
-   * **Cyclic Agent Audit Trail:** Review which hypotheses passed and which were refuted by the defense agent.
+   * **Financial Calculations:** Inspect the exact audited formulas and arithmetic steps.
+   * **Top 5 Tested Divergences Table:** Ranked by score with math details.
+   * **Two-Agent Audit Trail:** Review which hypotheses passed and which were refuted by the defense agent.
    * **Quarterly Sales vs Margin Chart:** Interactive visual trajectory.
-   * **1-Click PDF Download:** Download the publication-grade 2-page research PDF.
+   * **1-Click PDF Download:** Download the clean 2-page research PDF.
 
 ---
 
@@ -222,7 +222,7 @@ If you wish to execute LLM reasoning locally without cloud API keys:
    ```bash
    python main.py --ticker HINDUNILVR --offline --export-pdf
    ```
-> **Technical Note on Network Connectivity:** The `--offline` flag routes all LLM reasoning tasks locally to your Ollama model (`deepseek-r1:7b`). Data harvesters (Screener.in statutory statements and BSE exchange filings) still require network access to fetch public corporate disclosures unless cached.
+> **Technical Note on Network Connectivity:** The `--offline` flag routes all LLM reasoning tasks locally to your Ollama model (`deepseek-r1:7b`). Data fetchers (Screener.in financial statements and BSE exchange filings) still require network access to fetch public corporate disclosures unless cached.
 
 ---
 
@@ -234,26 +234,26 @@ Every investigation synthesizes the exact 8 deliverables mandated by the ATMOS 2
 2. **Why It Matters:** 3 to 5 analytical bullets explaining the strategic, liquidity, and operational significance.
 3. **Evidence:** Multiple independent statutory sources with direct, clickable links to SEBI filings and BSE concall transcripts.
 4. **Timeline:** Chronological development of the shift across trailing quarters and fiscal years.
-5. **Numbers:** The exact deterministic calculations and metrics required to substantiate the finding.
+5. **Numbers:** The exact financial calculations and metrics required to substantiate the finding.
 6. **Counterargument:** The strongest alternative explanation or benign sector justification tested by the Disproving Agent.
 7. **Falsification Condition:** The explicit future empirical disclosure that would cause the system to reconsider its conclusion.
 8. **Evidence Strength:** A rating of **Strong**, **Moderate**, or **Weak** accompanied by audit justification.
 
 ---
 
-## **5. Deterministic Forensic Financial Math Sandbox**
+## **5. How Financial Metrics & Formulas Are Calculated**
 
-To protect against arithmetic hallucination, all financial metrics are computed in pure Python using audited SEBI LODR disclosures:
+To ensure zero math mistakes, all financial metrics are calculated in pure Python using audited SEBI LODR disclosures:
 
-| Metric | Exact Formula | Period Alignment | Forensic Diagnostic Insight |
+| Metric | Exact Formula | Period Alignment | What This Tells You |
 | :--- | :--- | :--- | :--- |
-| **CFO-to-EBITDA Conversion** | `(Audited_CFO / Audited_Operating_Profit) * 100` | Audited Annual to Annual | Primary earnings quality test. A drop below 80% indicates profits on paper failing to convert to physical bank cash. |
+| **CFO-to-EBITDA Conversion** | `(Audited_CFO / Audited_Operating_Profit) * 100` | Audited Annual to Annual | Primary earnings quality test. A drop below 80% indicates profits on paper failing to convert to cash in the bank. |
 | **Core EBITDA (ex-Other Inc)**| `Net_Sales - Total_Operating_Expenses` | Quarterly & Annual | Isolates pure operational manufacturing profit, stripping out non-operating treasury gains. |
 | **Operating Margin Spread** | `Current_OPM - Prior_YoY_OPM` | Quarterly YoY ($t$ vs $t-4$) | Measures operating cost leverage across identical seasonal cycles in percentage points (pp) and basis points (bps). |
-| **Debtor Days (DSO)** | `(Trade_Receivables / Audited_Sales) * 365` | Audited Annual | Measures distributor credit discipline. Rising DSO indicates trade partners delaying payments. |
+| **Debtor Days (DSO)** | `(Trade_Receivables / Audited_Sales) * 365` | Audited Annual | Measures distributor credit discipline. Rising DSO indicates trade partners are taking longer to pay. |
 | **Inventory Days (DIO)** | `(Inventories / Audited_Sales) * 365` | Audited Annual | Average duration finished goods sit in warehouses before being sold. Expansion indicates channel inventory buildup. |
 | **Days Payable (DPO)** | `(Trade_Payables / Audited_Sales) * 365` | Audited Annual | Average days taken to pay raw material suppliers. Measures trade credit funding. |
-| **Cash Conversion Cycle (CCC)**| `DSO + DIO - DPO` | Audited Annual | Net working capital cycle. A deeply negative cycle (e.g. -89 days) proves vendors are funding operational inventory for free. |
+| **Cash Conversion Cycle (CCC)**| `DSO + DIO - DPO` | Audited Annual | Net working capital cycle. A deeply negative cycle (e.g. -89 days) means suppliers are effectively funding inventory. |
 
 ---
 
@@ -261,40 +261,40 @@ To protect against arithmetic hallucination, all financial metrics are computed 
 
 ```
 alphadecay/
-├── ALPHA_DECAY_PROJECT_OVERVIEW.pdf # 2-Page Technical Architecture Whitepaper PDF
+├── ALPHA_DECAY_PROJECT_OVERVIEW.pdf # 2-Page Technical Overview Whitepaper PDF
 ├── main.py                          # CLI runner for autonomous investigations
-├── run_web.py                       # Boots the pitch-black quant terminal web server
+├── run_web.py                       # Boots the web dashboard server
 ├── config.py                        # Centralized configuration, models & thresholds
 ├── requirements.txt                 # Pinned project dependencies
 ├── .env.example                     # Template environment configuration
 │
-├── agent/                           # Multi-Agent Adversarial System
-│   ├── cyclic_pipeline.py           # 2-attempt cyclic loop (Investigative vs Disproving)
+├── agent/                           # Two-Agent Fact-Checking System
+│   ├── cyclic_pipeline.py           # 2-attempt loop (Investigative vs Disproving)
 │   ├── graph.py                     # LangGraph StateGraph pipeline definition
 │   ├── nodes.py                     # Agent execution nodes
 │   └── state.py                     # State dataclasses and typing definitions
 │
-├── engine/                          # Deterministic Math & Forensic Analytics
-│   ├── analytics.py                 # Pure Python EBITDA, CFO conversion & CCC engine
-│   ├── forensics.py                 # Anomaly scoring heuristics & triage ranking
+├── engine/                          # Python Calculations & Analytics
+│   ├── analytics.py                 # Pure Python EBITDA, CFO conversion & CCC calculations
+│   ├── forensics.py                 # Anomaly scoring and triage ranking
 │   ├── investigator.py              # Investigation orchestration wrapper
-│   └── llm.py                       # Dual-provider LLM client (Gemini + Ollama)
+│   └── llm.py                       # LLM client with Gemini and Ollama fallback
 │
-├── ingestion/                       # Statutory Data Harvesters
+├── ingestion/                       # Data Fetchers (Screener, BSE, Tavily)
 │   ├── screener.py                  # Scrapes quarterly P&L, balance sheets & cash flows
-│   ├── concall_harvester.py         # Downloads BSE concall PDFs & extracts dialogue via PyPDF
+│   ├── concall_harvester.py         # Downloads BSE concall PDFs & extracts transcripts
 │   └── web_search.py                # Targeted financial search via Tavily API
 │
-├── exporter/                        # Institutional Packaging
+├── exporter/                        # PDF Report & Chart Generator
 │   ├── pdf.py                       # ReportLab strict 2-page dark research report generator
-│   └── chart.py                     # Matplotlib dual-axis sales vs margin chart generator
+│   └── chart.py                     # Matplotlib sales vs margin trajectory chart generator
 │
-├── webapp/                          # Pitch-Black Quant Terminal
+├── webapp/                          # Web Dashboard
 │   ├── app.py                       # Flask application routes and API endpoints
-│   ├── run_store.py                 # Transactional atomic JSON run store
-│   ├── static/css/theme.css         # Modern quant styles (#070709, micro-borders, shadows)
+│   ├── run_store.py                 # Transactional JSON run store
+│   ├── static/css/theme.css         # Dark theme styles (#070709, micro-borders, shadows)
 │   ├── static/fonts/                # TrueType fonts (Space Grotesk, Plus Jakarta Sans, JetBrains Mono)
-│   └── templates/                   # Clean HTML templates (Dashboard, Detail, Brief card)
+│   └── templates/                   # HTML templates (Dashboard, Detail, Architecture, Guide)
 │
 └── data/                            # Run Artifacts & Storage
     └── runs/                        # Run directories containing report.pdf, chart.png & .json
@@ -323,7 +323,7 @@ alphadecay/
   ```
   data/runs/<run_id>/report.pdf
   ```
-  You can also download it directly from the web dashboard by clicking the **"Download 2-Page Institutional PDF"** button.
+  You can also download it directly from the web dashboard by clicking the **"Download 2-Page Research PDF"** button.
 
 #### **Q4: How do I test the system on other FMCG companies?**
 * **Fix:** The system works out-of-the-box for any listed Indian company on Screener.in:
@@ -344,5 +344,5 @@ This project is licensed under the custom **ALPHA-DECAY Source-Available Attribu
 
 ### **Key License Restrictions:**
 - **Mandatory Attribution:** Any permitted reference, inspection, educational study, or demonstration must prominently credit **Aryan Mishra** as the original author and architect and link to the upstream repository ([`github.com/aryanmsrh/alphadecay`](https://github.com/aryanmsrh/alphadecay)).
-- **Strict Anti-Plagiarism & Competition Ban:** Under no circumstances may this software, its code, its prompts, its mathematical sandbox, or derivative works be copied, modified, rebranded, or submitted to any hackathon, competition, contest, evaluation, or grading by any third party without prior express written consent.
+- **Strict Anti-Plagiarism & Competition Ban:** Under no circumstances may this software, its code, its prompts, its financial calculations, or derivative works be copied, modified, rebranded, or submitted to any hackathon, competition, contest, evaluation, or grading by any third party without prior express written consent.
 - **Non-Commercial Restriction:** The software may not be monetized, sold, or incorporated into commercial financial advisory or trading tools.

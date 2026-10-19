@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}QUANT TERMINAL // {{ run.ticker }}{% endblock %}
+{% block topbar_title %}RESEARCH REPORT // {{ run.ticker }}{% endblock %}
 
 {% block content %}
 <div id="investigation-workspace" data-run-id="{{ run.run_id }}" data-status="{{ run.status }}">
@@ -21,7 +21,7 @@
           <div>Sector Track: <strong style="color: var(--text-primary); font-family: var(--font-display);">Track C — Consumer, FMCG & Retail</strong></div>
           <div>Run Identifier: <code style="font-family: var(--font-mono); color: var(--accent-blue);">{{ run.run_id }}</code></div>
           <div>Executed: <span style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }} UTC</span></div>
-          <div>Research Engine: <strong style="color: var(--accent-green); font-family: var(--font-display);">Deterministic Math + Cyclic Adversarial Agent</strong></div>
+          <div>Analysis Engine: <strong style="color: var(--accent-green); font-family: var(--font-display);">Python Calculations + 2-Agent Fact Checker</strong></div>
         </div>
       </div>
 
@@ -33,7 +33,7 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span>Download 2-Page Institutional PDF</span>
+            <span>Download 2-Page PDF Report</span>
           </a>
         {% endif %}
 
@@ -47,12 +47,12 @@
   {% if run.status in ('QUEUED', 'RUNNING') %}
     <div class="card" style="text-align: center; padding: 80px 24px;">
       <div class="status-dot healthy" style="animation: pulse 1s infinite; width: 14px; height: 14px; margin: 0 auto 20px;"></div>
-      <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 10px;">Autonomous Financial Research in Progress</h3>
+      <h3 style="font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 10px;">Running Investigation</h3>
       <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px; font-size: 14.5px; line-height: 1.6;">
-        Ingesting statutory filings from Screener.in, computing deterministic YoY calculations across quarterly P&L and annual cash flow statements, and executing cyclic hypothesis stress-testing...
+        Fetching filings from Screener.in, calculating financial ratios in Python, and running the two-agent fact-checking debate...
       </p>
       <div style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-blue);">
-        Status: Pipeline active · Testing anomalies against adversarial Disproving Agent...
+        Status: Active · Testing findings against the skeptic agent...
       </div>
     </div>
 
@@ -193,17 +193,17 @@
         <!-- Point 5: Numbers -->
         <div class="math-card">
           <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.8px;">
-            5. Numbers (Deterministic Calculations & Metrics Needed to Substantiate)
+            5. Numbers (Calculations Backing the Finding)
           </div>
           <div style="font-size: 14px; color: var(--text-primary); line-height: 1.55; font-family: var(--font-mono); background: #000; padding: 10px 14px; border: 1px solid var(--border);">
-            {{ run.report.get('5_Numbers', 'Deterministic financial calculations computed.') }}
+            {{ run.report.get('5_Numbers', 'Financial calculations computed.') }}
           </div>
         </div>
 
         <!-- Point 6: Counterargument -->
         <div class="math-card" style="border-left: 4px solid var(--accent-red);">
           <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-red); text-transform: uppercase; letter-spacing: 0.8px;">
-            6. Strongest Counterargument (Alternative Explanation Evaluated by Disproving Agent)
+            6. Counterargument (Alternative Explanation Tested by Skeptic Agent)
           </div>
           <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.55;">
             {{ run.report.get('6_Counterargument', 'Standard business cycle operations.') }}
@@ -213,7 +213,7 @@
         <!-- Point 7: Falsification Condition -->
         <div class="math-card" style="border-left: 4px solid var(--accent-yellow);">
           <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-yellow); text-transform: uppercase; letter-spacing: 0.8px;">
-            7. Falsification Condition (What Future Evidence Would Make System Reconsider Conclusion)
+            7. Falsification Condition (What Future Data Would Disprove This)
           </div>
           <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.55;">
             {{ run.report.get('7_Falsification_Condition', 'Subsequent normalization across trailing disclosures.') }}
@@ -223,7 +223,7 @@
         <!-- Point 8: Evidence Strength -->
         <div class="math-card" style="border-left: 4px solid var(--accent-green);">
           <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; color: var(--accent-green); text-transform: uppercase; letter-spacing: 0.8px;">
-            8. Evidence Strength Rating (Strong, Moderate, or Weak with Reasoning Shown)
+            8. Evidence Strength (Strong, Moderate, or Weak)
           </div>
           <div style="font-size: 15px; color: var(--text-primary); line-height: 1.55;">
             <strong style="color: var(--accent-green); font-family: var(--font-display); font-size: 17px; font-weight: 900;">
@@ -234,18 +234,18 @@
       </div>
     </div>
 
-    <!-- 3. DETERMINISTIC FINANCIAL MATH & EXACT CALCULATIONS -->
+    <!-- 3. FINANCIAL RATIOS & CALCULATIONS -->
     <div class="card" style="margin-bottom: 28px;">
       <div class="card-header">
         <div class="card-title" style="font-family: var(--font-display); font-size: 17px; font-weight: 800;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          <span>Deterministic Financial Math & Rigorous Formulas</span>
+          <span>Key Financial Ratios & Calculations</span>
         </div>
-        <span class="tag-badge">AUDITED STATUTORY FILINGS · ZERO ESTIMATION</span>
+        <span class="tag-badge">OFFICIAL FILINGS · CALCULATED IN PYTHON</span>
       </div>
 
       <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
-        Every indicator below is computed deterministically in pure Python from audited statutory statements (SEBI LODR filings). Period alignment is strictly enforced: annual Cash Flow Statements (CFO) are matched directly against audited annual Profit & Loss Operating Profit (EBITDA ex-Other Income), completely eliminating quarterly extrapolation errors.
+        All metrics below are calculated directly in Python from official company filings (SEBI LODR). Annual Cash Flow numbers are matched against annual Operating Profit so there are no mismatch errors.
       </p>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px;">

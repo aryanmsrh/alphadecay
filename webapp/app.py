@@ -77,6 +77,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         return render_template("index.html", metrics=metrics, recent_runs=recent_runs)
 
     @app.route("/new")
+    @app.route("/investigations/new")
     def new_investigation_page():
         return render_template("new_investigation.html")
 

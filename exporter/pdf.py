@@ -82,7 +82,7 @@ class WebsiteThemedCanvas(canvas.Canvas):
         # Left: Clean, concise spec title
         self.setFont(FONT_MONO, 7.0)
         self.setFillColor(colors.HexColor("#71717a")) # --text-muted
-        self.drawString(20, 10, "ALPHA-DECAY // QUANT FORENSIC INVESTIGATION REPORT")
+        self.drawString(20, 10, "ALPHA-DECAY // FINANCIAL RESEARCH REPORT")
 
         # Center: Clean GitHub Link without overlap
         self.setFont(FONT_MONO, 7.0)
@@ -205,8 +205,8 @@ def generate_pdf_report(
     # Top Entity Header Card
     header_table_data = [
         [
-            Paragraph(f"<b>ALPHA-DECAY // INSTITUTIONAL RESEARCH BRIEF</b><br/><font size=10 color='#f4f4f6'><b>{company} ({ticker})</b> · Track C: Consumer, FMCG & Retail</font><br/><font size=7 color='#a1a1aa'><b>AUDIT EVIDENCE STRENGTH:</b> {ev_strength_text} &nbsp;|&nbsp; <b>ATMOS 2026 BITS PILANI</b></font>", title_style),
-            Paragraph(f"<font size=7 color='#f4f4f6'>ADJUDICATION VERDICT</font><br/><b>{verdict}</b>", badge_style)
+            Paragraph(f"<b>ALPHA-DECAY // FINANCIAL RESEARCH REPORT</b><br/><font size=10 color='#f4f4f6'><b>{company} ({ticker})</b> · Track C: Consumer, FMCG & Retail</font><br/><font size=7 color='#a1a1aa'><b>EVIDENCE STRENGTH:</b> {ev_strength_text} &nbsp;|&nbsp; <b>ATMOS 2026 BITS PILANI</b></font>", title_style),
+            Paragraph(f"<font size=7 color='#f4f4f6'>FINAL VERDICT</font><br/><b>{verdict}</b>", badge_style)
         ]
     ]
     header_table = Table(header_table_data, colWidths=[422, 150])
@@ -250,15 +250,15 @@ def generate_pdf_report(
         story.append(Paragraph(str(why_matters), body_style))
     story.append(Spacer(1, 2))
 
-    # 3. Deterministic Financial Math & Plain-English Meaning
-    story.append(Paragraph("<b>3. Deterministic Financial Numbers & Exact Math</b>", section_h1))
+    # 3. Key Financial Numbers & Calculations
+    story.append(Paragraph("<b>3. Key Financial Numbers & Calculations</b>", section_h1))
     key_numbers = indicators.get("key_numbers", [])
     if key_numbers:
         table_rows = [[
             Paragraph("Metric & Period", table_head_style),
             Paragraph("Value", table_head_style),
             Paragraph("Formula & Exact Computation", table_head_style),
-            Paragraph("Plain-English Forensic Significance", table_head_style)
+            Paragraph("What This Means", table_head_style)
         ]]
         for kn in key_numbers[:4]:
             m_name = kn.get("name", "")
@@ -288,15 +288,15 @@ def generate_pdf_report(
         story.append(metrics_table)
     story.append(Spacer(1, 2))
 
-    # 4. Top Tested Anomalies Scored out of 10
-    story.append(Paragraph("<b>4. Top Tested Anomalies (Ranked by Severity / 10)</b>", section_h1))
+    # 4. Key Divergences Tested Scored out of 10
+    story.append(Paragraph("<b>4. Key Divergences Tested (Ranked by Severity / 10)</b>", section_h1))
     anomalies = indicators.get("anomalies") or indicators.get("red_flags", [])
     if anomalies:
         anom_rows = [[
             Paragraph("Severity", table_head_style),
-            Paragraph("Anomaly Metric", table_head_style),
-            Paragraph("Observed Accounting Divergence", table_head_style),
-            Paragraph("Diagnostic Significance", table_head_style)
+            Paragraph("Metric", table_head_style),
+            Paragraph("Observed Divergence", table_head_style),
+            Paragraph("What It Indicates", table_head_style)
         ]]
         for an in anomalies[:4]:
             sev_str = f"{an.get('severity', 0.0)}/10"
@@ -326,7 +326,7 @@ def generate_pdf_report(
 
     p2_header_data = [
         [
-            Paragraph(f"<b>ALPHA-DECAY</b> // Adversarial Multi-Agent Audit Trail & Falsification", title_style),
+            Paragraph(f"<b>ALPHA-DECAY</b> // Two-Agent Fact-Checking Trail & Falsification", title_style),
             Paragraph("<b>REPOSITORY:</b> <a href='https://github.com/aryanmsrh/alphadecay'><font color='#38bdf8'><u>github.com/aryanmsrh/alphadecay</u></font></a>", ParagraphStyle("TRP2", parent=styles["Normal"], fontName=FONT_MONO_BOLD, fontSize=7.0, leading=8.8, alignment=2, textColor=colors.HexColor("#38bdf8")))
         ]
     ]
@@ -344,8 +344,8 @@ def generate_pdf_report(
     story.append(p2_header_table)
     story.append(Spacer(1, 2))
 
-    # 5. Cyclic Pipeline Results & Survived vs Refuted
-    story.append(Paragraph("<b>5. Cyclic Multi-Agent Audit: Survived vs Refuted Hypotheses</b>", section_h1))
+    # 5. Two-Agent Debate Results: Passed vs Refuted
+    story.append(Paragraph("<b>5. Two-Agent Debate: Findings that Passed vs Refuted</b>", section_h1))
 
     passed_list = []
     failed_list = []
@@ -354,7 +354,7 @@ def generate_pdf_report(
         failed_list = cyclic_results.get("failed_hypotheses", [])
 
     if passed_list:
-        story.append(Paragraph("<b>HYPOTHESES THAT PASSED SCRUTINY (Survived Disproving Agent):</b>", ParagraphStyle("PassH", parent=body_style, fontName=FONT_HEAD, textColor=colors.HexColor("#22c55e"))))
+        story.append(Paragraph("<b>FINDINGS THAT PASSED SCRUTINY (Survived Disproving Agent):</b>", ParagraphStyle("PassH", parent=body_style, fontName=FONT_HEAD, textColor=colors.HexColor("#22c55e"))))
         for p in passed_list:
             bullet = f"• <b>[{p.get('anomaly_metric')} - Severity {p.get('severity')}/10 - Attempt {p.get('attempt_passed', 1)}]:</b> {p.get('hypothesis')}<br/>&nbsp;&nbsp;&nbsp;&nbsp;<font color='#38bdf8'>Overcame Defense:</font> <i>{p.get('counterargument_overcome', '')}</i>"
             story.append(Paragraph(bullet, body_style))
@@ -364,7 +364,7 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 2))
     if failed_list:
-        story.append(Paragraph("<b>HYPOTHESES THAT FAILED SCRUTINY (Refuted by Disproving Agent):</b>", ParagraphStyle("FailH", parent=body_style, fontName=FONT_HEAD, textColor=colors.HexColor("#f43f5e"))))
+        story.append(Paragraph("<b>FINDINGS THAT FAILED SCRUTINY (Refuted by Disproving Agent):</b>", ParagraphStyle("FailH", parent=body_style, fontName=FONT_HEAD, textColor=colors.HexColor("#f43f5e"))))
         for f in failed_list:
             bullet = f"• <b>[{f.get('anomaly_metric')} - Severity {f.get('severity')}/10]:</b> Refuted by defense: <i>{f.get('attempt_1_counterargument') or f.get('attempt_2_counterargument', '')}</i>"
             story.append(Paragraph(bullet, body_style))
@@ -395,7 +395,7 @@ def generate_pdf_report(
     story.append(Spacer(1, 2))
 
     # 8. Evidence Sources
-    story.append(Paragraph("<b>8. Evidentiary Provenance & Public Sources</b>", section_h1))
+    story.append(Paragraph("<b>8. Sources & Public Filings</b>", section_h1))
     ev_items = report.get("3_Evidence", [])
     if isinstance(ev_items, list):
         for e in ev_items[:3]:

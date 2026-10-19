@@ -26,7 +26,7 @@
           <line x1="12" y1="8" x2="12" y2="16"></line>
           <line x1="8" y1="12" x2="16" y2="12"></line>
         </svg>
-        <span>Launch Autonomous Forensic Investigation</span>
+        <span>Start Financial Investigation</span>
       </div>
       <span class="tag-badge">TRACK C // FMCG & RETAIL</span>
     </div>
@@ -35,7 +35,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
       <div class="form-group">
-        <label for="ticker" class="form-label">Target Listed Entity Ticker Symbol <span style="color: var(--accent-red)">*</span></label>
+        <label for="ticker" class="form-label">Company Ticker Symbol <span style="color: var(--accent-red)">*</span></label>
         <input 
           type="text" 
           id="ticker" 
@@ -47,7 +47,7 @@
           autofocus
           style="font-family: var(--font-mono); text-transform: uppercase; font-size: 15px; font-weight: 600;"
         >
-        <div class="form-help">Enter an NSE/BSE listed symbol from the FMCG, Consumer or Retail sector.</div>
+        <div class="form-help">Enter a stock ticker from the consumer or FMCG sector (NSE/BSE).</div>
 
         <div class="ticker-suggestions">
           <span style="font-size: 11px; color: var(--text-muted); align-self: center; margin-right: 4px;">Track C Universe:</span>
@@ -58,23 +58,23 @@
       </div>
 
       <div class="form-group" style="margin-top: 18px;">
-        <label for="hypothesis" class="form-label">Investigation Hypothesis or Question (Optional)</label>
+        <label for="hypothesis" class="form-label">Specific Question or Focus Area (Optional)</label>
         <textarea 
           id="hypothesis" 
           name="hypothesis" 
           class="form-control" 
           rows="3"
-          placeholder="e.g. Investigate whether the company is engaging in aggressive channel stuffing, uncollected trade credit expansion, or operating margin erosion."
+          placeholder="e.g. Check if cash flow dropped because of supplier payments, inventory buildup, or slower retail sales."
           style="font-size: 13.5px; resize: vertical;"
         ></textarea>
         <div class="form-help">
-          Leave blank to automatically investigate standard forensic anomalies (revenue deceleration, operating margin compression, cost decoupling, and debtor days elongation).
+          Leave blank to automatically check standard areas (sales slowdown, margin compression, cash flow drops, or longer distributor credit).
         </div>
       </div>
 
       <div class="card" style="margin-top: 20px; background-color: var(--bg-secondary); border-color: var(--border);">
         <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
-          Active Pipeline Architecture
+          Current Model & System Setup
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12.5px;">
           <div>
@@ -87,7 +87,7 @@
           </div>
           <div>
             <span style="color: var(--text-muted);">Analytics Engine:</span><br>
-            <strong style="color: var(--accent-green);">Deterministic Python (YoY & Margins)</strong>
+            <strong style="color: var(--accent-green);">Pure Python (YoY & Margins)</strong>
           </div>
         </div>
       </div>

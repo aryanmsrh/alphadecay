@@ -43,7 +43,7 @@ class ConcallHarvester:
       "supply chain",
   ]
 
-  def __init__(self, timeout: float = 14.0):
+  def __init__(self, timeout: float = 45.0):
     self.timeout = timeout
 
   def harvest_transcript(
@@ -57,16 +57,14 @@ class ConcallHarvester:
           headers=self.HEADERS, timeout=self.timeout, follow_redirects=True
       ) as client:
         resp = client.get(pdf_url)
-        if (
-            resp.status_code != 200
-            or len(resp.content) < 4000
-            or not resp.content.startswith(b"%PDF")
-        ):
-          return []
+        if resp.status_code != 200:
+          raise RuntimeError(f"Failed to download concall PDF (HTTP {resp.status_code}) from {pdf_url}")
+        if len(resp.content) < 4000 or not resp.content.startswith(b"%PDF"):
+          raise RuntimeError(f"Invalid PDF bytes received from {pdf_url}")
         pdf_bytes = io.BytesIO(resp.content)
         final_url = str(resp.url)
-    except Exception:
-      return []
+    except Exception as e:
+      raise RuntimeError(f"Failed to harvest concall PDF from {pdf_url}: {e}")
 
     try:
       reader = pypdf.PdfReader(pdf_bytes)
@@ -103,5 +101,5 @@ class ConcallHarvester:
 
       scored_chunks.sort(key=lambda x: x[0], reverse=True)
       return [item[1] for item in scored_chunks[:max_excerpts]]
-    except Exception:
-      return []
+    except Exception as e:
+      raise RuntimeError(f"Failed to parse concall PDF from {pdf_url}: {e}")

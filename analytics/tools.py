@@ -97,9 +97,6 @@ def normalize_row_key(key: str) -> str:
     return re.sub(r"[^a-zA-Z0-9]", "", key).lower()
 
 
-_normalize_row_key = normalize_row_key
-
-
 def get_row_series(rows: Dict[str, List[Any]], keys: List[str]) -> List[Any]:
     """Retrieves series data for matching row names from scraped statements."""
     for k in keys:
@@ -111,16 +108,3 @@ def get_row_series(rows: Dict[str, List[Any]], keys: List[str]) -> List[Any]:
         if norm_k in norm_rows:
             return norm_rows[norm_k]
     return []
-
-
-_get_row_series = get_row_series
-
-
-def safe_fmt(val: Any, fmt_spec: str = "{:.2f}", default: str = "N/A") -> str:
-    """Safely formats numerical values into display strings."""
-    if val is None:
-        return default
-    try:
-        return fmt_spec.format(val)
-    except Exception:
-        return default

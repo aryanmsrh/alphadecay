@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from agent.llm import LLM
 
 
-def extract_clean_percentage(raw_val: str, default: str = "85%") -> str:
+def extract_clean_percentage(raw_val: str) -> str:
     s = str(raw_val or "").strip()
     match = re.search(r"\b(\d{1,3}%)\b", s)
     if match:
@@ -13,7 +13,7 @@ def extract_clean_percentage(raw_val: str, default: str = "85%") -> str:
         val = int(match_num.group(1))
         if 0 <= val <= 100:
             return f"{val}%"
-    return default
+    raise ValueError(f"Model failed to output a valid confidence percentage: {raw_val}")
 
 
 class Attacker(LLM):
@@ -30,15 +30,10 @@ class Attacker(LLM):
         **kwargs,
     ) -> Tuple[Dict[str, Any], str]:
         metric = anomaly.get("metric", "Financial Metric")
-        summary = anomaly.get("summary", "")
-        math_detail = anomaly.get("math_detail", "")
-        directional_comparison = anomaly.get("directional_comparison", summary)
         severity = anomaly.get("severity", 5.0)
-        multi_quarter_trajectory = anomaly.get("multi_quarter_trajectory", summary)
+        multi_quarter_trajectory = anomaly.get("multi_quarter_trajectory", "")
         numbers_bullets = anomaly.get("numbers_bullets", [])
-        peer_data = (dossier.get("peer_data", []) if dossier else [])
-
-        numbers_text = "\n".join([f"- {b}" for b in numbers_bullets]) if numbers_bullets else math_detail
+        numbers_text = "\n".join([f"- {b}" for b in numbers_bullets])
         ev_text = "\n".join([
             f"- [{e.get('source')} ({e.get('url', '')})]: {e.get('excerpt', '')[:350]}"
             for e in evidence_items[:4]
@@ -51,7 +46,6 @@ Mindset: "Companies exist to make their numbers look prettier than reality. What
 
 Anomaly Under Investigation:
 - Metric: {metric}
-- Directional Fact: {directional_comparison}
 - Multi-Quarter Trajectory: {multi_quarter_trajectory}
 - Severity: {severity}/10
 
@@ -66,14 +60,14 @@ Requirements:
 2. Cross-examine the divergence against sector peers and multi-quarter progression.
 3. State specifically whether this indicates channel stuffing, inventory obsolescence, cost stickiness, margin degradation, or cash conversion stress.
 4. Output strictly valid JSON with exact keys: "verdict", "evidence_strength", "confidence".
-5. Note: "confidence" MUST be a clean percentage string only (e.g. "88%"). Place all explanation inside "evidence_strength".
+5. Note: "confidence" MUST be a clean percentage string strictly derived from evidence (e.g. 'XX%'). Place all explanation inside "evidence_strength".
 Do not echo instructions. Write exclusively in fluent English.
 
 JSON format:
 {{
   "verdict": "4 to 6 analytical sentences detailing what management is hiding",
   "evidence_strength": "e.g. High (8.5/10) - substantiated by audited cash flow and ratio spreads",
-  "confidence": "88%"
+  "confidence": "Clean percentage string strictly derived from evidence (e.g. 'XX%')"
 }}
 """
         system = "You are the Attacker, a ruthless forensic financial investigator assuming the worst. Explain in 4 to 6 analytical sentences what accounting trick, channel pressure, or operational stress management is hiding behind the audited numbers. Output strictly valid JSON."
@@ -96,14 +90,14 @@ JSON format:
             parsed = parsed["json"]
 
         verdict = str(parsed.get("verdict", "") or parsed.get("hypothesis", "")).strip()
+        if not verdict:
+            raise KeyError(f"Missing required deliverable field from LLM output: {parsed}")
         evidence_strength = str(parsed.get("evidence_strength", "")).strip()
         raw_conf = str(parsed.get("confidence", "") or parsed.get("confidence_rating", "")).strip()
-        confidence = extract_clean_percentage(raw_conf, default="88%")
+        confidence = extract_clean_percentage(raw_conf)
 
         return {
             "verdict": verdict,
-            "hypothesis": verdict,
             "evidence_strength": evidence_strength,
             "confidence": confidence,
-            "confidence_rating": confidence,
         }, provider

@@ -1,5 +1,5 @@
-# AlphaDecay: Minimal, Fast & Pure Python Dependencies
-# Zero bloatware. Zero unused corporate frameworks.
+# AlphaDecay: Clean & Production Python Dependencies
+# Zero bloatware. Pure deterministic analytics & forensic dual-runtime pipeline.
 
 # Core Web Application & Dashboard
 flask==3.1.3
@@ -11,38 +11,19 @@ markupsafe==3.0.4
 # HTTP & Asynchronous Networking
 httpx==0.28.1
 httpcore==1.0.9
-requests==2.34.2
-urllib3==2.8.0
 certifi==2026.7.22
 
-# Statutory Filings Ingestion & Parsing
+# Statutory Filings Ingestion & Text Extraction
 beautifulsoup4==4.15.0
 soupsieve==3.0.3
 pypdf==6.21.1
-pymupdf==1.28.2
-tavily-python==0.8.5
-
-# Financial Analytics & Charting
-numpy==2.5.4
-pandas==3.0.6
-matplotlib==3.11.2
-pillow==13.0.0
-contourpy==1.4.0
-cycler==0.12.1
-fonttools==4.67.0
-kiwisolver==1.5.1
-pyparsing==3.3.3
 
 # High-Precision PDF Research Report Generation
 reportlab==5.0.1
+pillow==13.0.0
 
-# Configuration & Validation
-pydantic==2.14.1
-pydantic-core==2.50.1
+# Configuration & Environment
 python-dotenv==1.2.4
-python-dateutil==2.9.0.post0
-annotated-types==0.8.0
-typing-extensions==4.16.0
 
 # Testing & Quality Assurance
 pytest==9.1.1

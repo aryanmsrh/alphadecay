@@ -73,6 +73,8 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
             "csrf_token": session["csrf_token"],
             "system_health": health,
             "track_c_universe": config.TRACK_C_NIFTY50,
+            "gemini_model": config.GEMINI_MODEL,
+            "ollama_model": config.OLLAMA_MODEL,
         }
 
     @app.route("/")
@@ -136,7 +138,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         if do_live:
             t0 = datetime.now()
             try:
-                res, _ = LLM().generate('Reply with strictly valid JSON: {"status": "ok"}')
+                res = LLM(model=config.OLLAMA_MODEL)._generate_ollama('Reply with strictly valid JSON: {"status": "ok"}')
                 if res:
                     ollama_status = "OK"
                     ollama_latency = round((datetime.now() - t0).total_seconds(), 2)
@@ -150,6 +152,8 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
             "ollama_base_url": config.OLLAMA_BASE_URL,
             "ollama_model": config.OLLAMA_MODEL,
             "ollama_latency_s": ollama_latency,
+            "server_host": request.host,
+            "data_dir": str(config.DATA_DIR),
         }
 
         return render_template("settings.html", diagnostics=diagnostics)
@@ -223,14 +227,28 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
                 archive.save_report(res)
             except Exception as e:
                 err_msg = str(e)
+                err_type = type(e).__name__
+
                 if "timed out" in err_msg.lower():
-                    err_msg = f"Inference timed out ({err_msg}). Ollama is taking longer than expected."
+                    if "concall" in err_msg.lower():
+                        display_err = f"Concall transcript download timed out: {err_msg}"
+                    elif "tavily" in err_msg.lower():
+                        display_err = f"Tavily search API timed out: {err_msg}"
+                    elif "gemini" in err_msg.lower():
+                        display_err = f"Gemini Cloud inference timed out: {err_msg}"
+                    else:
+                        display_err = f"Operation timed out: {err_msg}"
+                elif "503" in err_msg:
+                    display_err = f"Gemini Cloud high demand (503 Service Unavailable). Please retry or select another model: {err_msg}"
+                else:
+                    display_err = f"{err_type}: {err_msg}"
+
                 event_handler({
                     "step": "ERROR",
-                    "message": err_msg,
+                    "message": display_err,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 })
-                archive.update_status(r_id, "FAILED", error=err_msg)
+                archive.update_status(r_id, "FAILED", error=display_err)
 
         thread = threading.Thread(target=runner, args=(ticker, hypothesis, run_id, anomaly_count, provider), daemon=True)
         thread.start()
@@ -263,7 +281,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
     def api_investigation_events(run_id: str):
         run = archive.get_report(run_id)
         status = run.get("status") if run else "UNKNOWN"
-        events = investigation_events.get(run_id, [])
+        events = investigation_events.get(run_id) or (run.get("events", []) if run else [])
         return jsonify({"run_id": run_id, "status": status, "events": events})
 
     @app.route("/api/investigation/<run_id>/stream")

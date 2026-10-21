@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, List, Optional
 import httpx
 from config import TAVILY_API_KEY
@@ -8,7 +9,7 @@ class TavilySearchClient:
         self.api_key = api_key or TAVILY_API_KEY
         self.offline = not bool(self.api_key)
 
-    def search(self, query: str, max_results: int = 3) -> List[Dict[str, Any]]:
+    def search(self, query: str, max_results: int = 3, max_attempts: int = 3) -> List[Dict[str, Any]]:
         if self.offline:
             return []
 
@@ -38,10 +39,15 @@ class TavilySearchClient:
             ],
         }
 
-        try:
-            with httpx.Client(timeout=12.0) as client:
-                res = client.post(url, json=payload)
-                if res.status_code == 200:
+        timeout_config = httpx.Timeout(30.0, connect=10.0, read=25.0)
+        last_err: Optional[Exception] = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with httpx.Client(timeout=timeout_config) as client:
+                    res = client.post(url, json=payload)
+                    if res.status_code != 200:
+                        raise RuntimeError(f"Tavily API failed ({res.status_code}): {res.text}")
                     hits = res.json().get("results", [])
                     clean_hits = []
                     for h in hits:
@@ -55,7 +61,10 @@ class TavilySearchClient:
                                 "content": h.get("content", "")[:600],
                             })
                     return clean_hits
-        except Exception:
-            pass
+            except Exception as e:
+                last_err = e
+                if attempt < max_attempts:
+                    sleep_s = 1.5 * (2 ** (attempt - 1))
+                    time.sleep(sleep_s)
 
-        return []
+        raise RuntimeError(f"Tavily search API failed after {max_attempts} attempts: {last_err}")

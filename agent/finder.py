@@ -123,8 +123,8 @@ class Finder:
                     "raw_data": peer_raw,
                     "indicators": peer_ind,
                 })
-            except Exception:
-                continue
+            except Exception as e:
+                raise RuntimeError(f"Failed to fetch required peer benchmark for '{pt}': {e}")
 
         anomalies = indicators.get("anomalies", [])
         for anom in anomalies:
@@ -139,22 +139,19 @@ class Finder:
         if concall_links:
             for item in concall_links[:2]:
                 link = item.get("url") if isinstance(item, dict) else item
-                try:
-                    excerpts = self.harvester.harvest_transcript(link)
-                    for ex in excerpts:
-                        evidence_items.append({
-                            "source": (
-                                f"Concall: {item.get('title', 'Earnings Transcript')}"
-                                if isinstance(item, dict)
-                                else "Concall Transcript"
-                            ),
-                            "url": ex.get("source_url", link),
-                            "excerpt": ex.get("excerpt", ""),
-                        })
-                    if len(evidence_items) >= 4:
-                        break
-                except Exception:
-                    continue
+                excerpts = self.harvester.harvest_transcript(link)
+                for ex in excerpts:
+                    evidence_items.append({
+                        "source": (
+                            f"Concall: {item.get('title', 'Earnings Transcript')}"
+                            if isinstance(item, dict)
+                            else "Concall Transcript"
+                        ),
+                        "url": ex.get("source_url", link),
+                        "excerpt": ex.get("excerpt", ""),
+                    })
+                if len(evidence_items) >= 4:
+                    break
 
         try:
             search_hits = self.search_client.search(
@@ -167,15 +164,11 @@ class Finder:
                     "url": hit.get("url", ""),
                     "excerpt": hit.get("content", ""),
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            raise RuntimeError(f"Tavily search failed: {e}")
 
         if not evidence_items:
-            evidence_items.append({
-                "source": "Statutory Financial Statements (Screener / BSE)",
-                "url": raw_data.get("source_url", f"https://www.screener.in/company/{clean_ticker}/"),
-                "excerpt": f"Audited statutory financial disclosures and quarterly tables for {company_name} ({clean_ticker}).",
-            })
+            raise RuntimeError("Zero evidence sources were retrieved for company")
 
         return {
             "ticker": clean_ticker,
@@ -237,18 +230,7 @@ class Finder:
         def _notify(step: str, message: str, data: Optional[Dict[str, Any]] = None):
             if not event_callback:
                 return
-            try:
-                import inspect
-                sig = inspect.signature(event_callback)
-                if len(sig.parameters) == 1:
-                    event_callback({"step": step, "message": message, **(data or {})})
-                else:
-                    event_callback(step, message, data or {})
-            except Exception:
-                try:
-                    event_callback({"step": step, "message": message, **(data or {})})
-                except Exception:
-                    pass
+            event_callback({"step": step, "message": message, **(data or {})})
 
         _notify("TOOL_CALL", f"Agent invoking tool '{name}' with {json.dumps(args)}", {"tool_name": name, "tool_args": args})
 
@@ -320,7 +302,7 @@ class Finder:
         else:
             result = f"Tool '{name}' is not recognized."
 
-        _notify("TOOL_RESULT", f"Tool '{name}' returned verified data", {"tool_name": name, "result_preview": result[:200]})
+        _notify("TOOL_RESULT", f"Tool '{name}' output:\n{result}", {"tool_name": name, "result": result, "result_preview": result})
         return result
 
     def get_attack_context(

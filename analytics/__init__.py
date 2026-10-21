@@ -6,7 +6,6 @@ from .tools import (
     calculate_operating_margin,
     coerce_float,
     get_row_series,
-    safe_fmt,
 )
 
 __all__ = [
@@ -17,5 +16,4 @@ __all__ = [
     "calculate_operating_margin",
     "coerce_float",
     "get_row_series",
-    "safe_fmt",
 ]

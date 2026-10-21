@@ -20,7 +20,7 @@ Financial statements rarely reveal critical risks in a single headline figure. A
 3. **Aligned Reporting Periods:** Annual cash flows are benchmarked strictly against audited annual operating profits, eliminating quarterly mismatch errors.
 4. **Upstream Peer Triangulation:** Automatically benchmarks target companies against direct sector rivals (e.g., HUL vs. Dabur and Marico) directly from statutory disclosures.
 5. **Adversarial Forensic Arena:** Findings are challenged in an adversarial arena between a cynical **Attacker** (Prosecution) exposing downplayed risks and a rational **Defender** (Corporate Defense Counsel) presenting operational mechanics and setting concrete empirical falsification conditions.
-6. **Dual Runtime Engine:** Supports both high-speed cloud reasoning via **Google Gemini (`gemini-3.5-flash-lite`)** (~14s execution) and offline local reasoning via **Ollama (`deepseek-r1:7b`)** (~86s execution) with hot-swapping from the web dashboard.
+6. **Dual Runtime Engine:** Supports both high-speed cloud reasoning via **Google Gemini (`gemini-3.8-flash`)** (~14s execution) and offline local reasoning via **Ollama (`deepseek-r1:7b`)** (~86s execution) with hot-swapping from the web dashboard.
 7. **Strict 8-Point Hackathon Deliverables:** Emits the required 8-point research brief (*The Discovery, Why It Matters, Evidence, Timeline, Numbers, Attacker Case, Defender Counterargument & Falsification Condition, Strength Assessment*).
 8. **Interactive Quant Terminal & Publication PDF:** Renders a pitch-black web workstation (`web/app.py`) and generates a vector dark-canvas research PDF (`report.pdf`).
 
@@ -82,7 +82,7 @@ Financial statements rarely reveal critical risks in a single headline figure. A
                         ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 6. DUAL RUNTIME ENGINE (agent/llm.py)                                  │
-│   • Google Gemini Cloud (gemini-3.5-flash-lite) [Default: ~14s]        │
+│   • Google Gemini Cloud (gemini-3.8-flash) [Default: ~14s]             │
 │   • Local Ollama Engine (deepseek-r1:7b) [Offline: ~86s]               │
 │   • Dynamic runtime switching via Web UI Dropdown on /new              │
 │   • Resilient automatic failover to Ollama on network or API limits    │
@@ -139,7 +139,7 @@ Edit `.env` to configure your keys:
 ```env
 # Google Gemini Cloud (Recommended for ~14s high-speed inference)
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_MODEL=gemini-3.8-flash
 
 # Local Ollama Engine (For 100% offline local inference)
 OLLAMA_BASE_URL=http://localhost:11434
@@ -206,7 +206,7 @@ alphadecay/
 │   ├── attacker.py        # Prosecutorial adversarial forensic agent
 │   ├── defender.py        # Corporate defense counsel with falsification criteria
 │   ├── finder.py          # Dossier aggregator, concall matcher & mid-run tool manifest
-│   ├── llm.py             # Dual-engine transport (Gemini 3.5 Flash Lite + Ollama DeepSeek-R1)
+│   ├── llm.py             # Dual-engine transport (Gemini Cloud + Ollama DeepSeek-R1)
 │   └── pipeline.py        # End-to-end investigation orchestration & 8-point brief synthesis
 ├── analytics/
 │   ├── analytics.py       # Deterministic math sandbox (Sales YoY, OPM, CFO/EBITDA, DIO, DSO, CCC)
@@ -222,7 +222,7 @@ alphadecay/
 │   └── search.py          # Tavily targeted financial search integration
 ├── web/
 │   ├── app.py             # Flask web server & streaming event dispatcher
-│   ├── static/            # Pitch-black CSS theme, fonts (Space Grotesk, JetBrains Mono), Chart.js
+│   ├── static/            # Pitch-black CSS theme, typography (Space Grotesk, JetBrains Mono)
 │   └── templates/         # Clean dark-mode Jinja2 templates (overview, new, history, detail)
 ├── .env.example           # Fully documented dual-runtime environment configuration
 ├── requirements.txt       # Clean, pinned Python dependencies

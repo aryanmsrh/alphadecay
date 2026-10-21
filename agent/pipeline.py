@@ -14,30 +14,20 @@ from export.pdf import generate_pdf_report
 
 def build_deterministic_numbers(
     anomaly: Dict[str, Any],
-    key_numbers: Optional[List[Dict[str, Any]]] = None,
     peer_benchmarks: Optional[List[str]] = None,
 ) -> List[str]:
-    bullets: List[str] = []
     raw_bullets = anomaly.get("numbers_bullets", [])
+    if not raw_bullets or not isinstance(raw_bullets, list):
+        raise ValueError(f"Anomaly '{anomaly.get('metric')}' is missing required 'numbers_bullets'")
+
+    bullets: List[str] = []
     for b in raw_bullets:
         clean_b = str(b).strip()
         if clean_b and clean_b not in bullets:
             bullets.append(clean_b)
 
-    if not bullets and anomaly.get("math_detail"):
-        for part in str(anomaly["math_detail"]).split(";"):
-            clean_p = part.strip()
-            if clean_p and clean_p not in bullets:
-                bullets.append(clean_p)
-
-    if key_numbers:
-        for kn in key_numbers[:3]:
-            name = kn.get("name")
-            val = kn.get("value")
-            period = kn.get("period")
-            line = f"{name}: {val} ({period})"
-            if line not in bullets and not any(name in b for b in bullets):
-                bullets.append(line)
+    if not bullets:
+        raise ValueError(f"Anomaly '{anomaly.get('metric')}' is missing required 'numbers_bullets'")
 
     if peer_benchmarks:
         for pb in peer_benchmarks:
@@ -49,6 +39,9 @@ def build_deterministic_numbers(
 
 
 def build_deterministic_evidence(evidence_items: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    if not evidence_items:
+        raise RuntimeError("Zero evidence items provided to build_deterministic_evidence")
+
     clean_list: List[Dict[str, str]] = []
     seen_urls = set()
     for item in evidence_items:
@@ -65,10 +58,8 @@ def build_deterministic_evidence(evidence_items: List[Dict[str, Any]]) -> List[D
                 clean_list.append({"source": "Statutory Filing", "url": clean_item})
 
     if not clean_list:
-        clean_list.append({
-            "source": "Statutory Financial Disclosures (Screener / BSE)",
-            "url": "https://www.screener.in",
-        })
+        raise RuntimeError("Zero valid evidence URLs extracted from evidence items")
+
     return clean_list
 
 
@@ -76,22 +67,18 @@ def synthesize_anomaly_report(
     company_name: str,
     ticker: str,
     anomaly: Dict[str, Any],
-    key_numbers: List[Dict[str, Any]],
     evidence_items: List[Dict[str, Any]],
     attacker_result: Dict[str, Any],
     defender_result: Dict[str, Any],
+    key_numbers: Optional[List[Dict[str, Any]]] = None,
     dossier: Optional[Dict[str, Any]] = None,
     model: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], str]:
     metric = anomaly.get("metric", "Financial Metric")
-    summary = anomaly.get("summary", "")
-    math_detail = anomaly.get("math_detail", "")
-    directional_comparison = anomaly.get("directional_comparison", summary)
-    multi_quarter_trajectory = anomaly.get("multi_quarter_trajectory", summary)
-    numbers_bullets = anomaly.get("numbers_bullets", [])
+    multi_quarter_trajectory = anomaly.get("multi_quarter_trajectory", "")
     peer_benchmarks = dossier.get("peer_benchmarks", []) if dossier else []
 
-    numbers_list = build_deterministic_numbers(anomaly, key_numbers, peer_benchmarks)
+    numbers_list = build_deterministic_numbers(anomaly, peer_benchmarks)
     evidence_clean = build_deterministic_evidence(evidence_items)
 
     numbers_text = "\n".join([f"- {n}" for n in numbers_list])
@@ -102,7 +89,6 @@ def synthesize_anomaly_report(
 
 Anomaly Under Review:
 - Metric: {metric}
-- Directional Fact: {directional_comparison}
 - Multi-Quarter Trajectory: {multi_quarter_trajectory}
 - Calculated Numbers:
 {numbers_text}
@@ -149,18 +135,20 @@ Output strictly valid JSON with this exact schema:
 
     timeline_str = str(parsed.get("timeline", "")).strip()
 
+    if not discovery or not why_matters or not timeline_str:
+        raise KeyError(f"LLM synthesis missing required field: {parsed}")
+
     atk_strength = str(attacker_result.get("evidence_strength", "")).strip()
-    atk_conf = str(attacker_result.get("confidence", "") or attacker_result.get("confidence_rating", "")).strip()
+    atk_conf = str(attacker_result.get("confidence", "")).strip()
 
     def_fals = str(defender_result.get("falsification_condition", "")).strip()
     def_strength = str(defender_result.get("evidence_strength", "")).strip()
-    def_conf = str(defender_result.get("confidence", "") or defender_result.get("confidence_rating", "")).strip()
+    def_conf = str(defender_result.get("confidence", "")).strip()
 
     strength_summary = f"Attacker: {atk_conf} ({atk_strength}) | Defender: {def_conf} ({def_strength})"
 
     final_report = {
         "discovery": discovery,
-        "the_discovery": discovery,
         "why_it_matters": why_matters,
         "evidence": evidence_clean,
         "timeline": timeline_str,
@@ -169,14 +157,12 @@ Output strictly valid JSON with this exact schema:
             "verdict": atk_verdict,
             "evidence_strength": atk_strength,
             "confidence": atk_conf,
-            "confidence_rating": atk_conf,
         },
         "defender": {
             "counterargument": def_counter,
             "falsification_condition": def_fals,
             "evidence_strength": def_strength,
             "confidence": def_conf,
-            "confidence_rating": def_conf,
         },
         "strength": strength_summary,
     }
@@ -193,14 +179,28 @@ def run_investigation(
     event_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     provider: Optional[str] = None,
 ) -> Dict[str, Any]:
-    def emit(step: str, message: str, data: Optional[Dict[str, Any]] = None):
-        if event_callback:
-            event_callback({
-                "step": step,
-                "message": message,
+    execution_events: List[Dict[str, Any]] = []
+
+    def emit(
+        step_or_dict: Any,
+        message: Optional[str] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ):
+        if isinstance(step_or_dict, dict):
+            evt = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                **(data or {})
-            })
+                **step_or_dict,
+            }
+        else:
+            evt = {
+                "step": str(step_or_dict),
+                "message": str(message or ""),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                **(data or {}),
+            }
+        execution_events.append(evt)
+        if event_callback:
+            event_callback(evt)
 
     clean_ticker = ticker.upper().strip()
     if not run_id:
@@ -229,22 +229,12 @@ def run_investigation(
     key_numbers = dossier["key_numbers"]
     evidence_items = dossier["evidence_items"]
     all_anomalies = dossier.get("anomalies", [])
+    if not all_anomalies:
+        raise RuntimeError(f"No statistical anomalies detected in financial statements for {clean_ticker}")
 
     emit("ANALYTICS", f"Computed financial indicators and identified {len(all_anomalies)} anomalies")
 
     target_anomalies = all_anomalies[:anomaly_count]
-    if not target_anomalies and all_anomalies:
-        target_anomalies = [all_anomalies[0]]
-    elif not target_anomalies:
-        target_anomalies = [{
-            "metric": "Operating Trajectory",
-            "summary": "Standard operational baseline across reporting periods.",
-            "math_detail": "No severe divergence flagged.",
-            "severity": 3.0,
-            "directional_comparison": "Metric baseline in line with disclosures.",
-            "numbers_bullets": ["Operating baseline in line with disclosures."],
-            "multi_quarter_trajectory": "Trailing periods consistent.",
-        }]
 
     attacker = Attacker(model=active_model)
     defender = Defender(model=active_model)
@@ -274,8 +264,8 @@ def run_investigation(
             "index": idx,
             "hypothesis": atk_verdict,
             "verdict": atk_verdict,
-            "confidence": atk_res.get("confidence", "88%"),
-            "evidence_strength": atk_res.get("evidence_strength", "8.5/10"),
+            "confidence": atk_res.get("confidence", ""),
+            "evidence_strength": atk_res.get("evidence_strength", ""),
         })
 
         emit("DEFENDER_START", f"Defender formulating operational counter-argument and falsification criteria for Anomaly {idx}", {"index": idx})
@@ -299,8 +289,8 @@ def run_investigation(
             "hypothesis": def_counter,
             "counterargument": def_counter,
             "falsification_condition": def_res.get("falsification_condition", ""),
-            "confidence": def_res.get("confidence", "82%"),
-            "evidence_strength": def_res.get("evidence_strength", "8.0/10"),
+            "confidence": def_res.get("confidence", ""),
+            "evidence_strength": def_res.get("evidence_strength", ""),
         })
 
         emit("SYNTHESIS", f"Synthesizing 8-point brief for Anomaly {idx}: {metric}", {"index": idx})
@@ -337,6 +327,8 @@ def run_investigation(
 
     first_discovery = investigated_anomalies[0]["report"]["discovery"] if investigated_anomalies else ""
 
+    emit("DONE", f"Investigation complete for {clean_ticker}", {"run_id": run_id})
+
     result_data = {
         "run_id": run_id,
         "ticker": clean_ticker,
@@ -353,13 +345,12 @@ def run_investigation(
         "evidence_items": evidence_items,
         "evidence_count": len(evidence_items),
         "pdf_path": pdf_file,
+        "events": execution_events,
         "status": "COMPLETED",
     }
 
     run_file = base_dir / "run.json"
     with open(run_file, "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=2)
-
-    emit("DONE", f"Investigation complete for {clean_ticker}", {"run_id": run_id})
 
     return result_data

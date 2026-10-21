@@ -32,29 +32,6 @@ def clean_deepseek_reasoning(text: str) -> str:
     return cleaned.strip()
 
 
-def sanitize_json_text(text: str) -> str:
-    clean = clean_deepseek_reasoning(text)
-    if not clean:
-        clean = text
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", clean, flags=re.DOTALL)
-    if match:
-        clean = match.group(1).strip()
-    else:
-        start = clean.find("{")
-        end = clean.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            clean = clean[start : end + 1]
-        elif "{" in text and "}" in text:
-            start = text.find("{")
-            end = text.rfind("}")
-            if start != -1 and end != -1 and end > start:
-                clean = text[start : end + 1]
-    clean = re.sub(r"\*\*([^*]+)\*\*", r"\1", clean)
-    clean = re.sub(r",\s*([}\]])", r"\1", clean)
-    clean = re.sub(r"\s*[\u4e00-\u9fff]+\s*", " ", clean)
-    return clean.strip()
-
-
 def unwrap_outer_dict(data: Any) -> Any:
     if isinstance(data, dict) and len(data) == 1:
         k = list(data.keys())[0]
@@ -64,23 +41,14 @@ def unwrap_outer_dict(data: Any) -> Any:
 
 
 def parse_json_strictly(text: str) -> Dict[str, Any]:
-    clean = clean_deepseek_reasoning(text)
-    if clean:
-        try:
-            parsed = json.loads(clean)
-            if isinstance(parsed, dict):
-                return unwrap_outer_dict(parsed)
-            return parsed
-        except Exception:
-            pass
-    sanitized = sanitize_json_text(text)
+    clean = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
     try:
-        parsed = json.loads(sanitized)
+        parsed = json.loads(clean)
         if isinstance(parsed, dict):
             return unwrap_outer_dict(parsed)
         return parsed
     except Exception:
-        raise ValueError(f"Failed to parse valid JSON from response: {clean[:200] or text[:200]}")
+        raise ValueError("Model returned invalid JSON syntax: " + text)
 
 
 class LLM:
@@ -120,21 +88,39 @@ class LLM:
                 "parts": [{"text": system}],
             }
 
-        timeout_config = httpx.Timeout(self.timeout, connect=30.0)
-        with httpx.Client(timeout=timeout_config) as client:
-            res = client.post(url, json=payload)
-            if res.status_code != 200:
-                raise RuntimeError(f"Gemini API returned {res.status_code}: {res.text}")
-            data = res.json()
-            candidates = data.get("candidates", [])
-            if not candidates:
-                raise RuntimeError(f"Gemini API returned no candidates: {data}")
-            content = candidates[0].get("content", {})
-            parts = content.get("parts", [])
-            if not parts:
-                raise RuntimeError(f"Gemini API returned empty parts: {data}")
-            raw_text = parts[0].get("text", "")
-            return raw_text
+        timeout_config = httpx.Timeout(self.timeout, connect=15.0, read=self.timeout)
+        max_attempts = 3
+        last_err: Optional[Exception] = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with httpx.Client(timeout=timeout_config) as client:
+                    res = client.post(url, json=payload)
+                    if res.status_code != 200:
+                        raise RuntimeError(f"Gemini API returned {res.status_code}: {res.text}")
+                    data = res.json()
+                    candidates = data.get("candidates", [])
+                    if not candidates:
+                        raise RuntimeError(f"Gemini API returned no candidates: {data}")
+                    content = candidates[0].get("content", {})
+                    parts = content.get("parts", [])
+                    if not parts:
+                        raise RuntimeError(f"Gemini API returned empty parts: {data}")
+
+                    clean_parts = [
+                        p.get("text", "") for p in parts if not p.get("thought")
+                    ]
+                    raw_text = clean_parts[-1] if clean_parts else parts[0].get("text", "")
+                    return raw_text
+            except Exception as e:
+                last_err = e
+                err_str = str(e)
+                if attempt < max_attempts and ("503" in err_str or "429" in err_str or "timed out" in err_str.lower()):
+                    time.sleep(2.0 * attempt)
+                    continue
+                raise RuntimeError(f"Gemini Cloud inference failed: {e}")
+
+        raise RuntimeError(f"Gemini Cloud inference failed: {last_err}")
 
     def _generate_ollama(self, prompt: str, system: Optional[str] = None) -> str:
         endpoint = f"{self.base_url}/api/generate"
@@ -167,13 +153,11 @@ class LLM:
 
     def generate(self, prompt: str, system: Optional[str] = None) -> Tuple[str, str]:
         model_lower = str(self.model).lower()
-        if model_lower.startswith("gemini") and self.gemini_key:
-            try:
-                raw_text = self._generate_gemini(prompt, system=system)
-                return raw_text, self.model
-            except Exception:
-                raw_text = self._generate_ollama(prompt, system=system)
-                return raw_text, self.ollama_model
+        if model_lower.startswith("gemini"):
+            if not self.gemini_key:
+                raise ValueError("GEMINI_API_KEY is not configured")
+            raw_text = self._generate_gemini(prompt, system=system)
+            return raw_text, self.model
         else:
             raw_text = self._generate_ollama(prompt, system=system)
             return raw_text, self.ollama_model
@@ -196,93 +180,88 @@ class LLM:
         anomaly: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Dict[str, Any], str]:
         manifest_str = finder.get_tool_manifest() if (finder and hasattr(finder, "get_tool_manifest")) else ""
-        turn1_prompt = f"""{prompt}
+        anomaly_metric = (anomaly.get("metric", "Financial Metric") if anomaly else "Financial Metric")
+        anomaly_id = (anomaly.get("id", "") if anomaly else "")
+        anomaly_traj = (anomaly.get("multi_quarter_trajectory", "") if anomaly else "")
 
-Available Mid-Run Tools:
+        turn1_prompt = f"""Target Entity: {company_name} ({ticker})
+Active Financial Anomaly: {anomaly_metric} (ID: {anomaly_id})
+Trajectory: {anomaly_traj}
+
+Context:
+{prompt}
+
+=== PHASE 1: MANDATORY INVESTIGATIVE TRIANGULATION ===
+Before you output your final deliverable, you MUST select an investigative tool from the manifest to triangulate and stress-test your hypothesis against sector peers, concall disclosures, or historical filings.
+
+Available Investigative Tools:
 {manifest_str}
 
-Tool Call Instruction:
-You may output a tool request JSON if you require additional verification before delivering your final brief:
-{{"action": "call_tool", "tool_name": "...", "tool_args": {{...}}}}
-OR output your final schema JSON directly.
+Instructions for Phase 1:
+1. Formulate your preliminary hypothesis on what you suspect management is hiding or how the operational mechanics work.
+2. Select the most relevant tool from the manifest to cross-examine and verify (e.g. 'triangulate_peer_metric' to check sector peers, 'search_concall_transcript' to find management commentary, or 'search_india_filings_news' for external corporate actions).
+3. Output strictly valid JSON with this exact schema:
+{{
+  "preliminary_thesis": "Your 1-2 sentence initial investigative hypothesis",
+  "action": "call_tool",
+  "tool_name": "triangulate_peer_metric" | "search_concall_transcript" | "search_india_filings_news" | "get_multi_quarter_table",
+  "tool_args": {{ ... }}
+}}
 """
         raw_text, model_name = self.generate(turn1_prompt, system=system)
-        parsed_turn1 = None
-        try:
-            parsed_turn1 = parse_json_strictly(raw_text)
-        except Exception:
-            pass
+        parsed_turn1 = parse_json_strictly(raw_text)
 
-        tool_call_detected = False
         tool_name = ""
         tool_args: Dict[str, Any] = {}
+        preliminary_thesis = ""
 
         if isinstance(parsed_turn1, dict):
-            if parsed_turn1.get("action") == "call_tool" or "tool_name" in parsed_turn1:
-                tool_name = parsed_turn1.get("tool_name", "")
-                tool_args = parsed_turn1.get("tool_args", {})
-                if tool_name and finder:
-                    tool_call_detected = True
+            preliminary_thesis = str(parsed_turn1.get("preliminary_thesis", "")).strip()
+            tool_name = str(parsed_turn1.get("tool_name", "")).strip().lower()
+            if isinstance(parsed_turn1.get("tool_args"), dict):
+                tool_args = parsed_turn1["tool_args"]
 
-        if tool_call_detected:
-            tool_output = finder.execute_tool(
-                tool_name=tool_name,
-                tool_args=tool_args,
-                company_name=company_name,
-                ticker=ticker,
-                dossier=dossier,
-                event_callback=event_callback,
-            )
-            turn2_prompt = f"""{prompt}
+        valid_tools = ("triangulate_peer_metric", "search_concall_transcript", "search_india_filings_news", "get_multi_quarter_table")
+        if tool_name not in valid_tools:
+            tool_name = "triangulate_peer_metric"
+            tool_args = {"metric_id": anomaly_id or "signal_margin_cost_dynamics"}
 
-Tool Execution Result for '{tool_name}':
+        if tool_name == "triangulate_peer_metric" and not tool_args.get("metric_id"):
+            tool_args["metric_id"] = anomaly_id or "signal_margin_cost_dynamics"
+        elif tool_name == "search_concall_transcript" and not tool_args.get("keywords"):
+            tool_args["keywords"] = anomaly_metric.lower()
+        elif tool_name == "search_india_filings_news" and not tool_args.get("query"):
+            tool_args["query"] = f"{anomaly_metric} financial disclosures"
+        elif tool_name == "get_multi_quarter_table" and not tool_args.get("metric_id"):
+            tool_args["metric_id"] = anomaly_id or "margin"
+
+        if preliminary_thesis and event_callback:
+            event_callback({
+                "step": "TRIANGULATION",
+                "message": f"Investigative thesis: {preliminary_thesis}",
+                "hypothesis": preliminary_thesis,
+            })
+
+        tool_output = finder.execute_tool(
+            tool_name=tool_name,
+            tool_args=tool_args,
+            company_name=company_name,
+            ticker=ticker,
+            dossier=dossier,
+            event_callback=event_callback,
+        )
+
+        turn2_prompt = f"""{prompt}
+
+=== PHASE 2: FINAL FORENSIC DELIVERABLE WITH VERIFIED TRIANGULATION ===
+Initial Investigative Thesis:
+"{preliminary_thesis or 'Cross-examining financial divergence against external disclosures.'}"
+
+Verified Tool Findings from '{tool_name}' with args {json.dumps(tool_args)}:
 {tool_output}
 
-Now deliver your final forensic analysis. Output strictly valid JSON conforming to the requested schema.
+Task:
+Integrate the verified tool findings above alongside the audited statements to formulate your final position.
+Output strictly valid JSON conforming to the requested schema.
 """
-            return self.generate_json(turn2_prompt, system=system)
-
-        has_final_keys = False
-        if isinstance(parsed_turn1, dict):
-            if "verdict" in parsed_turn1 or "counterargument" in parsed_turn1:
-                has_final_keys = True
-
-        if finder:
-            metric_id = (anomaly.get("id", "") if anomaly else "") or "signal_margin_cost_dynamics"
-            keywords = (anomaly.get("metric", "") if anomaly else "") or "operating margin inventory receivables"
-            t1_res = finder.execute_tool("triangulate_peer_metric", {"metric_id": metric_id}, company_name, ticker, dossier, event_callback)
-            t2_res = finder.execute_tool("search_concall_transcript", {"keywords": keywords}, company_name, ticker, dossier, event_callback)
-
-            if has_final_keys:
-                return parsed_turn1, model_name
-
-            turn2_prompt = f"""{prompt}
-
-Verified Mid-Run Research Findings:
-- Peer Metric Triangulation:
-{t1_res}
-
-- Earnings Concall Records:
-{t2_res}
-
-Now deliver your final forensic analysis. Output strictly valid JSON conforming to the requested schema.
-"""
-            return self.generate_json(turn2_prompt, system=system)
-
-        if has_final_keys:
-            return parsed_turn1, model_name
-
-        return self.generate_json(prompt, system=system)
-
-
-def call_model(prompt: str, system: Optional[str] = None) -> Tuple[str, str]:
-    return LLM().generate(prompt, system=system)
-
-
-def call_ollama(prompt: str, system: Optional[str] = None) -> str:
-    text, _ = LLM().generate(prompt, system=system)
-    return text
-
-
-def extract_json_object(text: str) -> Dict[str, Any]:
-    return parse_json_strictly(text)
+        return self.generate_json(turn2_prompt, system=system)

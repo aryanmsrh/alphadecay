@@ -44,9 +44,9 @@
 
       <div class="form-group" style="margin-top: 20px;">
         <label for="provider" class="form-label">Runtime Engine</label>
-        <select id="provider" name="provider" class="form-control" style="font-size: 14.5px; max-width: 320px;">
-          <option value="gemini" selected>Gemini Cloud (gemini-3.5-flash-lite)</option>
-          <option value="ollama">Local DeepSeek-R1 (deepseek-r1:7b)</option>
+        <select id="provider" name="provider" class="form-control" style="font-size: 14.5px; max-width: 380px;">
+          <option value="gemini" selected>Gemini Cloud ({{ gemini_model }})</option>
+          <option value="ollama">Local DeepSeek-R1 ({{ ollama_model }})</option>
         </select>
         <div class="form-help">
           Select cloud Gemini or local DeepSeek-R1 via Ollama.

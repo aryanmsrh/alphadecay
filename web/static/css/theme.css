@@ -598,71 +598,10 @@ a:hover {
   color: #38bdf8;
   border: 1px solid #0284c7;
 }
-.verdict-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 28px 34px;
-  border-radius: var(--radius-md);
-  margin-bottom: 28px;
-  box-shadow: var(--shadow-elevated);
-}
-.verdict-banner-successful, .verdict-banner-failed {
-  background: #1c0303;
-  border: 1px solid #dc2626;
-  border-left: 8px solid #ef4444;
-}
-.verdict-banner-refuted, .verdict-banner-passed {
-  background: #021a0c;
+.badge-completed {
+  background: #052e16;
+  color: #4ade80;
   border: 1px solid #16a34a;
-  border-left: 8px solid #22c55e;
-}
-.verdict-pill-huge {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 900;
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  display: inline-block;
-  white-space: nowrap;
-}
-.verdict-pill-huge.successful, .verdict-pill-huge.failed {
-  background: #ef4444;
-  color: #FFFFFF;
-}
-.verdict-pill-huge.refuted, .verdict-pill-huge.passed {
-  background: #22c55e;
-  color: #000000;
-}
-.strength-tag-block {
-  background: #000000;
-  border: 1px solid var(--border-highlight);
-  padding: 14px 22px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 280px;
-  box-shadow: var(--shadow-subtle);
-}
-.strength-label-small {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 800;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.strength-score-huge {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
 }
 .form-group {
   margin-bottom: 24px;
@@ -741,33 +680,6 @@ a:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-elevated);
 }
-.math-metric-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.math-title {
-  font-weight: 700;
-  font-size: 16.5px;
-  color: var(--text-primary);
-  font-family: var(--font-display);
-}
-.math-period-tag {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-.math-number-value {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 900;
-  color: var(--accent-blue);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
 .math-formula-box, .numbers-box, .calc-box {
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -780,30 +692,6 @@ a:hover {
   word-break: break-word;
   margin: 0;
   min-height: 0;
-}
-.math-formula-title {
-  color: var(--text-muted);
-  font-weight: 700;
-  margin-bottom: 2px;
-  font-size: 10px;
-  letter-spacing: 0.5px;
-}
-.math-calc-line {
-  color: #FFFFFF;
-  font-weight: 600;
-  font-size: 11.5px;
-}
-.math-meaning-block {
-  font-size: 14.5px;
-  color: var(--text-primary);
-  line-height: 1.55;
-}
-.math-signifies-block {
-  font-size: 13.5px;
-  color: var(--text-secondary);
-  line-height: 1.55;
-  border-left: 2px solid var(--border-highlight);
-  padding-left: 12px;
 }
 .mono-val {
   font-family: var(--font-mono);
@@ -819,33 +707,6 @@ a:hover {
   font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 800;
-  white-space: nowrap;
-}
-.sev-high {
-  background: #450a0a;
-  color: #f87171;
-  border: 1px solid #dc2626;
-}
-.sev-med {
-  background: #422006;
-  color: #facc15;
-  border: 1px solid #ca8a04;
-}
-.sev-low {
-  background: #082f49;
-  color: #38bdf8;
-  border: 1px solid #0284c7;
-}
-.badge-attempt {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  text-transform: uppercase;
-  background: #000000;
-  border: 1px solid var(--border-light);
-  color: var(--text-secondary);
   white-space: nowrap;
 }
 .alert-banner {
@@ -916,6 +777,10 @@ a:hover {
   margin-bottom: 0 !important;
   opacity: 1 !important;
 }
+.hidden {
+  display: none !important;
+}
+
 @keyframes pulse {
   0% { opacity: 0.6; }
   50% { opacity: 1; }

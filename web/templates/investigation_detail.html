@@ -77,7 +77,7 @@
         wrap.innerHTML = `
           <div style="border: 1px solid #dc2626; background: #1c0303; padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 6px;">
             <div style="color: #f87171; font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">
-              ${timeHtml}Attacker Prosecutorial Hypothesis (${data.confidence || '88%'})
+              ${timeHtml}Attacker Prosecutorial Hypothesis (${data.confidence ? data.confidence : ''})
             </div>
             <div style="color: #FFFFFF; font-family: var(--font-body); font-size: 14px; line-height: 1.55;">
               ${data.hypothesis}
@@ -88,7 +88,7 @@
         wrap.innerHTML = `
           <div style="border: 1px solid #16a34a; background: #021a0c; padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 6px;">
             <div style="color: #4ade80; font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">
-              ${timeHtml}Defender Operational Defense (${data.confidence || '82%'})
+              ${timeHtml}Defender Operational Defense (${data.confidence ? data.confidence : ''})
             </div>
             <div style="color: #FFFFFF; font-family: var(--font-body); font-size: 14px; line-height: 1.55; margin-bottom: 6px;">
               ${data.hypothesis}
@@ -225,7 +225,7 @@
                   <li style="margin-bottom: 6px;">
                     {% if e is mapping %}
                       {% set e_src = e.source or 'Statutory Filing' %}
-                      {% set e_url = e.url or 'https://screener.in' %}
+                      {% set e_url = e.url or '#' %}
                       <a href="{{ e_url }}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-blue); text-decoration: underline; font-weight: 600;">[{{ e_src }}]</a> — {{ e_url }}
                     {% else %}
                       {{ e }}
@@ -254,24 +254,9 @@
               Numbers
             </div>
             <div class="math-formula-box" style="padding: 10px 14px;">
-              {% set num_items = rpt.numbers %}
-              {% if num_items is iterable and num_items is not string and num_items is not mapping %}
-                {% for n in num_items %}
-                  <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ n }}</div>
-                {% endfor %}
-              {% elif num_items is mapping %}
-                {% for k, v in num_items.items() %}
-                  {% if v is iterable and v is not string %}
-                    {% for item in v %}
-                      <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ item }}</div>
-                    {% endfor %}
-                  {% else %}
-                    <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ k }}: {{ v }}</div>
-                  {% endif %}
-                {% endfor %}
-              {% else %}
-                <div style="color: #FFFFFF; font-size: 12.5px;">{{ num_items }}</div>
-              {% endif %}
+              {% for n in rpt.numbers %}
+                <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ n }}</div>
+              {% endfor %}
             </div>
           </div>
 
@@ -337,12 +322,39 @@
               Strength
             </div>
             <div style="font-size: 14px; color: #FFFFFF; font-family: var(--font-mono);">
-              {{ rpt.strength or ('Attacker: ' ~ (atk.confidence or '88%') ~ ' | Defender: ' ~ (dfn.confidence or '82%')) }}
+              {{ rpt.strength or '' }}
             </div>
           </div>
         </div>
       </div>
     {% endfor %}
+
+    {% if run.status == 'COMPLETED' and run.events %}
+      <div class="card" style="margin-top: 24px; border: 1px solid var(--border);">
+        <div class="card-header" style="cursor: pointer;" onclick="document.getElementById('audit-drawer').classList.toggle('hidden');">
+          <div class="card-title" style="font-size: 16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+            <span>Execution Telemetry & Tool Audit Log ({{ run.events|length }} Events)</span>
+          </div>
+          <span class="tag-badge" style="font-size: 10px;">CLICK TO TOGGLE</span>
+        </div>
+        <div id="audit-drawer" style="background: #000; border-radius: var(--radius-sm); padding: 14px; max-height: 400px; overflow-y: auto; font-family: var(--font-mono); font-size: 12px; line-height: 1.6;">
+          {% for evt in run.events %}
+            <div style="margin-bottom: 6px;">
+              <span style="color: var(--text-muted);">[{{ evt.timestamp if evt.timestamp else '' }}]</span>
+              <span style="color: var(--accent-blue); font-weight: 700;">{{ evt.step }}:</span>
+              <span style="color: #e4e4e7;">{{ evt.message }}</span>
+              {% if evt.result %}
+                <pre style="background: #0a0a0f; border: 1px solid var(--border); padding: 6px; margin: 4px 0 8px 16px; border-radius: 4px; color: #a1a1aa; font-size: 11px; white-space: pre-wrap;">{{ evt.result }}</pre>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
 
   {% endif %}
 </div>

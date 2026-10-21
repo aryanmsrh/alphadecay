@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}Overview{% endblock %}
+
+{% block content %}
+<div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 24px;">
+  <div class="metric-card accent-blue">
+    <div class="metric-card-label">Completed Reports</div>
+    <div class="metric-card-val">{{ metrics.total_completed }}</div>
+    <div class="metric-card-desc">
+      Total investigations completed
+    </div>
+  </div>
+
+  <div class="metric-card accent-green">
+    <div class="metric-card-label">Latest Stock Analyzed</div>
+    <div class="metric-card-val" style="font-size: 20px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+      {{ metrics.most_recent_company or 'None' }}
+    </div>
+    <div class="metric-card-desc">
+      {% if metrics.latest_ticker %}
+        <code style="color: var(--accent-blue); font-weight: 700;">{{ metrics.latest_ticker }}</code> · 
+      {% endif %}
+      Statutory disclosures
+    </div>
+  </div>
+
+  <div class="metric-card accent-blue">
+    <div class="metric-card-label">Model Engine</div>
+    <div class="metric-card-val" style="font-size: 18px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+      {{ system_health.model }}
+    </div>
+    <div class="metric-card-desc">Local execution</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+      <span>Recent Company Reports</span>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('investigations_history_page') }}" class="btn btn-secondary btn-sm">
+        <span>View All</span>
+      </a>
+      <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
+        <span>New Analysis</span>
+      </a>
+    </div>
+  </div>
+
+  {% if recent_runs and recent_runs|length > 0 %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Ticker</th>
+            <th>Status</th>
+            <th>Discovery</th>
+            <th>Date</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent_runs %}
+            <tr class="clickable-row" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
+              <td>
+                <strong style="color: #FFFFFF;">{{ r.company_name or r.ticker }}</strong>
+              </td>
+              <td><code>{{ r.ticker }}</code></td>
+              <td>
+                <span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span>
+              </td>
+              <td style="max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_discovery or r.hypothesis or '' }}">
+                {{ r.primary_discovery or r.hypothesis or 'Analysis in progress...' }}
+              </td>
+              <td style="color: var(--text-muted); font-size: 12.5px; white-space: nowrap;">
+                {{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }} UTC
+              </td>
+              <td style="text-align: right;" onclick="event.stopPropagation();">
+                <a href="{{ url_for('investigation_detail_page', run_id=r.run_id) }}" class="btn btn-secondary btn-sm">
+                  <span>View</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h3>No Reports Yet</h3>
+      <p>Select a company to analyze financial indicators and calculated anomalies.</p>
+      <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary">
+        <span>Start Analysis</span>
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

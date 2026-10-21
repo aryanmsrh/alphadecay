@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if page_title %}{{ page_title }} · {% endif %}AlphaDecay</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Space+Grotesk:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v=3.3">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <a href="{{ url_for('index') }}" class="brand-link">
+          <div class="brand-logo-wrap">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="8" fill="#0A0A0F" stroke="rgba(255,255,255,0.18)" stroke-width="1.2"/>
+              <path d="M18.95 20.47 Q18.04 22.45 16.78 23.35 Q15.51 24.25 13.67 24.25 Q10.56 24.25 9.02 22.23 Q7.49 20.20 7.49 16.07 Q7.49 11.89 9.15 9.82 Q10.82 7.75 14.06 7.75 Q15.98 7.75 17.37 8.73 Q18.76 9.71 19.47 11.50 L19.51 11.50 Q19.88 9.68 20.61 8.05 L24.51 8.05 Q23.77 9.38 22.99 11.74 Q22.20 14.09 22.02 15.78 Q22.50 20.32 24.02 23.95 L20.06 23.95 Q19.34 22.19 19.01 20.47 L18.95 20.47 Z M11.82 16.03 Q11.82 18.91 12.45 20.16 Q13.07 21.41 14.48 21.41 Q15.79 21.41 16.73 19.93 Q17.67 18.44 17.94 15.98 Q17.62 13.37 16.76 11.98 Q15.89 10.60 14.60 10.60 Q13.10 10.60 12.46 11.91 Q11.82 13.22 11.82 16.03 Z" fill="#FFFFFF"/>
+            </svg>
+          </div>
+          <div class="brand-text-wrap">
+            <span class="brand-title">Alpha<span class="brand-highlight">Decay</span></span>
+            <span class="brand-sub">Financial Research</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Overview</span>
+        </a>
+
+        <a href="{{ url_for('new_investigation_page') }}" class="nav-item {% if request.endpoint == 'new_investigation_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>New Analysis</span>
+        </a>
+
+        <a href="{{ url_for('investigations_history_page') }}" class="nav-item {% if request.endpoint == 'investigations_history_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polyline points="12 8 12 12 14 14"></polyline>
+            <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
+          </svg>
+          <span>Past Reports</span>
+        </a>
+
+        <a href="{{ url_for('architecture_page') }}" class="nav-item {% if request.endpoint == 'architecture_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          <span>Architecture & Guide</span>
+        </a>
+
+        <a href="{{ url_for('settings_page') }}" class="nav-item {% if request.endpoint == 'settings_page' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div><strong style="color: var(--accent-blue);">AlphaDecay</strong></div>
+        <div style="font-size: 11px; color: var(--text-muted);">Financial Research</div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <span class="page-title">{% block topbar_title %}AlphaDecay{% endblock %}</span>
+        </div>
+
+        <div class="topbar-right">
+          <div class="provider-pill">
+            <span class="status-dot healthy"></span>
+            <span>Model: <strong>{{ system_health.model }}</strong></span>
+          </div>
+
+          <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>New Analysis</span>
+          </a>
+        </div>
+      </header>
+
+      <main class="content-body">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

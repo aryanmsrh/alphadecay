@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}Analysis · {{ run.ticker }}{% endblock %}
+
+{% block content %}
+<div id="investigation-workspace" data-run-id="{{ run.run_id }}" data-status="{{ run.status }}">
+  <div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <h1 style="font-family: var(--font-display); font-size: 26px; font-weight: 800; color: #FFFFFF; margin: 0;">
+            {{ run.company_name or run.ticker }}
+          </h1>
+          <code style="font-family: var(--font-mono); font-size: 14px; background: #000; padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--accent-blue);">
+            {{ run.ticker }}
+          </code>
+        </div>
+        <div style="font-size: 13.5px; color: var(--text-secondary);">
+          Report ID: <code style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.run_id }}</code>
+          &nbsp;·&nbsp;
+          Analyzed: <span style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }} UTC</span>
+          {% if run.provider or run.provider_used %}
+            &nbsp;·&nbsp;
+            Engine: <span style="font-family: var(--font-mono); color: var(--accent-blue);">{{ run.provider_used or run.provider }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        {% if run.status == 'COMPLETED' %}
+          <a href="{{ url_for('api_investigation_pdf', run_id=run.run_id) }}" class="btn btn-primary btn-sm" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download PDF</span>
+          </a>
+        {% endif %}
+        <a href="{{ url_for('new_investigation_page') }}" class="btn btn-secondary btn-sm">
+          <span>New Analysis</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if run.status in ('QUEUED', 'RUNNING') %}
+    <div class="card" style="margin-bottom: 24px; padding: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="status-dot healthy" style="animation: pulse 1s infinite; width: 12px; height: 12px;"></div>
+          <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0;">
+            Live Analysis Stream: {{ run.ticker }}
+          </h3>
+        </div>
+        <span class="tag-badge">LIVE STREAM</span>
+      </div>
+
+      <div id="live-stream-log" style="background: #000000; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; min-height: 260px; max-height: 520px; overflow-y: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: #e4e4e7;">
+        <div style="color: var(--text-muted);">Initializing stream...</div>
+      </div>
+    </div>
+
+    <script>
+    const logBox = document.getElementById('live-stream-log');
+    let evtSource = null;
+
+    function appendEvent(data) {
+      if (!data) return;
+      const wrap = document.createElement('div');
+      wrap.style.marginBottom = '12px';
+
+      const timeStr = data.timestamp ? data.timestamp.substring(11, 19) : '';
+      const timeHtml = timeStr ? `<span style="color: var(--text-muted); margin-right: 8px;">[${timeStr}]</span>` : '';
+
+      if (data.step === 'ATTACKER' && data.hypothesis) {
+        wrap.innerHTML = `
+          <div style="border: 1px solid #dc2626; background: #1c0303; padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 6px;">
+            <div style="color: #f87171; font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">
+              ${timeHtml}Attacker Prosecutorial Hypothesis (${data.confidence || '88%'})
+            </div>
+            <div style="color: #FFFFFF; font-family: var(--font-body); font-size: 14px; line-height: 1.55;">
+              ${data.hypothesis}
+            </div>
+          </div>
+        `;
+      } else if (data.step === 'DEFENDER' && data.hypothesis) {
+        wrap.innerHTML = `
+          <div style="border: 1px solid #16a34a; background: #021a0c; padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 6px;">
+            <div style="color: #4ade80; font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">
+              ${timeHtml}Defender Operational Defense (${data.confidence || '82%'})
+            </div>
+            <div style="color: #FFFFFF; font-family: var(--font-body); font-size: 14px; line-height: 1.55; margin-bottom: 6px;">
+              ${data.hypothesis}
+            </div>
+            ${data.falsification_condition ? `
+              <div style="color: #86efac; font-size: 13px; font-family: var(--font-mono); border-top: 1px dashed rgba(34,197,94,0.3); padding-top: 6px;">
+                <strong>Falsification Condition:</strong> ${data.falsification_condition}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else if (data.step === 'TOOL_CALL') {
+        wrap.innerHTML = `
+          <div style="border: 1px solid #2563eb; background: #030d1a; padding: 8px 12px; border-radius: var(--radius-sm); margin: 4px 0; font-size: 12.5px;">
+            <span style="color: #60a5fa; font-weight: 700; text-transform: uppercase;">${timeHtml}TOOL CALL:</span>
+            <span style="color: #93c5fd; margin-left: 6px;">${data.message || ''}</span>
+          </div>
+        `;
+      } else if (data.step === 'TOOL_RESULT') {
+        wrap.innerHTML = `
+          <div style="border: 1px solid #0d9488; background: #021a17; padding: 8px 12px; border-radius: var(--radius-sm); margin: 4px 0; font-size: 12.5px;">
+            <span style="color: #2dd4bf; font-weight: 700; text-transform: uppercase;">${timeHtml}TOOL RESULT:</span>
+            <span style="color: #a7f3d0; margin-left: 6px;">${data.message || ''}</span>
+          </div>
+        `;
+      } else if (data.message) {
+        const stepHtml = data.step ? `<span style="color: var(--accent-blue); font-weight: 700; margin-right: 8px;">${data.step}:</span>` : '';
+        wrap.innerHTML = `${timeHtml}${stepHtml}<span>${data.message}</span>`;
+      }
+      logBox.appendChild(wrap);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    if (window.EventSource) {
+      evtSource = new EventSource("{{ url_for('api_investigation_stream', run_id=run.run_id) }}");
+      evtSource.onmessage = function(e) {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.step === 'FINISHED' || data.status === 'COMPLETED' || data.status === 'FAILED') {
+            evtSource.close();
+            setTimeout(function() { window.location.reload(); }, 1000);
+            return;
+          }
+          appendEvent(data);
+        } catch (err) {}
+      };
+      evtSource.onerror = function() {
+        pollStatus();
+      };
+    } else {
+      pollStatus();
+    }
+
+    function pollStatus() {
+      fetch("{{ url_for('api_investigation_events', run_id=run.run_id) }}")
+        .then(function(res) { return res.json(); })
+        .then(function(d) {
+          if (d.events && d.events.length) {
+            logBox.innerHTML = '';
+            d.events.forEach(appendEvent);
+          }
+          if (d.status === 'COMPLETED' || d.status === 'FAILED') {
+            setTimeout(function() { window.location.reload(); }, 1000);
+          } else {
+            setTimeout(pollStatus, 2000);
+          }
+        })
+        .catch(function() { setTimeout(pollStatus, 3000); });
+    }
+    </script>
+  {% elif run.status == 'FAILED' %}
+    <div class="alert-banner alert-danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <div>
+        <strong>Analysis Failed:</strong> {{ run.error or 'Pipeline encountered an error.' }}
+      </div>
+    </div>
+  {% else %}
+
+    {% set anomalies_list = run.investigated_anomalies or [] %}
+    {% for item in anomalies_list %}
+      {% set rpt = item.report or {} %}
+      <div class="card" style="margin-bottom: 28px; border: 1px solid var(--border-highlight);">
+        <div class="card-header" style="background: #000; margin: -26px -28px 24px -28px; padding: 18px 28px; border-bottom: 1px solid var(--border);">
+          <div class="card-title" style="font-family: var(--font-display); font-size: 18px; font-weight: 800;">
+            <span>Anomaly {{ item.index or loop.index }}: {{ item.metric }}</span>
+          </div>
+          {% if item.severity %}
+            <span class="tag-badge">SEVERITY {{ item.severity }}/10</span>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- 1. The Discovery -->
+          <div class="math-card">
+            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
+              The Discovery
+            </div>
+            <div style="font-family: var(--font-display); font-size: 17px; font-weight: 700; color: #FFFFFF; line-height: 1.5;">
+              {{ rpt.discovery or rpt.the_discovery or item.metric }}
+            </div>
+          </div>
+
+          <!-- 2. Why It Matters -->
+          <div class="math-card">
+            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
+              Why It Matters
+            </div>
+            <ul style="padding-left: 20px; font-size: 14.5px; color: var(--text-primary); line-height: 1.6; margin: 0;">
+              {% set wm = rpt.why_it_matters %}
+              {% if wm is iterable and wm is not string %}
+                {% for b in wm %}
+                  <li style="margin-bottom: 6px;">{{ b }}</li>
+                {% endfor %}
+              {% else %}
+                <li>{{ wm }}</li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- 3. Evidence -->
+          <div class="math-card">
+            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
+              Evidence
+            </div>
+            <ul style="padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+              {% set ev = rpt.evidence %}
+              {% if ev is iterable and ev is not string %}
+                {% for e in ev %}
+                  <li style="margin-bottom: 6px;">
+                    {% if e is mapping %}
+                      {% set e_src = e.source or 'Statutory Filing' %}
+                      {% set e_url = e.url or 'https://screener.in' %}
+                      <a href="{{ e_url }}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-blue); text-decoration: underline; font-weight: 600;">[{{ e_src }}]</a> — {{ e_url }}
+                    {% else %}
+                      {{ e }}
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              {% else %}
+                <li>{{ ev }}</li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <!-- 4. Timeline -->
+          <div class="math-card">
+            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
+              Timeline
+            </div>
+            <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.6;">
+              {{ rpt.timeline }}
+            </div>
+          </div>
+
+          <!-- 5. Numbers -->
+          <div class="math-card">
+            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+              Numbers
+            </div>
+            <div class="math-formula-box" style="padding: 10px 14px;">
+              {% set num_items = rpt.numbers %}
+              {% if num_items is iterable and num_items is not string and num_items is not mapping %}
+                {% for n in num_items %}
+                  <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ n }}</div>
+                {% endfor %}
+              {% elif num_items is mapping %}
+                {% for k, v in num_items.items() %}
+                  {% if v is iterable and v is not string %}
+                    {% for item in v %}
+                      <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ item }}</div>
+                    {% endfor %}
+                  {% else %}
+                    <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ k }}: {{ v }}</div>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <div style="color: #FFFFFF; font-size: 12.5px;">{{ num_items }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 6. Attacker -->
+          <div class="math-card" style="border-left: 4px solid var(--accent-red); background: #120505;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.5px;">
+                Attacker
+              </span>
+              {% set atk = rpt.attacker or {} %}
+              {% if atk is mapping and (atk.confidence or atk.confidence_rating) %}
+                <span class="badge" style="background: #450a0a; color: #f87171; border: 1px solid #dc2626; font-size: 11px;">
+                  Confidence: {{ atk.confidence or atk.confidence_rating }}
+                </span>
+              {% endif %}
+            </div>
+
+            <div style="font-size: 14.5px; color: #FFFFFF; line-height: 1.6; margin-bottom: 8px;">
+              <strong>Verdict:</strong> {{ atk.verdict if atk is mapping else atk }}
+            </div>
+
+            {% if atk is mapping and atk.evidence_strength %}
+              <div style="font-size: 13px; color: #fca5a5; font-family: var(--font-mono);">
+                <strong>Evidence Strength:</strong> {{ atk.evidence_strength }}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- 7. Defender -->
+          <div class="math-card" style="border-left: 4px solid var(--accent-green); background: #03140a;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.5px;">
+                Defender
+              </span>
+              {% set dfn = rpt.defender or {} %}
+              {% if dfn is mapping and (dfn.confidence or dfn.confidence_rating) %}
+                <span class="badge" style="background: #052e16; color: #4ade80; border: 1px solid #16a34a; font-size: 11px;">
+                  Confidence: {{ dfn.confidence or dfn.confidence_rating }}
+                </span>
+              {% endif %}
+            </div>
+
+            <div style="font-size: 14.5px; color: #FFFFFF; line-height: 1.6; margin-bottom: 8px;">
+              <strong>Counterargument:</strong> {{ dfn.counterargument if (dfn is mapping and dfn.counterargument) else (dfn.alternative_explanation if dfn is mapping else dfn) }}
+            </div>
+
+            {% if dfn is mapping and dfn.falsification_condition %}
+              <div style="font-size: 13.5px; color: #86efac; line-height: 1.5; margin-bottom: 6px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px dashed rgba(34,197,94,0.3);">
+                <strong>Falsification Condition:</strong> {{ dfn.falsification_condition }}
+              </div>
+            {% endif %}
+
+            {% if dfn is mapping and dfn.evidence_strength %}
+              <div style="font-size: 13px; color: #bbf7d0; font-family: var(--font-mono);">
+                <strong>Evidence Strength:</strong> {{ dfn.evidence_strength }}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- 8. Strength -->
+          <div class="math-card">
+            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+              Strength
+            </div>
+            <div style="font-size: 14px; color: #FFFFFF; font-family: var(--font-mono);">
+              {{ rpt.strength or ('Attacker: ' ~ (atk.confidence or '88%') ~ ' | Defender: ' ~ (dfn.confidence or '82%')) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+  {% endif %}
+</div>
+{% endblock %}

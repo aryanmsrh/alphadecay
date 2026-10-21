@@ -32,19 +32,9 @@ env/
 .env.local
 .env.*.local
 
-# Scraper & pipeline disk cache
+# Data directory
+!data/
 data/cache/
-*.json.cache
-*.log
+data/runs/*
+!data/runs/.gitkeep
 
-# IDE & OS files
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Jupyter notebooks checkpoints
-.ipynb_checkpoints
-!ALPHA_DECAY_PROJECT_OVERVIEW.pdf
-!ALPHA_DECAY_PROJECT_OVERVIEW.pdf
-!data/**

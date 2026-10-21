@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}Architecture & Guide{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <div class="card" style="border-left: 3px solid var(--accent-blue);">
+    <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+      AlphaDecay System Architecture
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+      AlphaDecay analyzes statutory filings, computes financial indicators in Python, flags non-obvious anomalies, and evaluates both sides: the Attacker and the Defender.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span>Investigation Engine</span>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+      <div class="math-card" style="border-left: 4px solid var(--accent-red);">
+        <h3 style="font-size: 16px; font-weight: 700; color: #f87171; margin-bottom: 6px;">The Attacker</h3>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+          Assumes the worst. Analyzes calculated anomalies to build a prosecutorial case that management is hiding something behind accounting tricks, channel stuffing, or working capital pressure. Outputs a verdict and evidence strength rating.
+        </p>
+      </div>
+
+      <div class="math-card" style="border-left: 4px solid var(--accent-green);">
+        <h3 style="font-size: 16px; font-weight: 700; color: #4ade80; margin-bottom: 6px;">The Defender</h3>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+          Assumes the company is acting rationally. Defends using verified operational mechanics, seasonal context, or industry realities. Defines a hard falsification condition where the attacker's claim falls apart, with an evidence strength rating.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span>Eight-Point Anomaly Schema</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; color: var(--text-secondary);">
+      <div><strong style="color: var(--text-primary);">1. The Discovery:</strong> One clear sentence describing the non-obvious finding (the anomaly).</div>
+      <div><strong style="color: var(--text-primary);">2. Why It Matters:</strong> Three to five bullets explaining the significance of the finding in plain English.</div>
+      <div><strong style="color: var(--text-primary);">3. Evidence:</strong> Multiple independent sources supporting the finding, with links.</div>
+      <div><strong style="color: var(--text-primary);">4. Timeline:</strong> When the change emerged and how it developed.</div>
+      <div><strong style="color: var(--text-primary);">5. Numbers:</strong> Only the calculations and metrics needed to substantiate the finding.</div>
+      <div><strong style="color: var(--text-primary);">6. Attacker:</strong> The attacker's verdict and evidence strength.</div>
+      <div><strong style="color: var(--text-primary);">7. Defender:</strong> The defender's alternative explanation or contradictory evidence along with the falsification condition.</div>
+      <div><strong style="color: var(--text-primary);">8. Strength:</strong> Verdict strength and confidence rating of attacker and defender.</div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

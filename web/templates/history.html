@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block topbar_title %}Past Reports{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 14 14"></polyline>
+      </svg>
+      <span>Past Reports ({{ total }} Total)</span>
+    </div>
+
+    <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>New Analysis</span>
+    </a>
+  </div>
+
+  <form method="GET" action="{{ url_for('investigations_history_page') }}" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+    <div style="flex: 2; min-width: 200px;">
+      <input 
+        type="text" 
+        name="search" 
+        class="form-control" 
+        placeholder="Search by company name, ticker symbol, or keywords..." 
+        value="{{ search_query }}"
+      >
+    </div>
+
+    <div style="flex: 1; min-width: 140px;">
+      <select name="status" class="form-control" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        <option value="QUEUED" {% if status_filter == 'QUEUED' %}selected{% endif %}>QUEUED</option>
+        <option value="RUNNING" {% if status_filter == 'RUNNING' %}selected{% endif %}>RUNNING</option>
+        <option value="COMPLETED" {% if status_filter == 'COMPLETED' or status_filter == 'SUCCEEDED' %}selected{% endif %}>COMPLETED</option>
+        <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>FAILED</option>
+      </select>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span>Search</span>
+      </button>
+
+      {% if search_query or status_filter or ticker_filter %}
+        <a href="{{ url_for('investigations_history_page') }}" class="btn btn-secondary" title="Clear Filters">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if runs and runs|length > 0 %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Ticker</th>
+            <th>Status</th>
+            <th>Discovery</th>
+            <th>Date</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in runs %}
+            <tr class="clickable-row" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
+              <td>
+                <strong style="color: #FFFFFF;">{{ r.company_name or r.ticker }}</strong>
+              </td>
+              <td><code>{{ r.ticker }}</code></td>
+              <td>
+                <span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span>
+              </td>
+              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_discovery or r.hypothesis or '' }}">
+                {{ r.primary_discovery or r.hypothesis or (r.error if r.status == 'FAILED' else 'In progress...') }}
+              </td>
+              <td style="color: var(--text-muted); font-size: 12.5px; white-space: nowrap;">
+                {{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }} UTC
+              </td>
+              <td style="text-align: right;" onclick="event.stopPropagation();">
+                <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                  <a href="{{ url_for('investigation_detail_page', run_id=r.run_id) }}" class="btn btn-secondary btn-sm">
+                    <span>View</span>
+                  </a>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="deleteRun('{{ r.run_id }}', '{{ r.ticker }}')">
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if total_pages > 1 %}
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 24px;">
+        {% if page > 1 %}
+          <a href="{{ url_for('investigations_history_page', page=page-1, search=search_query, status=status_filter, ticker=ticker_filter) }}" class="btn btn-secondary btn-sm">Previous</a>
+        {% endif %}
+        <span style="align-self: center; font-size: 13px; color: var(--text-muted); font-family: var(--font-mono);">Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}
+          <a href="{{ url_for('investigations_history_page', page=page+1, search=search_query, status=status_filter, ticker=ticker_filter) }}" class="btn btn-secondary btn-sm">Next</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">
+      <h3>No Reports Found</h3>
+      <p>No reports matched your search filters.</p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function deleteRun(runId, ticker) {
+  if (confirm(`Delete analysis for ${ticker} (${runId})?`)) {
+    fetch(`/api/investigation/${runId}/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      }
+    }).then(res => {
+      if (res.ok) window.location.reload();
+      else alert('Failed to delete report.');
+    });
+  }
+}
+</script>
+{% endblock %}

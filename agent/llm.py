@@ -23,11 +23,6 @@ def clean_deepseek_reasoning(text: str) -> str:
             cleaned = cleaned[start : end + 1].strip()
         else:
             cleaned = re.sub(r"<think>.*", "", cleaned, flags=re.DOTALL).strip()
-    if not cleaned and "{" in text and "}" in text:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            return text[start : end + 1].strip()
     cleaned = re.sub(r"\s*[\u4e00-\u9fff]+\s*", " ", cleaned)
     return cleaned.strip()
 
@@ -41,14 +36,51 @@ def unwrap_outer_dict(data: Any) -> Any:
 
 
 def parse_json_strictly(text: str) -> Dict[str, Any]:
-    clean = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+    # 1. Strip think blocks & reasoning tags
+    clean = clean_deepseek_reasoning(text)
+
+    # 2. Try direct JSON load
     try:
         parsed = json.loads(clean)
         if isinstance(parsed, dict):
             return unwrap_outer_dict(parsed)
         return parsed
     except Exception:
-        raise ValueError("Model returned invalid JSON syntax: " + text)
+        pass
+
+    # 3. Extract JSON enclosed inside markdown code fences: ```json ... ``` or ``` ... ```
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", clean, flags=re.DOTALL)
+    if m:
+        try:
+            parsed = json.loads(m.group(1).strip())
+            if isinstance(parsed, dict):
+                return unwrap_outer_dict(parsed)
+            return parsed
+        except Exception:
+            pass
+
+    # 4. Extract outermost JSON object between first '{' and last '}'
+    start = clean.find("{")
+    end = clean.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = clean[start : end + 1].strip()
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return unwrap_outer_dict(parsed)
+            return parsed
+        except Exception:
+            # 5. Fix common LLM syntax flaws like trailing commas before closing braces
+            fixed = re.sub(r",\s*([\}\]])", r"\1", candidate)
+            try:
+                parsed = json.loads(fixed)
+                if isinstance(parsed, dict):
+                    return unwrap_outer_dict(parsed)
+                return parsed
+            except Exception:
+                pass
+
+    raise ValueError("Model returned invalid JSON syntax: " + text)
 
 
 class LLM:

@@ -104,19 +104,19 @@ Synthesize the foundational discovery sentence, the commercial why-it-matters bu
 
 Requirements:
 1. discovery: Exactly one clear sentence stating the core financial anomaly with exact numbers.
-2. why_it_matters: Array of 3 to 5 sharp, specific plain-English bullet strings explaining commercial and financial impact.
-3. timeline: A chronological narrative tracing the exact multi-quarter progression from the trajectory provided.
+2. why_it_matters: Array of comprehensive analytical plain-English bullet strings explaining the commercial consequences, capital allocation impact, and peer competitive implications. Provide full depth.
+3. timeline: A thorough chronological narrative tracing the exact multi-quarter progression from the trajectory provided.
 Do not output template text or prompt instructions. Write exclusively in fluent English.
 
 Output strictly valid JSON with this exact schema:
 {{
   "discovery": "One clear sentence stating the core financial anomaly with exact numbers.",
   "why_it_matters": [
-    "First impact bullet",
-    "Second impact bullet",
-    "Third impact bullet"
+    "First comprehensive impact analysis",
+    "Second comprehensive impact analysis",
+    "Third comprehensive impact analysis"
   ],
-  "timeline": "Chronological narrative of the multi-quarter progression."
+  "timeline": "Thorough chronological narrative of the multi-quarter progression."
 }}
 """
     system = "You are a senior institutional financial editor. Output strictly valid JSON conforming to the requested schema. Write exclusively in fluent English."

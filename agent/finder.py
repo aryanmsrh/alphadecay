@@ -135,6 +135,23 @@ class Finder:
                     anom["numbers_bullets"].append(f"Sector Peer Benchmark: {pb}")
 
         evidence_items = []
+
+        # 1. Primary Audited Statutory Financial Statements (Screener.in / BSE LODR)
+        evidence_items.append({
+            "source": f"Screener.in: Audited Financial Statements ({clean_ticker})",
+            "url": f"https://www.screener.in/company/{clean_ticker}/consolidated/",
+            "excerpt": f"Audited statutory balance sheets, quarterly profit & loss, cash flows, and operating ratios for {company_name} ({clean_ticker}).",
+        })
+
+        # 2. Sector Peer Statutory Filings & Ratio Benchmarks (Screener.in)
+        for pt in target_peers:
+            evidence_items.append({
+                "source": f"Screener.in: Sector Peer Benchmark ({pt})",
+                "url": f"https://www.screener.in/company/{pt}/consolidated/",
+                "excerpt": f"Audited statutory statements and operating ratio history for direct industry peer rival {pt}.",
+            })
+
+        # 3. BSE India Earnings Concall Transcripts
         concall_links = raw_data.get("concall_transcripts", [])
         if concall_links:
             for item in concall_links[:2]:
@@ -143,15 +160,17 @@ class Finder:
                 for ex in excerpts:
                     evidence_items.append({
                         "source": (
-                            f"Concall: {item.get('title', 'Earnings Transcript')}"
+                            f"BSE Concall: {item.get('title', 'Earnings Transcript')}"
                             if isinstance(item, dict)
-                            else "Concall Transcript"
+                            else "BSE Concall Transcript"
                         ),
                         "url": ex.get("source_url", link),
                         "excerpt": ex.get("excerpt", ""),
                     })
-                if len(evidence_items) >= 4:
+                if len(evidence_items) >= 6:
                     break
+
+        # 4. Targeted Financial Search & Regulatory Disclosures (Tavily)
 
         try:
             search_hits = self.search_client.search(

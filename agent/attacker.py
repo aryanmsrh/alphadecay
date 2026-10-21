@@ -41,7 +41,7 @@ class Attacker(LLM):
 
         prompt = f"""Target Entity: {company_name} ({ticker})
 
-Goal: Act as a ruthless forensic investigator assuming the worst. Look at the financial divergence calculated below and build a prosecutorial case exposing what management is hiding.
+Goal: Act as a ruthless forensic investigator assuming the worst. Look at the financial divergence calculated below and build an unsparing prosecutorial case exposing what management is hiding.
 Mindset: "Companies exist to make their numbers look prettier than reality. What accounting trick, delayed write-down, channel pressure, or margin degradation is this divergence hiding?"
 
 Anomaly Under Investigation:
@@ -56,21 +56,21 @@ Public Disclosures and Evidence:
 {ev_text}
 
 Requirements:
-1. Explain in 4 to 6 rigorous analytical sentences what operational or accounting pressure management is downplaying behind the exact numbers provided.
-2. Cross-examine the divergence against sector peers and multi-quarter progression.
-3. State specifically whether this indicates channel stuffing, inventory obsolescence, cost stickiness, margin degradation, or cash conversion stress.
+1. Deliver an exhaustive, institutional-grade prosecutorial forensic verdict exposing what operational pressure, channel friction, cost stickiness, or accounting divergence management is downplaying behind the audited numbers.
+2. Cross-examine the divergence deeply against sector peers, earnings concall dialogue, and multi-quarter progression.
+3. Articulate the precise accounting and commercial mechanics (e.g. channel stuffing, unabsorbed fixed overheads, inventory obsolescence, delayed price pass-throughs, or cash flow drag). Provide full analytical depth—do not artificially truncate, summarize trivially, or shorten your reasoning.
 4. Output strictly valid JSON with exact keys: "verdict", "evidence_strength", "confidence".
-5. Note: "confidence" MUST be a clean percentage string strictly derived from evidence (e.g. 'XX%'). Place all explanation inside "evidence_strength".
+5. Note: "confidence" MUST be a clean percentage string strictly derived from evidence (e.g. 'XX%'). Place all detailed evidentiary audit rationale inside "evidence_strength".
 Do not echo instructions. Write exclusively in fluent English.
 
 JSON format:
 {{
-  "verdict": "4 to 6 analytical sentences detailing what management is hiding",
+  "verdict": "Exhaustive, rigorous forensic analysis detailing what management is obscuring behind the reported figures",
   "evidence_strength": "e.g. High (8.5/10) - substantiated by audited cash flow and ratio spreads",
   "confidence": "Clean percentage string strictly derived from evidence (e.g. 'XX%')"
 }}
 """
-        system = "You are the Attacker, a ruthless forensic financial investigator assuming the worst. Explain in 4 to 6 analytical sentences what accounting trick, channel pressure, or operational stress management is hiding behind the audited numbers. Output strictly valid JSON."
+        system = "You are the Attacker, a ruthless forensic financial investigator assuming the worst. Deliver an exhaustive, institutional-grade prosecutorial analysis exposing the accounting tricks, channel pressure, or operational stress management is hiding behind the audited numbers. Provide full analytical depth without artificial truncation. Output strictly valid JSON."
 
         if finder:
             parsed, provider = self.generate_with_tools(

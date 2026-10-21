@@ -62,21 +62,22 @@ Public Disclosures and Evidence:
 {ev_text}
 
 Requirements:
-1. Explain in 4 to 6 rigorous analytical sentences why this divergence reflects standard corporate operational strategy, deliberate strategic supply buffering, capacity expansion, input pricing pass-through delays, distribution channel adjustments, or balance sheet preservation rather than distress.
-2. Formulate a hard falsification condition stating the exact future positive metric turnaround (with concrete numbers, e.g., metric recovering above X% or normalizing below Y for 2 consecutive quarters) that would disprove the Attacker's claim and vindicate management.
-3. Output strictly valid JSON with exact keys: "counterargument", "falsification_condition", "evidence_strength", "confidence".
-4. Note: "confidence" MUST be a clean percentage string strictly derived from evidence (e.g. 'XX%'). Place all explanation inside "evidence_strength".
+1. Deliver an exhaustive, institutional-grade corporate defense detailing why this divergence reflects standard corporate operational strategy, deliberate strategic supply buffering, capacity expansion, input pricing pass-through delays, distribution channel adjustments, or balance sheet preservation rather than distress.
+2. Cross-examine the divergence deeply against sector peer benchmarks, historical cyclicality, and concall explanations.
+3. Formulate a hard, measurable falsification condition stating the exact future positive metric turnaround (with concrete numerical thresholds, e.g., metric recovering above X% or normalizing below Y for 2 consecutive quarters) that would definitively disprove the Attacker's claim and vindicate management. Provide full analytical depth—do not artificially truncate, summarize trivially, or shorten your reasoning.
+4. Output strictly valid JSON with exact keys: "counterargument", "falsification_condition", "evidence_strength", "confidence".
+5. Note: "confidence" MUST be a clean percentage string strictly derived from evidence (e.g. 'XX%'). Place all detailed evidentiary audit rationale inside "evidence_strength".
 Do not echo instructions. Write exclusively in fluent English.
 
 JSON format:
 {{
-  "counterargument": "4 to 6 analytical sentences defending management and operational strategy",
+  "counterargument": "Exhaustive, rigorous analytical defense explaining corporate operational strategy and commercial mechanics",
   "falsification_condition": "Concrete positive metric recovery condition disproving the attacker thesis",
   "evidence_strength": "e.g. High (8.0/10) - supported by operational cash flows and working capital structure",
   "confidence": "Clean percentage string strictly derived from evidence (e.g. 'XX%')"
 }}
 """
-        system = "You are the Defender, the Corporate Defense Counsel for the company. You are strictly forbidden from agreeing with accusations of distress or malfeasance. Explain in 4 to 6 analytical sentences how operational mechanics and rational business strategy explain the numbers. Define a concrete positive metric turnaround threshold as the falsification condition. Output strictly valid JSON."
+        system = "You are the Defender, the Corporate Defense Counsel for the company. You are strictly forbidden from agreeing with accusations of distress or malfeasance. Deliver an exhaustive, rigorous analytical defense explaining how operational mechanics and rational business strategy explain the numbers. Define a concrete positive metric turnaround threshold as the falsification condition. Provide full analytical depth without artificial truncation. Output strictly valid JSON."
 
         if finder:
             parsed, provider = self.generate_with_tools(

@@ -224,48 +224,46 @@ Context:
 {prompt}
 
 === PHASE 1: MANDATORY INVESTIGATIVE TRIANGULATION ===
-Before you output your final deliverable, you MUST select an investigative tool from the manifest to triangulate and stress-test your hypothesis against sector peers, concall disclosures, or historical filings.
+Before you output your final deliverable, you MUST state your initial investigative thesis.
+Our forensic pipeline unconditionally executes ALL 4 INVESTIGATIVE TOOLS simultaneously to stress-test your hypothesis across:
+1. 'triangulate_peer_metric' — Scrapes and benchmarks direct sector rival spreads
+2. 'search_concall_transcript' — Searches official earnings calls for management explanations
+3. 'search_india_filings_news' — Searches live external news, statutory filings, and channel reports
+4. 'get_multi_quarter_table' — Pulls trailing multi-quarter P&L and annual balance sheet ratios
 
-Available Investigative Tools:
+Available Forensic Tool Manifest:
 {manifest_str}
 
 Instructions for Phase 1:
-1. Formulate your preliminary hypothesis on what you suspect management is hiding or how the operational mechanics work.
-2. Select the most relevant tool from the manifest to cross-examine and verify (e.g. 'triangulate_peer_metric' to check sector peers, 'search_concall_transcript' to find management commentary, or 'search_india_filings_news' for external corporate actions).
-3. Output strictly valid JSON with this exact schema:
+1. Formulate your preliminary hypothesis detailing what operational or accounting friction you suspect.
+2. Provide specific operational focus parameters to calibrate the search tools:
+   - 'concall_keywords': 2 to 4 space-separated operational keywords to probe in the concalls (e.g. 'inventory demand modern trade channel' or 'raw material price commodity inflation').
+   - 'news_query': Specific query for external corporate filings or industry developments.
+3. Output strictly valid JSON conforming to this schema:
 {{
-  "preliminary_thesis": "Your 1-2 sentence initial investigative hypothesis",
-  "action": "call_tool",
-  "tool_name": "triangulate_peer_metric" | "search_concall_transcript" | "search_india_filings_news" | "get_multi_quarter_table",
-  "tool_args": {{ ... }}
+  "preliminary_thesis": "Your initial investigative hypothesis and angle of inquiry",
+  "concall_keywords": "targeted keywords to probe in concall transcript",
+  "news_query": "focused query to search external filings and market reports"
 }}
 """
         raw_text, model_name = self.generate(turn1_prompt, system=system)
         parsed_turn1 = parse_json_strictly(raw_text)
 
-        tool_name = ""
-        tool_args: Dict[str, Any] = {}
         preliminary_thesis = ""
+        concall_keywords = anomaly_metric.lower()
+        news_query = f"{company_name} {anomaly_metric} financial disclosures"
 
         if isinstance(parsed_turn1, dict):
-            preliminary_thesis = str(parsed_turn1.get("preliminary_thesis", "")).strip()
-            tool_name = str(parsed_turn1.get("tool_name", "")).strip().lower()
-            if isinstance(parsed_turn1.get("tool_args"), dict):
-                tool_args = parsed_turn1["tool_args"]
+            preliminary_thesis = str(parsed_turn1.get("preliminary_thesis", "") or parsed_turn1.get("hypothesis", "")).strip()
+            if parsed_turn1.get("concall_keywords"):
+                concall_keywords = str(parsed_turn1["concall_keywords"]).strip()
+            elif isinstance(parsed_turn1.get("tool_args"), dict) and parsed_turn1["tool_args"].get("keywords"):
+                concall_keywords = str(parsed_turn1["tool_args"]["keywords"]).strip()
 
-        valid_tools = ("triangulate_peer_metric", "search_concall_transcript", "search_india_filings_news", "get_multi_quarter_table")
-        if tool_name not in valid_tools:
-            tool_name = "triangulate_peer_metric"
-            tool_args = {"metric_id": anomaly_id or "signal_margin_cost_dynamics"}
-
-        if tool_name == "triangulate_peer_metric" and not tool_args.get("metric_id"):
-            tool_args["metric_id"] = anomaly_id or "signal_margin_cost_dynamics"
-        elif tool_name == "search_concall_transcript" and not tool_args.get("keywords"):
-            tool_args["keywords"] = anomaly_metric.lower()
-        elif tool_name == "search_india_filings_news" and not tool_args.get("query"):
-            tool_args["query"] = f"{anomaly_metric} financial disclosures"
-        elif tool_name == "get_multi_quarter_table" and not tool_args.get("metric_id"):
-            tool_args["metric_id"] = anomaly_id or "margin"
+            if parsed_turn1.get("news_query"):
+                news_query = str(parsed_turn1["news_query"]).strip()
+            elif isinstance(parsed_turn1.get("tool_args"), dict) and parsed_turn1["tool_args"].get("query"):
+                news_query = str(parsed_turn1["tool_args"]["query"]).strip()
 
         if preliminary_thesis and event_callback:
             event_callback({
@@ -274,26 +272,43 @@ Instructions for Phase 1:
                 "hypothesis": preliminary_thesis,
             })
 
-        tool_output = finder.execute_tool(
-            tool_name=tool_name,
-            tool_args=tool_args,
-            company_name=company_name,
-            ticker=ticker,
-            dossier=dossier,
-            event_callback=event_callback,
-        )
+        # Unconditionally execute ALL 4 investigative tools
+        all_tools = [
+            ("triangulate_peer_metric", {"metric_id": anomaly_id or "signal_margin_cost_dynamics"}),
+            ("search_concall_transcript", {"keywords": concall_keywords}),
+            ("search_india_filings_news", {"query": news_query}),
+            ("get_multi_quarter_table", {"metric_id": anomaly_id or "margin"}),
+        ]
+
+        tool_outputs = []
+        for t_name, t_args in all_tools:
+            out = finder.execute_tool(
+                tool_name=t_name,
+                tool_args=t_args,
+                company_name=company_name,
+                ticker=ticker,
+                dossier=dossier,
+                event_callback=event_callback,
+            )
+            tool_outputs.append((t_name, t_args, out))
+
+        findings_blocks = []
+        for t_name, t_args, out in tool_outputs:
+            findings_blocks.append(f"### TOOL: {t_name.upper()} (args: {json.dumps(t_args)})\n{out}")
+        combined_tool_findings = "\n\n".join(findings_blocks)
 
         turn2_prompt = f"""{prompt}
 
-=== PHASE 2: FINAL FORENSIC DELIVERABLE WITH VERIFIED TRIANGULATION ===
+=== PHASE 2: EXHAUSTIVE FORENSIC SYNTHESIS WITH COMPLETE MULTI-TOOL TRIANGULATION ===
 Initial Investigative Thesis:
-"{preliminary_thesis or 'Cross-examining financial divergence against external disclosures.'}"
+"{preliminary_thesis or 'Cross-examining financial divergence against multi-source evidence.'}"
 
-Verified Tool Findings from '{tool_name}' with args {json.dumps(tool_args)}:
-{tool_output}
+Verified Forensic Triangulation (ALL 4 Tools Executed):
+{combined_tool_findings}
 
 Task:
-Integrate the verified tool findings above alongside the audited statements to formulate your final position.
+Integrate ALL verified tool findings above (Peer Benchmarks, Management Concall Commentary, Market Filings & News, and Trailing Multi-Quarter Ratios) alongside audited statements to formulate your complete, in-depth institutional position.
+Provide full analytical depth—do not truncate, summarize trivially, or artificially shorten your reasoning.
 Output strictly valid JSON conforming to the requested schema.
 """
         return self.generate_json(turn2_prompt, system=system)

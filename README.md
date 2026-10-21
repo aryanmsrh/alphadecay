@@ -120,4 +120,9 @@ Every investigation automatically synthesizes the mandatory 8-point institutiona
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the **AlphaDecay Source-Available Attribution & Non-Commercial Research License**.
+
+* **Permitted:** Personal inspection, educational study, academic evaluation, and research use with mandatory attribution to Aryan Mishra.
+* **Prohibited:** Commercial use, monetization, and re-submission or repackaging for hackathons, competitions, or academic submissions without express written authorization.
+
+See the full terms in [LICENSE](LICENSE).

@@ -347,29 +347,11 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
             return jsonify({"success": success, "run_id": run_id})
         return redirect(url_for("investigations_history_page"))
 
-    @app.errorhandler(400)
-    def bad_request_error(e):
-        if request.path.startswith("/api/") or request.is_json:
-            return jsonify({"error": str(getattr(e, "description", e)), "status": 400}), 400
-        return render_template("errors/400.html", message=getattr(e, "description", None)), 400
-
-    @app.errorhandler(403)
-    def forbidden_error(e):
-        if request.path.startswith("/api/") or request.is_json:
-            return jsonify({"error": str(getattr(e, "description", e)), "status": 403}), 403
-        return render_template("errors/403.html", message=getattr(e, "description", None)), 403
-
     @app.errorhandler(404)
     def not_found_error(e):
         if request.path.startswith("/api/") or request.is_json:
             return jsonify({"error": str(getattr(e, "description", e)), "status": 404}), 404
         return render_template("errors/404.html", message=getattr(e, "description", None)), 404
-
-    @app.errorhandler(500)
-    def internal_error(e):
-        if request.path.startswith("/api/") or request.is_json:
-            return jsonify({"error": "Internal server error", "status": 500}), 500
-        return render_template("errors/500.html", message=getattr(e, "description", None)), 500
 
     return app
 

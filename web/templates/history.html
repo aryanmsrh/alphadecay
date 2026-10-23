@@ -1,39 +1,29 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}Past Reports{% endblock %}
-
 {% block content %}
 <div class="card">
   <div class="card-header">
     <div class="card-title">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 14 14"></polyline>
-      </svg>
-      <span>Past Reports ({{ total }} Total)</span>
+      <span>HISTORICAL INVESTIGATION ARCHIVE ({{ total }} TOTAL)</span>
     </div>
 
     <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      <span>New Analysis</span>
+      <span>+ New Analysis</span>
     </a>
   </div>
 
   <form method="GET" action="{{ url_for('investigations_history_page') }}" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
-    <div style="flex: 2; min-width: 200px;">
+    <div style="flex: 2; min-width: 220px;">
       <input 
         type="text" 
         name="search" 
         class="form-control" 
-        placeholder="Search by company name, ticker symbol, or keywords..." 
+        placeholder="Search by company name, ticker symbol, or forensic keyword..." 
         value="{{ search_query }}"
       >
     </div>
 
-    <div style="flex: 1; min-width: 140px;">
+    <div style="flex: 1; min-width: 160px;">
       <select name="status" class="form-control" onchange="this.form.submit()">
         <option value="">All Statuses</option>
         <option value="QUEUED" {% if status_filter == 'QUEUED' %}selected{% endif %}>QUEUED</option>
@@ -45,10 +35,6 @@
 
     <div style="display: flex; gap: 8px;">
       <button type="submit" class="btn btn-secondary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
         <span>Search</span>
       </button>
 
@@ -63,32 +49,32 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Company</th>
+            <th>Target Entity</th>
             <th>Ticker</th>
             <th>Status</th>
-            <th>Discovery</th>
-            <th>Date</th>
+            <th>Primary Discovery</th>
+            <th>Timestamp</th>
             <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for r in runs %}
-            <tr class="clickable-row" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
+            <tr style="cursor: pointer;" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
               <td>
-                <strong style="color: #FFFFFF;">{{ r.company_name or r.ticker }}</strong>
+                <strong style="color: #FFFFFF; font-weight: 700;">{{ r.company_name or r.ticker }}</strong>
               </td>
-              <td><code>{{ r.ticker }}</code></td>
+              <td><span style="font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--accent-blue);">{{ r.ticker }}</span></td>
               <td>
                 <span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span>
               </td>
-              <td style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_discovery or r.hypothesis or '' }}">
+              <td style="max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px;" title="{{ r.primary_discovery or r.hypothesis or '' }}">
                 {{ r.primary_discovery or r.hypothesis or (r.error if r.status == 'FAILED' else 'In progress...') }}
               </td>
-              <td style="color: var(--text-muted); font-size: 12.5px; white-space: nowrap;">
-                {{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }} UTC
+              <td style="color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; white-space: nowrap;">
+                <span class="device-time" data-utc="{{ r.created_at }}">{{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }}</span>
               </td>
               <td style="text-align: right;" onclick="event.stopPropagation();">
-                <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                <div style="display: inline-flex; gap: 6px;">
                   <a href="{{ url_for('investigation_detail_page', run_id=r.run_id) }}" class="btn btn-secondary btn-sm">
                     <span>View</span>
                   </a>
@@ -108,33 +94,35 @@
         {% if page > 1 %}
           <a href="{{ url_for('investigations_history_page', page=page-1, search=search_query, status=status_filter, ticker=ticker_filter) }}" class="btn btn-secondary btn-sm">Previous</a>
         {% endif %}
-        <span style="align-self: center; font-size: 13px; color: var(--text-muted); font-family: var(--font-mono);">Page {{ page }} of {{ total_pages }}</span>
+        <span style="align-self: center; font-size: 14px; color: var(--text-muted); font-family: var(--font-mono);">Page {{ page }} of {{ total_pages }}</span>
         {% if page < total_pages %}
           <a href="{{ url_for('investigations_history_page', page=page+1, search=search_query, status=status_filter, ticker=ticker_filter) }}" class="btn btn-secondary btn-sm">Next</a>
         {% endif %}
       </div>
     {% endif %}
   {% else %}
-    <div class="empty-state">
-      <h3>No Reports Found</h3>
-      <p>No reports matched your search filters.</p>
+    <div style="text-align: center; padding: 48px 20px; background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius);">
+      <h2 style="font-family: var(--font-heading); font-size: 20px; margin-bottom: 8px;">NO REPORTS FOUND</h2>
+      <p style="color: var(--text-secondary); font-size: 14.5px; margin-bottom: 0;">
+        No investigations matched the current search filters.
+      </p>
     </div>
   {% endif %}
 </div>
 
 <script>
 function deleteRun(runId, ticker) {
-  if (confirm(`Delete analysis for ${ticker} (${runId})?`)) {
+  if (confirm(`Permanently delete investigation ${runId} for ${ticker}? This action cannot be undone.`)) {
     fetch(`/api/investigation/${runId}/delete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
       }
     }).then(res => {
       if (res.ok) window.location.reload();
       else alert('Failed to delete report.');
-    });
+    }).catch(err => alert("Error: " + err));
   }
 }
 </script>

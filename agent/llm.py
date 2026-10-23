@@ -1,9 +1,14 @@
 import json
 import os
+import random
 import re
 import time
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import httpx
+from agent.prompts import (
+    build_turn1_triangulation_prompt,
+    build_turn2_synthesis_prompt,
+)
 from config import (
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,
@@ -101,7 +106,13 @@ class LLM:
         else:
             self.timeout = timeout or OLLAMA_TIMEOUT
 
-    def _generate_gemini(self, prompt: str, system: Optional[str] = None) -> str:
+    def _generate_gemini(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        event_callback: Optional[Callable[..., None]] = None,
+        label: str = "Forensic Reasoning",
+    ) -> str:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.gemini_key}"
         payload: Dict[str, Any] = {
             "contents": [
@@ -120,41 +131,84 @@ class LLM:
                 "parts": [{"text": system}],
             }
 
-        timeout_config = httpx.Timeout(self.timeout, connect=15.0, read=self.timeout)
-        max_attempts = 3
+        timeout_config = httpx.Timeout(self.timeout, connect=20.0, read=self.timeout)
+        backoff_delays = [15.0, 35.0, 65.0, 120.0, 180.0, 240.0]
+        max_attempts = len(backoff_delays) + 1  # 7 attempts
         last_err: Optional[Exception] = None
+
+        def _calc_wait(att: int) -> Tuple[float, str]:
+            base = backoff_delays[att - 1]
+            jitter = random.uniform(1.0, 5.0)
+            wt = round(base + jitter, 1)
+            total_sec = int(wt)
+            if total_sec >= 60:
+                fmt = f"{total_sec // 60}m {total_sec % 60}s"
+            else:
+                fmt = f"{wt}s"
+            return wt, fmt
 
         for attempt in range(1, max_attempts + 1):
             try:
                 with httpx.Client(timeout=timeout_config) as client:
-                    res = client.post(url, json=payload)
-                    if res.status_code != 200:
-                        raise RuntimeError(f"Gemini API returned {res.status_code}: {res.text}")
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if not candidates:
-                        raise RuntimeError(f"Gemini API returned no candidates: {data}")
-                    content = candidates[0].get("content", {})
-                    parts = content.get("parts", [])
-                    if not parts:
-                        raise RuntimeError(f"Gemini API returned empty parts: {data}")
+                    response = client.post(url, json=payload)
+                    if response.status_code == 200:
+                        data = response.json()
+                        candidates = data.get("candidates", [])
+                        if not candidates:
+                            raise RuntimeError("Gemini API returned no candidates")
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        text_parts = [p.get("text", "") for p in parts if not p.get("thought")]
+                        raw_text = "".join(text_parts).strip()
+                        if not raw_text:
+                            raise RuntimeError("Gemini API returned empty text content")
+                        return raw_text
 
-                    clean_parts = [
-                        p.get("text", "") for p in parts if not p.get("thought")
-                    ]
-                    raw_text = clean_parts[-1] if clean_parts else parts[0].get("text", "")
-                    return raw_text
+                    err_body = response.text
+                    # Check for transient capacity shed (503), rate limit (429), or gateway errors (502, 504)
+                    if response.status_code in (503, 429, 502, 504) and attempt < max_attempts:
+                        wait_time, wait_str = _calc_wait(attempt)
+                        if event_callback:
+                            event_callback({
+                                "step": "RETRY",
+                                "message": f"Gemini high demand ({response.status_code}). Retrying with backoff in {wait_str} (attempt {attempt}/{max_attempts})...",
+                                "attempt": attempt,
+                                "max_attempts": max_attempts,
+                                "wait_time": wait_time,
+                                "model": self.model,
+                            })
+                        time.sleep(wait_time)
+                        continue
+
+                    raise RuntimeError(f"Gemini API returned {response.status_code}: {err_body}")
+
             except Exception as e:
                 last_err = e
-                err_str = str(e)
-                if attempt < max_attempts and ("503" in err_str or "429" in err_str or "timed out" in err_str.lower()):
-                    time.sleep(2.0 * attempt)
+                err_str = str(e).lower()
+                is_transient = any(k in err_str for k in ["503", "429", "502", "504", "timed out", "readtimeout", "connecterror"])
+                if attempt < max_attempts and is_transient:
+                    wait_time, wait_str = _calc_wait(attempt)
+                    if event_callback:
+                        event_callback({
+                            "step": "RETRY",
+                            "message": f"Gemini connection latency spike ({type(e).__name__}). Retrying in {wait_str} (attempt {attempt}/{max_attempts})...",
+                            "attempt": attempt,
+                            "max_attempts": max_attempts,
+                            "wait_time": wait_time,
+                            "model": self.model,
+                        })
+                    time.sleep(wait_time)
                     continue
                 raise RuntimeError(f"Gemini Cloud inference failed: {e}")
 
-        raise RuntimeError(f"Gemini Cloud inference failed: {last_err}")
+        raise RuntimeError(f"Gemini Cloud inference failed after {max_attempts} attempts: {last_err}")
 
-    def _generate_ollama(self, prompt: str, system: Optional[str] = None) -> str:
+    def _generate_ollama(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        event_callback: Optional[Callable[..., None]] = None,
+        label: str = "DeepSeek Reasoning",
+    ) -> str:
         endpoint = f"{self.base_url}/api/generate"
         payload = {
             "model": self.ollama_model,
@@ -171,31 +225,44 @@ class LLM:
         }
         if system:
             payload["system"] = system
-        timeout_config = httpx.Timeout(self.timeout, connect=60.0)
-        with httpx.Client(timeout=timeout_config) as client:
-            res = client.post(endpoint, json=payload)
-            if res.status_code != 200:
-                raise RuntimeError(f"Ollama returned {res.status_code}: {res.text}")
-            res_json = res.json()
-            raw_text = res_json.get("response", "")
-            if not raw_text.strip():
-                raise RuntimeError(f"Ollama returned empty response: {res_json}")
-            cleaned = clean_deepseek_reasoning(raw_text)
-            return cleaned if cleaned else raw_text
+        timeout_config = httpx.Timeout(self.timeout, connect=60.0, read=self.timeout)
 
-    def generate(self, prompt: str, system: Optional[str] = None) -> Tuple[str, str]:
+        with httpx.Client(timeout=timeout_config) as client:
+            response = client.post(endpoint, json=payload)
+            if response.status_code != 200:
+                err_body = response.text
+                raise RuntimeError(f"Ollama returned {response.status_code}: {err_body}")
+            data = response.json()
+            raw_text = data.get("response", "")
+
+        cleaned = clean_deepseek_reasoning(raw_text)
+        return cleaned if cleaned else raw_text
+
+    def generate(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        event_callback: Optional[Callable[..., None]] = None,
+        label: str = "Model Inference",
+    ) -> Tuple[str, str]:
         model_lower = str(self.model).lower()
         if model_lower.startswith("gemini"):
             if not self.gemini_key:
                 raise ValueError("GEMINI_API_KEY is not configured")
-            raw_text = self._generate_gemini(prompt, system=system)
+            raw_text = self._generate_gemini(prompt, system=system, event_callback=event_callback, label=label)
             return raw_text, self.model
         else:
-            raw_text = self._generate_ollama(prompt, system=system)
+            raw_text = self._generate_ollama(prompt, system=system, event_callback=event_callback, label=label)
             return raw_text, self.ollama_model
 
-    def generate_json(self, prompt: str, system: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
-        raw_text, model_name = self.generate(prompt, system=system)
+    def generate_json(
+        self,
+        prompt: str,
+        system: Optional[str] = None,
+        event_callback: Optional[Callable[..., None]] = None,
+        label: str = "JSON Extraction",
+    ) -> Tuple[Dict[str, Any], str]:
+        raw_text, model_name = self.generate(prompt, system=system, event_callback=event_callback, label=label)
         parsed = parse_json_strictly(raw_text)
         return parsed, model_name
 
@@ -216,37 +283,28 @@ class LLM:
         anomaly_id = (anomaly.get("id", "") if anomaly else "")
         anomaly_traj = (anomaly.get("multi_quarter_trajectory", "") if anomaly else "")
 
-        turn1_prompt = f"""Target Entity: {company_name} ({ticker})
-Active Financial Anomaly: {anomaly_metric} (ID: {anomaly_id})
-Trajectory: {anomaly_traj}
+        if event_callback:
+            event_callback({
+                "step": "PHASE1_START",
+                "message": f"Formulating investigative hypothesis and targeting search parameters for {anomaly_metric}...",
+                "metric": anomaly_metric,
+            })
 
-Context:
-{prompt}
-
-=== PHASE 1: MANDATORY INVESTIGATIVE TRIANGULATION ===
-Before you output your final deliverable, you MUST state your initial investigative thesis.
-Our forensic pipeline unconditionally executes ALL 4 INVESTIGATIVE TOOLS simultaneously to stress-test your hypothesis across:
-1. 'triangulate_peer_metric' — Scrapes and benchmarks direct sector rival spreads
-2. 'search_concall_transcript' — Searches official earnings calls for management explanations
-3. 'search_india_filings_news' — Searches live external news, statutory filings, and channel reports
-4. 'get_multi_quarter_table' — Pulls trailing multi-quarter P&L and annual balance sheet ratios
-
-Available Forensic Tool Manifest:
-{manifest_str}
-
-Instructions for Phase 1:
-1. Formulate your preliminary hypothesis detailing what operational or accounting friction you suspect.
-2. Provide specific operational focus parameters to calibrate the search tools:
-   - 'concall_keywords': 2 to 4 space-separated operational keywords to probe in the concalls (e.g. 'inventory demand modern trade channel' or 'raw material price commodity inflation').
-   - 'news_query': Specific query for external corporate filings or industry developments.
-3. Output strictly valid JSON conforming to this schema:
-{{
-  "preliminary_thesis": "Your initial investigative hypothesis and angle of inquiry",
-  "concall_keywords": "targeted keywords to probe in concall transcript",
-  "news_query": "focused query to search external filings and market reports"
-}}
-"""
-        raw_text, model_name = self.generate(turn1_prompt, system=system)
+        turn1_prompt = build_turn1_triangulation_prompt(
+            company_name=company_name,
+            ticker=ticker,
+            anomaly_metric=anomaly_metric,
+            anomaly_id=anomaly_id,
+            anomaly_traj=anomaly_traj,
+            context_prompt=prompt,
+            manifest_str=manifest_str,
+        )
+        raw_text, model_name = self.generate(
+            turn1_prompt,
+            system=system,
+            event_callback=event_callback,
+            label=f"Phase 1: Triangulation ({anomaly_metric})",
+        )
         parsed_turn1 = parse_json_strictly(raw_text)
 
         preliminary_thesis = ""
@@ -297,18 +355,21 @@ Instructions for Phase 1:
             findings_blocks.append(f"### TOOL: {t_name.upper()} (args: {json.dumps(t_args)})\n{out}")
         combined_tool_findings = "\n\n".join(findings_blocks)
 
-        turn2_prompt = f"""{prompt}
+        if event_callback:
+            event_callback({
+                "step": "PHASE2_START",
+                "message": f"Synthesizing complete multi-tool triangulation into institutional verdict...",
+                "metric": anomaly_metric,
+            })
 
-=== PHASE 2: EXHAUSTIVE FORENSIC SYNTHESIS WITH COMPLETE MULTI-TOOL TRIANGULATION ===
-Initial Investigative Thesis:
-"{preliminary_thesis or 'Cross-examining financial divergence against multi-source evidence.'}"
-
-Verified Forensic Triangulation (ALL 4 Tools Executed):
-{combined_tool_findings}
-
-Task:
-Integrate ALL verified tool findings above (Peer Benchmarks, Management Concall Commentary, Market Filings & News, and Trailing Multi-Quarter Ratios) alongside audited statements to formulate your complete, in-depth institutional position.
-Provide full analytical depth—do not truncate, summarize trivially, or artificially shorten your reasoning.
-Output strictly valid JSON conforming to the requested schema.
-"""
-        return self.generate_json(turn2_prompt, system=system)
+        turn2_prompt = build_turn2_synthesis_prompt(
+            context_prompt=prompt,
+            preliminary_thesis=preliminary_thesis,
+            combined_tool_findings=combined_tool_findings,
+        )
+        return self.generate_json(
+            turn2_prompt,
+            system=system,
+            event_callback=event_callback,
+            label="Phase 2: Complete Forensic Synthesis",
+        )

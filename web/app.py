@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import httpx
+
 from flask import (
     Flask,
     Response,
@@ -134,20 +136,47 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         do_live = request.args.get("live") == "true"
         ollama_status = "CONFIGURED"
         ollama_latency = None
+        gemini_status = "CONFIGURED" if config.GEMINI_API_KEY else "NOT CONFIGURED"
+        gemini_latency = None
 
         if do_live:
+            # 1. Test Gemini Cloud
+            if not config.GEMINI_API_KEY:
+                gemini_status = "NOT CONFIGURED"
+            else:
+                t_gem = datetime.now()
+                try:
+                    model_url = f"https://generativelanguage.googleapis.com/v1beta/models/{config.GEMINI_MODEL}?key={config.GEMINI_API_KEY}"
+                    with httpx.Client(timeout=6.0) as client:
+                        res = client.get(model_url)
+                        if res.status_code == 200:
+                            gemini_status = "ONLINE"
+                            gemini_latency = round((datetime.now() - t_gem).total_seconds(), 2)
+                        elif res.status_code in (401, 403):
+                            gemini_status = "INVALID KEY"
+                        else:
+                            gemini_status = f"ERROR ({res.status_code})"
+                except Exception:
+                    gemini_status = "UNAVAILABLE"
+
+            # 2. Test Local Ollama
             t0 = datetime.now()
             try:
-                res = LLM(model=config.OLLAMA_MODEL)._generate_ollama('Reply with strictly valid JSON: {"status": "ok"}')
-                if res:
-                    ollama_status = "OK"
-                    ollama_latency = round((datetime.now() - t0).total_seconds(), 2)
-                else:
-                    ollama_status = "UNAVAILABLE"
+                with httpx.Client(timeout=5.0) as client:
+                    probe = client.get(f"{config.OLLAMA_BASE_URL}/api/tags")
+                    if probe.status_code == 200:
+                        ollama_status = "ONLINE"
+                        ollama_latency = round((datetime.now() - t0).total_seconds(), 2)
+                    else:
+                        ollama_status = f"HTTP {probe.status_code}"
             except Exception:
                 ollama_status = "UNAVAILABLE"
 
         diagnostics = {
+            "gemini_status": gemini_status,
+            "gemini_model": config.GEMINI_MODEL,
+            "gemini_api_key_configured": bool(config.GEMINI_API_KEY),
+            "gemini_latency_s": gemini_latency,
             "ollama_status": ollama_status,
             "ollama_base_url": config.OLLAMA_BASE_URL,
             "ollama_model": config.OLLAMA_MODEL,
@@ -304,23 +333,10 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
 
                 time.sleep(0.5)
 
-        return Response(stream_with_context(generate()), mimetype="text/event-stream")
-
-    @app.route("/api/investigation/<run_id>/pdf")
-    def api_investigation_pdf(run_id: str):
-        run = archive.get_report(run_id)
-        if not run:
-            abort(404)
-        raw_p = Path(run.get("pdf_path") or f"data/runs/{run_id}/report.pdf")
-        pdf_p = raw_p.resolve() if raw_p.is_absolute() else (BASE_DIR / raw_p).resolve()
-        if not pdf_p.exists():
-            abort(404)
-        return send_file(
-            str(pdf_p),
-            mimetype="application/pdf",
-            as_attachment=True,
-            download_name=f"{run.get('ticker')}_report.pdf",
-        )
+        resp = Response(stream_with_context(generate()), mimetype="text/event-stream")
+        resp.headers["Cache-Control"] = "no-cache, no-transform"
+        resp.headers["X-Accel-Buffering"] = "no"
+        return resp
 
     @app.route("/api/investigation/<run_id>/delete", methods=["POST", "DELETE"])
     def api_investigation_delete(run_id: str):

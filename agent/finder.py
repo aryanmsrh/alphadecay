@@ -321,7 +321,7 @@ class Finder:
         else:
             result = f"Tool '{name}' is not recognized."
 
-        _notify("TOOL_RESULT", f"Tool '{name}' output:\n{result}", {"tool_name": name, "result": result, "result_preview": result})
+        _notify("TOOL_RESULT", f"Tool '{name}' retrieved forensic evidence", {"tool_name": name, "tool_args": args, "result": result, "result_preview": result})
         return result
 
     def get_attack_context(

@@ -1,38 +1,36 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}Architecture & Guide{% endblock %}
-
 {% block content %}
-<div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+<div style="max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
 
   <div class="card" style="border-left: 3px solid var(--accent-blue);">
-    <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
-      AlphaDecay System Architecture
+    <h1 style="font-family: var(--font-heading); font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; letter-spacing: -0.025em;">
+      ALPHADECAY FORENSIC ARCHITECTURE
     </h1>
-    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-      AlphaDecay analyzes statutory filings, computes financial indicators in Python, flags non-obvious anomalies, and evaluates both sides: the Attacker and the Defender.
+    <p style="color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; margin: 0;">
+      Automated adversarial triangulation of statutory filings, multi-quarter balance sheets, earnings concalls, and peer spreads.
     </p>
   </div>
 
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <span>Investigation Engine</span>
+        <span>ADVERSARIAL FORENSIC ENGINE</span>
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-      <div class="math-card" style="border-left: 4px solid var(--accent-red);">
-        <h3 style="font-size: 16px; font-weight: 700; color: #f87171; margin-bottom: 6px;">The Attacker</h3>
-        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-          Assumes the worst. Analyzes calculated anomalies to build a prosecutorial case that management is hiding something behind accounting tricks, channel stuffing, or working capital pressure. Outputs a verdict and evidence strength rating.
+    <div class="adversarial-split-grid" style="margin-top: 0;">
+      <div class="duel-column attacker">
+        <div class="duel-title-atk">ATTACKER</div>
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+          Assumes the worst. Analyzes calculated divergences to formulate a prosecutorial indictment alleging that management is concealing operational friction, demand deterioration, or margin compression behind accounting adjustments or working capital distortion.
         </p>
       </div>
 
-      <div class="math-card" style="border-left: 4px solid var(--accent-green);">
-        <h3 style="font-size: 16px; font-weight: 700; color: #4ade80; margin-bottom: 6px;">The Defender</h3>
-        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-          Assumes the company is acting rationally. Defends using verified operational mechanics, seasonal context, or industry realities. Defines a hard falsification condition where the attacker's claim falls apart, with an evidence strength rating.
+      <div class="duel-column defender">
+        <div class="duel-title-dfn">DEFENDER</div>
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+          Assumes corporate rationality. Cross-examines prosecutorial claims using verified operational mechanics, commodity price pass-through lags, seasonal working capital cycles, or distribution adjustments. Defines a measurable falsification condition that disproves the Attacker's case.
         </p>
       </div>
     </div>
@@ -41,19 +39,50 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <span>Eight-Point Anomaly Schema</span>
+        <span>EIGHT-POINT FORENSIC REPORT SCHEMA</span>
       </div>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; color: var(--text-secondary);">
-      <div><strong style="color: var(--text-primary);">1. The Discovery:</strong> One clear sentence describing the non-obvious finding (the anomaly).</div>
-      <div><strong style="color: var(--text-primary);">2. Why It Matters:</strong> Three to five bullets explaining the significance of the finding in plain English.</div>
-      <div><strong style="color: var(--text-primary);">3. Evidence:</strong> Multiple independent sources supporting the finding, with links.</div>
-      <div><strong style="color: var(--text-primary);">4. Timeline:</strong> When the change emerged and how it developed.</div>
-      <div><strong style="color: var(--text-primary);">5. Numbers:</strong> Only the calculations and metrics needed to substantiate the finding.</div>
-      <div><strong style="color: var(--text-primary);">6. Attacker:</strong> The attacker's verdict and evidence strength.</div>
-      <div><strong style="color: var(--text-primary);">7. Defender:</strong> The defender's alternative explanation or contradictory evidence along with the falsification condition.</div>
-      <div><strong style="color: var(--text-primary);">8. Strength:</strong> Verdict strength and confidence rating of attacker and defender.</div>
+    <div class="data-grid">
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-blue); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">1. THE DISCOVERY</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">One definitive thesis sentence articulating the detected statistical divergence.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-blue); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">2. WHY IT MATTERS</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Core economic and commercial implications explaining institutional significance.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-blue); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">3. EVIDENCE</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Independent public filings, BSE corporate disclosures, and earnings call excerpts.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-blue); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">4. TIMELINE</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Chronological milestone trajectory tracing multi-quarter emergence.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-blue); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">5. NUMBERS</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Calculated financial ratios and peer benchmark spreads substantiating the anomaly.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-red); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">6. ATTACKER</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Prosecutorial verdict, verified evidence strength, and confidence percentage.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-green); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">7. DEFENDER</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Corporate operational defense counterargument alongside measurable falsification condition.</p>
+      </div>
+
+      <div class="data-grid-cell">
+        <strong style="color: var(--accent-yellow); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.05em;">8. STRENGTH</strong>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Adversarial strength split comparing prosecutorial conviction against defense durability.</p>
+      </div>
     </div>
   </div>
 

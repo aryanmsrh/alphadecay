@@ -1,65 +1,98 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}Settings & Status{% endblock %}
-
 {% block content %}
-<div style="max-width: 900px; margin: 0 auto;">
+<div style="max-width: 960px; margin: 0 auto;">
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-        <span>Model & System Status</span>
+        <span>RUNTIME ENGINE & SYSTEM DIAGNOSTICS</span>
       </div>
 
-      <a href="{{ url_for('settings_page', live='true') }}" id="live-check-btn" class="btn btn-secondary btn-sm" onclick="this.innerHTML='Testing Ollama...';">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <polyline points="1 20 1 14 7 14"></polyline>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-        <span>Test Connection</span>
+      <a href="{{ url_for('settings_page', live='true') }}" id="live-check-btn" class="btn btn-secondary btn-sm" onclick="this.innerHTML='TESTING CONNECTIONS...';">
+        <span>Test All Connections</span>
       </a>
     </div>
 
-    <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
+    <!-- Gemini Cloud Engine Card -->
+    <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-left: 3px solid var(--accent-blue); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <strong style="font-size: 15px; color: var(--text-primary);">{{ diagnostics.ollama_model }}</strong>
+          <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: -0.02em;">
+            GEMINI CLOUD ENGINE
+          </h2>
+          <span class="tag-badge">DEFAULT CLOUD</span>
         </div>
-        <span class="badge {% if diagnostics.ollama_status == 'OK' %}badge-succeeded{% else %}badge-queued{% endif %}">
+        <span class="badge {% if 'ONLINE' in diagnostics.gemini_status or diagnostics.gemini_status == 'OK' %}badge-completed{% elif 'BUSY' in diagnostics.gemini_status %}badge-successful{% elif diagnostics.gemini_status == 'CONFIGURED' %}badge-queued{% else %}badge-failed{% endif %}">
+          {{ diagnostics.gemini_status }}
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 14px;">
+        <div><span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px;">MODEL:</span> <span style="font-family: var(--font-mono); color: var(--accent-blue); font-weight: 700;">{{ diagnostics.gemini_model }}</span></div>
+        <div>
+          <span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px;">API KEY:</span>
+          {% if diagnostics.gemini_api_key_configured %}
+            <span style="color: var(--accent-green); font-family: var(--font-mono); font-weight: 700;">CONFIGURED (Active)</span>
+          {% else %}
+            <span style="color: var(--accent-red); font-family: var(--font-mono); font-weight: 700;">NOT SET</span>
+          {% endif %}
+        </div>
+        <div>
+          <span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px;">PING LATENCY:</span>
+          {% if diagnostics.gemini_latency_s is not none %}
+            <strong style="color: var(--accent-green); font-family: var(--font-mono);">{{ diagnostics.gemini_latency_s }}s</strong>
+          {% else %}
+            <span style="color: var(--text-dim); font-size: 13px;">Untested</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Ollama Local Engine Card -->
+    <div style="background-color: var(--bg-surface-elevated); border: 1px solid var(--border); border-left: 3px solid var(--accent-green); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2 style="font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: -0.02em;">
+            LOCAL DEEPSEEK-R1 (OLLAMA)
+          </h2>
+          <span class="tag-badge">LOCAL PROVIDER</span>
+        </div>
+        <span class="badge {% if diagnostics.ollama_status == 'ONLINE' %}badge-completed{% elif diagnostics.ollama_status == 'CONFIGURED' %}badge-queued{% else %}badge-failed{% endif %}">
           {{ diagnostics.ollama_status }}
         </span>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 13px;">
-        <div><span style="color: var(--text-muted);">Model:</span> <code style="color: var(--accent-blue);">{{ diagnostics.ollama_model }}</code></div>
-        <div><span style="color: var(--text-muted);">Endpoint:</span> <code>{{ diagnostics.ollama_base_url }}</code></div>
-        {% if diagnostics.ollama_latency_s is not none %}
-          <div><span style="color: var(--text-muted);">Latency:</span> <strong style="color: var(--accent-green);">{{ diagnostics.ollama_latency_s }}s</strong></div>
-        {% endif %}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: 14px;">
+        <div><span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px;">MODEL:</span> <span style="font-family: var(--font-mono); color: var(--accent-blue); font-weight: 700;">{{ diagnostics.ollama_model }}</span></div>
+        <div><span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px;">ENDPOINT:</span> <span style="font-family: var(--font-mono);">{{ diagnostics.ollama_base_url }}</span></div>
+        <div>
+          <span style="color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px;">PING LATENCY:</span>
+          {% if diagnostics.ollama_latency_s is not none %}
+            <strong style="color: var(--accent-green); font-family: var(--font-mono);">{{ diagnostics.ollama_latency_s }}s</strong>
+          {% else %}
+            <span style="color: var(--text-dim); font-size: 13px;">Untested</span>
+          {% endif %}
+        </div>
       </div>
     </div>
 
-    <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
-      Parameters
+    <div style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">
+      SERVER PARAMETERS
     </div>
     <div class="table-responsive">
       <table class="data-table">
         <tbody>
           <tr>
-            <td><strong>Server Host</strong></td>
-            <td><code>{{ diagnostics.server_host }}</code></td>
+            <td><strong style="font-family: var(--font-mono); font-size: 12px;">SERVER HOST</strong></td>
+            <td><span style="font-family: var(--font-mono); font-size: 13.5px;">{{ diagnostics.server_host }}</span></td>
           </tr>
           <tr>
-            <td><strong>CSRF Protection</strong></td>
-            <td><span style="color: var(--accent-green); font-weight: 600;">ACTIVE</span></td>
+            <td><strong style="font-family: var(--font-mono); font-size: 12px;">CSRF INTEGRITY</strong></td>
+            <td><span style="color: var(--accent-green); font-family: var(--font-mono); font-weight: 700;">ACTIVE</span></td>
           </tr>
           <tr>
-            <td><strong>Storage</strong></td>
-            <td><code>{{ diagnostics.data_dir }}</code></td>
+            <td><strong style="font-family: var(--font-mono); font-size: 12px;">RUNS STORAGE PATH</strong></td>
+            <td><span style="font-family: var(--font-mono); font-size: 12.5px; color: var(--text-secondary);">{{ diagnostics.data_dir }}</span></td>
           </tr>
         </tbody>
       </table>

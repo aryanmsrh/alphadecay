@@ -18,10 +18,6 @@ beautifulsoup4==4.15.0
 soupsieve==3.0.3
 pypdf==6.21.1
 
-# High-Precision PDF Research Report Generation
-reportlab==5.0.1
-pillow==13.0.0
-
 # Configuration & Environment
 python-dotenv==1.2.4
 

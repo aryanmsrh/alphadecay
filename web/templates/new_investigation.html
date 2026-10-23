@@ -1,18 +1,11 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}New Analysis{% endblock %}
-
 {% block content %}
-<div style="max-width: 820px; margin: 0 auto;">
+<div style="max-width: 860px; margin: 0 auto;">
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="16"></line>
-          <line x1="8" y1="12" x2="16" y2="12"></line>
-        </svg>
-        <span>Start Analysis</span>
+        <span>INITIATE FORENSIC INVESTIGATION</span>
       </div>
     </div>
 
@@ -20,7 +13,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
       <div class="form-group">
-        <label for="ticker" class="form-label">Stock Ticker Symbol <span style="color: var(--accent-red)">*</span></label>
+        <label for="ticker" class="form-label">TARGET STOCK TICKER SYMBOL <span style="color: var(--accent-red)">*</span></label>
         <input 
           type="text" 
           id="ticker" 
@@ -30,12 +23,12 @@
           required 
           autocomplete="off"
           autofocus
-          style="font-family: var(--font-mono); text-transform: uppercase; font-size: 15.5px; font-weight: 600;"
+          style="font-family: var(--font-mono); text-transform: uppercase; font-size: 15px; font-weight: 700;"
         >
-        <div class="form-help">Enter a listed stock symbol:</div>
+        <div class="form-help">Select or enter a listed Indian equity symbol:</div>
 
-        <div class="ticker-suggestions">
-          <span style="font-size: 12px; color: var(--text-muted); align-self: center; margin-right: 4px;">Suggestions:</span>
+        <div class="ticker-suggestions" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); align-self: center; margin-right: 4px;">UNIVERSE:</span>
           {% for t in track_c_universe %}
             <button type="button" class="suggestion-chip" onclick="selectTicker('{{ t }}')">{{ t }}</button>
           {% endfor %}
@@ -43,8 +36,8 @@
       </div>
 
       <div class="form-group" style="margin-top: 20px;">
-        <label for="provider" class="form-label">Runtime Engine</label>
-        <select id="provider" name="provider" class="form-control" style="font-size: 14.5px; max-width: 380px;">
+        <label for="provider" class="form-label">INFERENCE ENGINE</label>
+        <select id="provider" name="provider" class="form-control" style="font-size: 14px; max-width: 440px;">
           <option value="gemini" selected>Gemini Cloud ({{ gemini_model }})</option>
           <option value="ollama">Local DeepSeek-R1 ({{ ollama_model }})</option>
         </select>
@@ -54,8 +47,8 @@
       </div>
 
       <div class="form-group" style="margin-top: 20px;">
-        <label for="anomaly_count" class="form-label">Number of Anomalies to Flag</label>
-        <select id="anomaly_count" name="anomaly_count" class="form-control" style="font-size: 14.5px; max-width: 240px;">
+        <label for="anomaly_count" class="form-label">ANOMALY EVALUATION DEPTH</label>
+        <select id="anomaly_count" name="anomaly_count" class="form-control" style="font-size: 14px; max-width: 280px;">
           <option value="1" selected>1 Anomaly (Default)</option>
           <option value="2">2 Anomalies</option>
           <option value="3">3 Anomalies</option>
@@ -63,32 +56,29 @@
           <option value="5">5 Anomalies (Maximum)</option>
         </select>
         <div class="form-help">
-          Select how many anomalies to evaluate (1 to 5).
+          Number of detected statistical anomalies to cross-examine.
         </div>
       </div>
 
       <div class="form-group" style="margin-top: 20px;">
-        <label for="hypothesis" class="form-label">Specific Question or Focus Area (Optional)</label>
+        <label for="hypothesis" class="form-label">SPECIFIC INVESTIGATIVE HYPOTHESIS (OPTIONAL)</label>
         <textarea 
           id="hypothesis" 
           name="hypothesis" 
           class="form-control" 
           rows="3"
-          placeholder="e.g. Check operating cash flow, inventory days, or receivables."
-          style="font-size: 14.5px; resize: vertical; line-height: 1.5;"
+          placeholder="e.g. Probe operating cash flow collapse, inventory days divergence, or auditor qualifications..."
+          style="font-size: 14px; resize: vertical; line-height: 1.55; font-family: var(--font-body);"
         ></textarea>
         <div class="form-help">
-          Leave blank to run on calculated anomalies.
+          Leave blank to allow the pipeline to target the highest-severity statistical anomaly.
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 26px;">
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-        <button type="submit" id="submit-btn" class="btn btn-primary" style="padding: 11px 24px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-          </svg>
-          <span>Run Analysis</span>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">CANCEL</a>
+        <button type="submit" id="submit-btn" class="btn btn-primary" style="padding: 8px 18px;">
+          <span>RUN INVESTIGATION ▶</span>
         </button>
       </div>
     </form>
@@ -102,20 +92,11 @@ function selectTicker(ticker) {
   input.focus();
 }
 
-document.getElementById('investigation-form').addEventListener('submit', function(e) {
+document.getElementById('investigation-form').addEventListener('submit', function() {
   const btn = document.getElementById('submit-btn');
-  const tickerInput = document.getElementById('ticker');
-  if (!tickerInput.value.trim()) {
-    e.preventDefault();
-    alert('Please enter a target stock ticker symbol.');
-    tickerInput.focus();
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = `
-    <span class="status-dot healthy" style="animation: pulse 1s infinite;"></span>
-    <span>Starting Analysis...</span>
-  `;
+  btn.innerHTML = '<span>ACTIVATING TELEMETRY...</span>';
+  btn.style.opacity = '0.7';
+  btn.style.pointerEvents = 'none';
 });
 </script>
 {% endblock %}

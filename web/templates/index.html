@@ -1,51 +1,61 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}Overview{% endblock %}
-
 {% block content %}
-<div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 24px;">
-  <div class="metric-card accent-blue">
-    <div class="metric-card-label">Completed Reports</div>
+<!-- Authoritative Header Banner -->
+<div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+  <div>
+    <h1 style="font-family: var(--font-heading); font-size: 26px; font-weight: 700; color: #FFFFFF; margin-bottom: 6px; letter-spacing: -0.03em;">
+      FORENSIC RESEARCH OVERVIEW
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 14.5px; margin: 0;">
+      Automated adversarial triangulation of financial filings, earnings calls, and peer spreads.
+    </p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="{{ url_for('investigations_history_page') }}" class="btn btn-secondary">
+      <span>Past Reports</span>
+    </a>
+    <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary">
+      <span>+ New Analysis</span>
+    </a>
+  </div>
+</div>
+
+<!-- Metrics Grid -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-card-label">Completed Investigations</div>
     <div class="metric-card-val">{{ metrics.total_completed }}</div>
-    <div class="metric-card-desc">
-      Total investigations completed
-    </div>
+    <div class="metric-card-desc">Audited institutional reports</div>
   </div>
 
-  <div class="metric-card accent-green">
-    <div class="metric-card-label">Latest Stock Analyzed</div>
-    <div class="metric-card-val" style="font-size: 20px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+  <div class="metric-card">
+    <div class="metric-card-label">Recent Target Entity</div>
+    <div class="metric-card-val" style="font-size: 22px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
       {{ metrics.most_recent_company or 'None' }}
     </div>
     <div class="metric-card-desc">
       {% if metrics.latest_ticker %}
-        <code style="color: var(--accent-blue); font-weight: 700;">{{ metrics.latest_ticker }}</code> · 
+        <span style="font-family: var(--font-mono); color: var(--accent-blue); font-weight: 700;">{{ metrics.latest_ticker }}</span> · 
       {% endif %}
       Statutory disclosures
     </div>
   </div>
 
-  <div class="metric-card accent-blue">
-    <div class="metric-card-label">Model Engine</div>
-    <div class="metric-card-val" style="font-size: 18px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+  <div class="metric-card">
+    <div class="metric-card-label">Active Engine</div>
+    <div class="metric-card-val" style="font-size: 20px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
       {{ system_health.model }}
     </div>
-    <div class="metric-card-desc">Local execution</div>
+    <div class="metric-card-desc">Local / Cloud Execution</div>
   </div>
 </div>
 
+<!-- Recent Reports Table -->
 <div class="card">
   <div class="card-header">
     <div class="card-title">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="8" y1="6" x2="21" y2="6"></line>
-        <line x1="8" y1="12" x2="21" y2="12"></line>
-        <line x1="8" y1="18" x2="21" y2="18"></line>
-        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-      </svg>
-      <span>Recent Company Reports</span>
+      <span>Recent Company Investigations</span>
     </div>
 
     <div style="display: flex; gap: 8px;">
@@ -53,7 +63,7 @@
         <span>View All</span>
       </a>
       <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary btn-sm">
-        <span>New Analysis</span>
+        <span>+ New</span>
       </a>
     </div>
   </div>
@@ -63,34 +73,39 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Company</th>
+            <th>Entity</th>
             <th>Ticker</th>
             <th>Status</th>
-            <th>Discovery</th>
-            <th>Date</th>
+            <th>Primary Discovery</th>
+            <th>Timestamp</th>
             <th style="text-align: right;">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for r in recent_runs %}
-            <tr class="clickable-row" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
+            <tr style="cursor: pointer;" onclick="window.location='{{ url_for('investigation_detail_page', run_id=r.run_id) }}'">
               <td>
-                <strong style="color: #FFFFFF;">{{ r.company_name or r.ticker }}</strong>
+                <strong style="color: #FFFFFF; font-family: var(--font-body); font-weight: 700;">{{ r.company_name or r.ticker }}</strong>
               </td>
-              <td><code>{{ r.ticker }}</code></td>
+              <td><span style="font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: var(--accent-blue);">{{ r.ticker }}</span></td>
               <td>
                 <span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span>
               </td>
-              <td style="max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_discovery or r.hypothesis or '' }}">
+              <td style="max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ r.primary_discovery or r.hypothesis or '' }}">
                 {{ r.primary_discovery or r.hypothesis or 'Analysis in progress...' }}
               </td>
-              <td style="color: var(--text-muted); font-size: 12.5px; white-space: nowrap;">
-                {{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }} UTC
+              <td style="color: var(--text-muted); font-family: var(--font-mono); font-size: 13.5px; white-space: nowrap;">
+                <span class="device-time" data-utc="{{ r.created_at }}">{{ r.created_at[:16].replace('T', ' ') if r.created_at else '—' }}</span>
               </td>
               <td style="text-align: right;" onclick="event.stopPropagation();">
-                <a href="{{ url_for('investigation_detail_page', run_id=r.run_id) }}" class="btn btn-secondary btn-sm">
-                  <span>View</span>
-                </a>
+                <div style="display: inline-flex; gap: 6px;">
+                  <a href="{{ url_for('investigation_detail_page', run_id=r.run_id) }}" class="btn btn-secondary btn-sm">
+                    <span>View</span>
+                  </a>
+                  <button class="btn btn-danger btn-sm" onclick="deleteRun('{{ r.run_id }}', '{{ r.ticker }}')">
+                    <span>Delete</span>
+                  </button>
+                </div>
               </td>
             </tr>
           {% endfor %}
@@ -98,13 +113,38 @@
       </table>
     </div>
   {% else %}
-    <div class="empty-state">
-      <h3>No Reports Yet</h3>
-      <p>Select a company to analyze financial indicators and calculated anomalies.</p>
+    <div style="text-align: center; padding: 48px 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius);">
+      <h2 style="font-family: var(--font-heading); font-size: 20px; margin-bottom: 8px;">No Investigations Recorded</h2>
+      <p style="color: var(--text-secondary); font-size: 14.5px; margin-bottom: 20px;">
+        Target a listed company to examine non-obvious statistical anomalies.
+      </p>
       <a href="{{ url_for('new_investigation_page') }}" class="btn btn-primary">
-        <span>Start Analysis</span>
+        <span>Target Company</span>
       </a>
     </div>
   {% endif %}
 </div>
+
+<script>
+function deleteRun(runId, ticker) {
+  if (confirm(`Permanently delete report ${runId} for ${ticker}? This action cannot be undone.`)) {
+    fetch(`/api/investigation/${runId}/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert("Failed to delete report.");
+      }
+    })
+    .catch(err => alert("Error: " + err));
+  }
+}
+</script>
 {% endblock %}

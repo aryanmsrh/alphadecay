@@ -109,7 +109,18 @@ def main():
         else:
             print(f"     • {ev}")
 
-        print(f"  4. Timeline:                {rpt.get('timeline', '')}")
+        print("  4. Timeline:")
+        tl = rpt.get("timeline", "")
+        if isinstance(tl, list):
+            for t in tl:
+                print(f"     • {t}")
+        elif isinstance(tl, str):
+            lines = [l.strip().lstrip("-•* ") for l in tl.split("\n") if l.strip()]
+            if len(lines) > 1:
+                for l in lines:
+                    print(f"     • {l}")
+            else:
+                print(f"     {tl}")
 
         print("  5. Numbers:")
         num_items = rpt.get("numbers", [])
@@ -135,10 +146,19 @@ def main():
         else:
             print(f"  7. Defender:                {dfn}")
 
-        print(f"  8. Strength:                {rpt.get('strength', '')}")
+        print("  8. Strength:")
+        st = rpt.get("strength", "")
+        if isinstance(st, list):
+            for s in st:
+                print(f"     • {s}")
+        elif isinstance(st, str) and " | " in st:
+            for part in st.split(" | "):
+                print(f"     • {part.strip()}")
+        else:
+            print(f"     • Attacker: {atk.get('evidence_strength', '')} ({atk.get('confidence', '')})")
+            print(f"     • Defender: {dfn.get('evidence_strength', '')} ({dfn.get('confidence', '')})")
         print("-" * 80)
 
-    print(f"\nPDF Report: {result.get('pdf_path')}\n")
 
     if not args.keep_data:
         archive.delete_report(run_id)

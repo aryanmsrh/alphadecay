@@ -1,361 +1,1015 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}Analysis · {{ run.ticker }}{% endblock %}
-
 {% block content %}
 <div id="investigation-workspace" data-run-id="{{ run.run_id }}" data-status="{{ run.status }}">
+  <!-- Top Entity Overview Card -->
   <div class="card" style="margin-bottom: 24px;">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px;">
       <div>
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-          <h1 style="font-family: var(--font-display); font-size: 26px; font-weight: 800; color: #FFFFFF; margin: 0;">
+          <h1 style="font-family: var(--font-heading); font-size: 28px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: -0.025em;">
             {{ run.company_name or run.ticker }}
           </h1>
-          <code style="font-family: var(--font-mono); font-size: 14px; background: #000; padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--accent-blue);">
+          <span style="font-family: var(--font-mono); font-size: 15px; font-weight: 700; background: var(--bg-surface-elevated); padding: 3px 8px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); color: var(--accent-blue);">
             {{ run.ticker }}
-          </code>
+          </span>
         </div>
-        <div style="font-size: 13.5px; color: var(--text-secondary);">
-          Report ID: <code style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.run_id }}</code>
+        <div style="font-size: 13.5px; color: var(--text-secondary); font-family: var(--font-mono);">
+          REPORT ID: <span style="color: var(--text-primary);">{{ run.run_id }}</span>
           &nbsp;·&nbsp;
-          Analyzed: <span style="font-family: var(--font-mono); color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }} UTC</span>
+          ANALYZED: <span class="device-time-sec" data-utc="{{ run.created_at }}" style="color: var(--text-primary);">{{ run.created_at[:19].replace('T', ' ') if run.created_at else '—' }}</span>
           {% if run.provider or run.provider_used %}
             &nbsp;·&nbsp;
-            Engine: <span style="font-family: var(--font-mono); color: var(--accent-blue);">{{ run.provider_used or run.provider }}</span>
+            ENGINE: <span style="color: var(--accent-blue);">{{ run.provider_used or run.provider }}</span>
           {% endif %}
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 10px;">
-        {% if run.status == 'COMPLETED' %}
-          <a href="{{ url_for('api_investigation_pdf', run_id=run.run_id) }}" class="btn btn-primary btn-sm" download>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download PDF</span>
-          </a>
-        {% endif %}
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDeleteRun('{{ run.run_id }}', '{{ run.ticker }}')">
+          <span>Delete Run</span>
+        </button>
         <a href="{{ url_for('new_investigation_page') }}" class="btn btn-secondary btn-sm">
-          <span>New Analysis</span>
+          <span>+ New Analysis</span>
         </a>
       </div>
     </div>
   </div>
 
   {% if run.status in ('QUEUED', 'RUNNING') %}
-    <div class="card" style="margin-bottom: 24px; padding: 24px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="status-dot healthy" style="animation: pulse 1s infinite; width: 12px; height: 12px;"></div>
-          <h3 style="font-family: var(--font-display); font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0;">
-            Live Analysis Stream: {{ run.ticker }}
-          </h3>
+    <!-- Progressive Reveal: Discovered Anomaly & Company Baseline Dossier -->
+    <div id="progressive-dossier" style="display: none; margin-bottom: 24px;"></div>
+
+    <div class="card" style="margin-bottom: 24px; padding: 22px 26px; border: 1px solid var(--border-light);">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="live-radar-dot"></span>
+          <h2 style="font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: #FFFFFF; margin: 0;">
+            LIVE FORENSIC INTELLIGENCE STREAM
+          </h2>
+          <span class="badge badge-queued">{{ run.ticker }}</span>
         </div>
-        <span class="tag-badge">LIVE STREAM</span>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="live-timer" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); background: var(--bg-surface-elevated); padding: 6px 12px; border: 1px solid var(--border);">
+            ELAPSED: 00:00
+          </span>
+          <span id="live-event-counter" style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-blue); background: var(--bg-surface-elevated); padding: 6px 12px; border: 1px solid var(--border); font-weight: 700;">
+            0 EVENTS
+          </span>
+        </div>
       </div>
 
-      <div id="live-stream-log" style="background: #000000; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; min-height: 260px; max-height: 520px; overflow-y: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: #e4e4e7;">
-        <div style="color: var(--text-muted);">Initializing stream...</div>
+      <div style="background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: var(--accent-green); font-weight: 700;">● SSE TELEMETRY ACTIVE</span>
+            <span>·</span>
+            <span>TARGET: {{ run.ticker }}</span>
+            <span>·</span>
+            <span>ENGINE: {{ run.provider_used or run.provider or 'Gemini Cloud' }}</span>
+          </div>
+          <div style="color: var(--text-dim);">AUTO-SCROLL ON</div>
+        </div>
+
+        <div id="live-stream-log" style="padding: 16px 20px; min-height: 280px; max-height: 540px; overflow-y: auto; font-family: var(--font-body); font-size: 16px; line-height: 1.6; color: var(--text-primary);">
+          <div style="color: var(--text-muted); font-family: var(--font-mono); font-size: 14px;">Initializing forensic telemetry connection...</div>
+        </div>
       </div>
     </div>
-
-    <script>
-    const logBox = document.getElementById('live-stream-log');
-    let evtSource = null;
-
-    function appendEvent(data) {
-      if (!data) return;
-      const wrap = document.createElement('div');
-      wrap.style.marginBottom = '12px';
-
-      const timeStr = data.timestamp ? data.timestamp.substring(11, 19) : '';
-      const timeHtml = timeStr ? `<span style="color: var(--text-muted); margin-right: 8px;">[${timeStr}]</span>` : '';
-
-      if (data.step === 'ATTACKER' && data.hypothesis) {
-        wrap.innerHTML = `
-          <div style="border: 1px solid #dc2626; background: #1c0303; padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 6px;">
-            <div style="color: #f87171; font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">
-              ${timeHtml}Attacker Prosecutorial Hypothesis (${data.confidence ? data.confidence : ''})
-            </div>
-            <div style="color: #FFFFFF; font-family: var(--font-body); font-size: 14px; line-height: 1.55;">
-              ${data.hypothesis}
-            </div>
-          </div>
-        `;
-      } else if (data.step === 'DEFENDER' && data.hypothesis) {
-        wrap.innerHTML = `
-          <div style="border: 1px solid #16a34a; background: #021a0c; padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 6px;">
-            <div style="color: #4ade80; font-weight: 700; font-size: 12px; text-transform: uppercase; margin-bottom: 4px;">
-              ${timeHtml}Defender Operational Defense (${data.confidence ? data.confidence : ''})
-            </div>
-            <div style="color: #FFFFFF; font-family: var(--font-body); font-size: 14px; line-height: 1.55; margin-bottom: 6px;">
-              ${data.hypothesis}
-            </div>
-            ${data.falsification_condition ? `
-              <div style="color: #86efac; font-size: 13px; font-family: var(--font-mono); border-top: 1px dashed rgba(34,197,94,0.3); padding-top: 6px;">
-                <strong>Falsification Condition:</strong> ${data.falsification_condition}
-              </div>
-            ` : ''}
-          </div>
-        `;
-      } else if (data.step === 'TOOL_CALL') {
-        wrap.innerHTML = `
-          <div style="border: 1px solid #2563eb; background: #030d1a; padding: 8px 12px; border-radius: var(--radius-sm); margin: 4px 0; font-size: 12.5px;">
-            <span style="color: #60a5fa; font-weight: 700; text-transform: uppercase;">${timeHtml}TOOL CALL:</span>
-            <span style="color: #93c5fd; margin-left: 6px;">${data.message || ''}</span>
-          </div>
-        `;
-      } else if (data.step === 'TOOL_RESULT') {
-        wrap.innerHTML = `
-          <div style="border: 1px solid #0d9488; background: #021a17; padding: 8px 12px; border-radius: var(--radius-sm); margin: 4px 0; font-size: 12.5px;">
-            <span style="color: #2dd4bf; font-weight: 700; text-transform: uppercase;">${timeHtml}TOOL RESULT:</span>
-            <span style="color: #a7f3d0; margin-left: 6px;">${data.message || ''}</span>
-          </div>
-        `;
-      } else if (data.message) {
-        const stepHtml = data.step ? `<span style="color: var(--accent-blue); font-weight: 700; margin-right: 8px;">${data.step}:</span>` : '';
-        wrap.innerHTML = `${timeHtml}${stepHtml}<span>${data.message}</span>`;
-      }
-      logBox.appendChild(wrap);
-      logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    if (window.EventSource) {
-      evtSource = new EventSource("{{ url_for('api_investigation_stream', run_id=run.run_id) }}");
-      evtSource.onmessage = function(e) {
-        try {
-          const data = JSON.parse(e.data);
-          if (data.step === 'FINISHED' || data.status === 'COMPLETED' || data.status === 'FAILED') {
-            evtSource.close();
-            setTimeout(function() { window.location.reload(); }, 1000);
-            return;
-          }
-          appendEvent(data);
-        } catch (err) {}
-      };
-      evtSource.onerror = function() {
-        pollStatus();
-      };
-    } else {
-      pollStatus();
-    }
-
-    function pollStatus() {
-      fetch("{{ url_for('api_investigation_events', run_id=run.run_id) }}")
-        .then(function(res) { return res.json(); })
-        .then(function(d) {
-          if (d.events && d.events.length) {
-            logBox.innerHTML = '';
-            d.events.forEach(appendEvent);
-          }
-          if (d.status === 'COMPLETED' || d.status === 'FAILED') {
-            setTimeout(function() { window.location.reload(); }, 1000);
-          } else {
-            setTimeout(pollStatus, 2000);
-          }
-        })
-        .catch(function() { setTimeout(pollStatus, 3000); });
-    }
-    </script>
   {% elif run.status == 'FAILED' %}
     <div class="alert-banner alert-danger">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
       <div>
         <strong>Analysis Failed:</strong> {{ run.error or 'Pipeline encountered an error.' }}
       </div>
     </div>
   {% else %}
 
+    <!-- COMPLETED AUDIT DELIVERABLES -->
     {% set anomalies_list = run.investigated_anomalies or [] %}
     {% for item in anomalies_list %}
       {% set rpt = item.report or {} %}
-      <div class="card" style="margin-bottom: 28px; border: 1px solid var(--border-highlight);">
-        <div class="card-header" style="background: #000; margin: -26px -28px 24px -28px; padding: 18px 28px; border-bottom: 1px solid var(--border);">
-          <div class="card-title" style="font-family: var(--font-display); font-size: 18px; font-weight: 800;">
-            <span>Anomaly {{ item.index or loop.index }}: {{ item.metric }}</span>
+      <div class="card" style="margin-bottom: 28px;">
+        <div class="card-header">
+          <div class="card-title" style="font-size: 20px;">
+            <span>ANOMALY {{ item.index or loop.index }}: {{ item.metric }}</span>
           </div>
           {% if item.severity %}
-            <span class="tag-badge">SEVERITY {{ item.severity }}/10</span>
+            <span class="badge" style="background: rgba(231, 197, 71, 0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); font-size: 11px;">
+              SEVERITY {{ item.severity }}/10
+            </span>
           {% endif %}
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 18px;">
           <!-- 1. The Discovery -->
-          <div class="math-card">
-            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
-              The Discovery
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px;">
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px;">
+              1. THE DISCOVERY
             </div>
-            <div style="font-family: var(--font-display); font-size: 17px; font-weight: 700; color: #FFFFFF; line-height: 1.5;">
+            <div style="font-family: var(--font-heading); font-size: 24px; font-weight: 700; color: #FFFFFF; line-height: 1.45; letter-spacing: -0.02em;">
               {{ rpt.discovery or rpt.the_discovery or item.metric }}
             </div>
           </div>
 
-          <!-- 2. Why It Matters -->
-          <div class="math-card">
-            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
-              Why It Matters
+          <!-- 2. Why It Matters (Grid Rendering) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px;">
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;">
+              2. WHY IT MATTERS
             </div>
-            <ul style="padding-left: 20px; font-size: 14.5px; color: var(--text-primary); line-height: 1.6; margin: 0;">
+            <div class="data-grid">
               {% set wm = rpt.why_it_matters %}
               {% if wm is iterable and wm is not string %}
                 {% for b in wm %}
-                  <li style="margin-bottom: 6px;">{{ b }}</li>
+                  <div class="data-grid-cell">
+                    <span style="font-family: var(--font-mono); color: var(--accent-blue); font-size: 14.5px; font-weight: 700; margin-right: 8px;">0{{ loop.index }}</span>
+                    <span style="font-size: 16.5px; line-height: 1.65; color: var(--text-primary);">{{ b }}</span>
+                  </div>
                 {% endfor %}
               {% else %}
-                <li>{{ wm }}</li>
+                <div class="data-grid-cell" style="font-size: 16.5px; line-height: 1.65;">{{ wm }}</div>
               {% endif %}
-            </ul>
+            </div>
           </div>
 
-          <!-- 3. Evidence -->
-          <div class="math-card">
-            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
-              Evidence
+          <!-- 3. Evidence (Grid Rendering) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px;">
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;">
+              3. EVIDENCE
             </div>
-            <ul style="padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+            <div class="data-grid">
               {% set ev = rpt.evidence %}
               {% if ev is iterable and ev is not string %}
                 {% for e in ev %}
-                  <li style="margin-bottom: 6px;">
+                  <div class="data-grid-cell">
                     {% if e is mapping %}
                       {% set e_src = e.source or 'Statutory Filing' %}
                       {% set e_url = e.url or '#' %}
-                      <a href="{{ e_url }}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-blue); text-decoration: underline; font-weight: 600;">[{{ e_src }}]</a> — {{ e_url }}
+                      <div style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-blue); font-weight: 700; margin-bottom: 6px;">
+                        [{{ e_src }}]
+                      </div>
+                      <a href="{{ e_url }}" target="_blank" rel="noopener noreferrer" class="cell-evidence-link" style="font-size: 14px;">{{ e_url }}</a>
                     {% else %}
-                      {{ e }}
+                      <span style="font-size: 16px; line-height: 1.65; color: var(--text-primary);">{{ e }}</span>
                     {% endif %}
-                  </li>
+                  </div>
                 {% endfor %}
               {% else %}
-                <li>{{ ev }}</li>
+                <div class="data-grid-cell" style="font-size: 16px; line-height: 1.65;">{{ ev }}</div>
               {% endif %}
-            </ul>
-          </div>
-
-          <!-- 4. Timeline -->
-          <div class="math-card">
-            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px;">
-              Timeline
-            </div>
-            <div style="font-size: 14.5px; color: var(--text-primary); line-height: 1.6;">
-              {{ rpt.timeline }}
             </div>
           </div>
 
-          <!-- 5. Numbers -->
-          <div class="math-card">
-            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
-              Numbers
+          <!-- 4. Timeline (Grid Rendering - Chronological Periods) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px;">
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;">
+              4. TIMELINE
             </div>
-            <div class="math-formula-box" style="padding: 10px 14px;">
+            <div class="data-grid">
+              {% set tl = rpt.timeline %}
+              {% if tl is iterable and tl is not string %}
+                {% for b in tl %}
+                  <div class="data-grid-cell">
+                    {% if ':' in b %}
+                      {% set parts = b.split(':', 1) %}
+                      <div style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; color: var(--accent-yellow); margin-bottom: 6px; letter-spacing: 0.03em;">
+                        {{ parts[0] }}
+                      </div>
+                      <div style="font-size: 16.5px; line-height: 1.65; color: var(--text-primary);">
+                        {{ parts[1] | trim }}
+                      </div>
+                    {% else %}
+                      <div style="font-size: 16.5px; line-height: 1.65; color: var(--text-primary);">
+                        {{ b }}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              {% elif tl is string %}
+                {% for line in tl.split('\n') %}
+                  {% if line.strip() %}
+                    {% set clean_line = line.strip().lstrip('-•* ') %}
+                    <div class="data-grid-cell">
+                      {% if ':' in clean_line %}
+                        {% set parts = clean_line.split(':', 1) %}
+                        <div style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; color: var(--accent-yellow); margin-bottom: 6px; letter-spacing: 0.03em;">
+                          {{ parts[0] }}
+                        </div>
+                        <div style="font-size: 16.5px; line-height: 1.65; color: var(--text-primary);">
+                          {{ parts[1] | trim }}
+                        </div>
+                      {% else %}
+                        <div style="font-size: 16.5px; line-height: 1.65; color: var(--text-primary);">
+                          {{ clean_line }}
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 5. Numbers (Financial Metrics Grid - Structured Trajectory & Metric Formatting) -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px;">
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px;">
+              5. AUDITED NUMBERS
+            </div>
+            <div class="data-grid">
               {% for n in rpt.numbers %}
-                <div style="color: #FFFFFF; margin-bottom: 4px; font-size: 12.5px;">• {{ n }}</div>
+                {% if ':' in n %}
+                  {% set parts = n.split(':', 1) %}
+                  {% set label = parts[0].strip() %}
+                  {% set val = parts[1].strip() %}
+
+                  {% if ' -> ' in val and val.split(' -> ')|length >= 3 %}
+                    <!-- Full-Width Multi-Quarter Trajectory Track -->
+                    <div class="data-grid-cell" style="grid-column: 1 / -1; background: var(--bg-surface); border: 1px solid var(--border-light); padding: 18px 22px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.06em; text-transform: uppercase;">
+                          {{ label }}
+                        </span>
+                        <span class="badge" style="background: rgba(231, 197, 71, 0.12); color: var(--accent-yellow); border: 1px solid rgba(231, 197, 71, 0.35); font-size: 11px;">
+                          {{ val.split(' -> ')|length }} QUARTERS MAPPED
+                        </span>
+                      </div>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        {% for step in val.split(' -> ') %}
+                          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+                            {% if ':' in step %}
+                              {% set s_parts = step.split(':', 1) %}
+                              <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-yellow);">
+                                {{ s_parts[0] | trim }}
+                              </span>
+                              <span style="color: var(--border-light); font-size: 11px;">|</span>
+                              {% if ' | ' in s_parts[1] %}
+                                {% for sub in s_parts[1].split(' | ') %}
+                                  <span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF; font-variant-numeric: tabular-nums;">
+                                    {{ sub | trim }}
+                                  </span>
+                                  {% if not loop.last %}
+                                    <span style="color: var(--text-muted); font-size: 11px;">·</span>
+                                  {% endif %}
+                                {% endfor %}
+                              {% else %}
+                                <span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF; font-variant-numeric: tabular-nums;">
+                                  {{ s_parts[1] | trim }}
+                                </span>
+                              {% endif %}
+                            {% else %}
+                              <span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF;">
+                                {{ step | trim }}
+                              </span>
+                            {% endif %}
+                          </div>
+                          {% if not loop.last %}
+                            <span style="color: var(--accent-blue); font-size: 15px; font-weight: 700; user-select: none;">→</span>
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% elif 'Sector Peer' in label or (' | ' in val and val.split(' | ')|length >= 3) %}
+                    <!-- Peer Comparison Row -->
+                    <div class="data-grid-cell" style="grid-column: 1 / -1; background: var(--bg-surface); border: 1px solid var(--border-light); padding: 16px 20px;">
+                      <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px;">
+                        {{ label }}
+                      </div>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                        {% set pipe_items = val.split(' | ') %}
+                        <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-violet); background: rgba(155, 140, 255, 0.08); padding: 5px 10px; border: 1px solid rgba(155, 140, 255, 0.25); border-radius: var(--radius-sm);">
+                          {{ pipe_items[0] | trim }}
+                        </span>
+                        {% for sub in pipe_items[1:] %}
+                          <span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF; background: var(--bg-surface-elevated); padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums;">
+                            {{ sub | trim }}
+                          </span>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% elif ' -> ' in val %}
+                    <!-- 2-Point Transition Card (Baseline -> Target) -->
+                    <div class="data-grid-cell" style="background: var(--bg-surface); border: 1px solid var(--border-light);">
+                      <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px;">
+                        {{ label }}
+                      </div>
+                      {% set pair = val.split(' -> ') %}
+                      <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: #FFFFFF; line-height: 1.6; font-variant-numeric: tabular-nums;">
+                        <span>{{ pair[0] | trim }}</span>
+                        <span style="color: var(--accent-blue); font-weight: 700; margin: 0 6px;">→</span>
+                        <span>{{ pair[1] | trim }}</span>
+                      </div>
+                    </div>
+                  {% else %}
+                    <!-- Standard Metric Card -->
+                    <div class="data-grid-cell" style="background: var(--bg-surface); border: 1px solid var(--border-light);">
+                      <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px;">
+                        {{ label }}
+                      </div>
+                      <div style="font-family: var(--font-mono); font-size: 16.5px; font-weight: 600; color: #FFFFFF; line-height: 1.6; font-variant-numeric: tabular-nums;">
+                        {{ val }}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <div class="data-grid-cell" style="background: var(--bg-surface); border: 1px solid var(--border-light);">
+                    <div style="font-family: var(--font-mono); font-size: 16.5px; font-weight: 600; color: #FFFFFF; line-height: 1.6; font-variant-numeric: tabular-nums;">
+                      {{ n }}
+                    </div>
+                  </div>
+                {% endif %}
               {% endfor %}
             </div>
           </div>
 
-          <!-- 6. Attacker -->
-          <div class="math-card" style="border-left: 4px solid var(--accent-red); background: #120505;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.5px;">
-                Attacker
-              </span>
+          <!-- 6 & 7: TWO-COLUMN ADVERSARIAL SPLIT (ATTACKER vs DEFENDER) -->
+          <div class="adversarial-split-grid">
+            <!-- Left Column: ATTACKER -->
+            <div class="duel-column attacker">
+              <div class="duel-header">
+                <div class="duel-title-atk" style="font-size: 16px; font-weight: 800;">ATTACKER</div>
+                {% set atk = rpt.attacker or {} %}
+                {% if atk is mapping and (atk.confidence or atk.confidence_rating) %}
+                  <span class="badge badge-successful">
+                    CONFIDENCE: {{ atk.confidence or atk.confidence_rating }}
+                  </span>
+                {% endif %}
+              </div>
+
+              <div style="margin-bottom: 6px;">
+                <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">
+                  PROSECUTORIAL VERDICT
+                </div>
+                <div style="font-size: 16.5px; color: #FFFFFF; line-height: 1.65;">
+                  {{ atk.verdict if atk is mapping else atk }}
+                </div>
+              </div>
+
+              {% if atk is mapping and atk.evidence_strength %}
+                <div style="font-size: 14.5px; color: #fca5a5; font-family: var(--font-mono); line-height: 1.55; background: rgba(0,0,0,0.4); padding: 10px 14px; border: 1px solid rgba(239,68,68,0.25); border-radius: var(--radius-sm);">
+                  <strong style="color: #ef4444; text-transform: uppercase; letter-spacing: 0.04em;">Evidence Strength:</strong> {{ atk.evidence_strength }}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Right Column: DEFENDER -->
+            <div class="duel-column defender">
+              <div class="duel-header">
+                <div class="duel-title-dfn" style="font-size: 16px; font-weight: 800;">DEFENDER</div>
+                {% set dfn = rpt.defender or {} %}
+                {% if dfn is mapping and (dfn.confidence or dfn.confidence_rating) %}
+                  <span class="badge badge-completed">
+                    CONFIDENCE: {{ dfn.confidence or dfn.confidence_rating }}
+                  </span>
+                {% endif %}
+              </div>
+
+              <div style="margin-bottom: 6px;">
+                <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: #86efac; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">
+                  DEFENSE COUNTERARGUMENT
+                </div>
+                <div style="font-size: 16.5px; color: #FFFFFF; line-height: 1.65;">
+                  {{ dfn.counterargument if (dfn is mapping and dfn.counterargument) else (dfn.alternative_explanation if dfn is mapping else dfn) }}
+                </div>
+              </div>
+
+              {% if dfn is mapping and dfn.falsification_condition %}
+                <div style="font-size: 14.5px; color: #86efac; line-height: 1.55; background: rgba(0,0,0,0.4); padding: 10px 14px; border: 1px dashed rgba(34,197,94,0.35); border-radius: var(--radius-sm); margin-bottom: 8px;">
+                  <strong style="color: #22c55e; text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--font-mono);">Falsification Condition:</strong> {{ dfn.falsification_condition }}
+                </div>
+              {% endif %}
+
+              {% if dfn is mapping and dfn.evidence_strength %}
+                <div style="font-size: 14.5px; color: #bbf7d0; font-family: var(--font-mono); line-height: 1.55; background: rgba(0,0,0,0.4); padding: 10px 14px; border: 1px solid rgba(34,197,94,0.25); border-radius: var(--radius-sm);">
+                  <strong style="color: #22c55e; text-transform: uppercase; letter-spacing: 0.04em;">Evidence Strength:</strong> {{ dfn.evidence_strength }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 8. Strength Assessment -->
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px;">
+            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px;">
+              8. STRENGTH ASSESSMENT
+            </div>
+            <div class="data-grid">
               {% set atk = rpt.attacker or {} %}
-              {% if atk is mapping and (atk.confidence or atk.confidence_rating) %}
-                <span class="badge" style="background: #450a0a; color: #f87171; border: 1px solid #dc2626; font-size: 11px;">
-                  Confidence: {{ atk.confidence or atk.confidence_rating }}
-                </span>
-              {% endif %}
-            </div>
-
-            <div style="font-size: 14.5px; color: #FFFFFF; line-height: 1.6; margin-bottom: 8px;">
-              <strong>Verdict:</strong> {{ atk.verdict if atk is mapping else atk }}
-            </div>
-
-            {% if atk is mapping and atk.evidence_strength %}
-              <div style="font-size: 13px; color: #fca5a5; font-family: var(--font-mono);">
-                <strong>Evidence Strength:</strong> {{ atk.evidence_strength }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- 7. Defender -->
-          <div class="math-card" style="border-left: 4px solid var(--accent-green); background: #03140a;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.5px;">
-                Defender
-              </span>
               {% set dfn = rpt.defender or {} %}
-              {% if dfn is mapping and (dfn.confidence or dfn.confidence_rating) %}
-                <span class="badge" style="background: #052e16; color: #4ade80; border: 1px solid #16a34a; font-size: 11px;">
-                  Confidence: {{ dfn.confidence or dfn.confidence_rating }}
-                </span>
+              {% set atk_c = (atk.confidence if atk is mapping else '') or '' %}
+              {% set atk_s = (atk.evidence_strength if atk is mapping else '') or '' %}
+              {% set dfn_c = (dfn.confidence if dfn is mapping else '') or '' %}
+              {% set dfn_s = (dfn.evidence_strength if dfn is mapping else '') or '' %}
+              {% if rpt.strength is iterable and rpt.strength is not string %}
+                {% for b in rpt.strength %}
+                  <div class="data-grid-cell" style="font-size: 16px; line-height: 1.65;">
+                    {% if 'Attacker' in b %}
+                      <strong style="color: var(--accent-red);">{{ b.split(':', 1)[0] }}:</strong>{{ b.split(':', 1)[1] if ':' in b else '' }}
+                    {% elif 'Defender' in b %}
+                      <strong style="color: var(--accent-green);">{{ b.split(':', 1)[0] }}:</strong>{{ b.split(':', 1)[1] if ':' in b else '' }}
+                    {% else %}
+                      {{ b }}
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="data-grid-cell" style="font-size: 16px; line-height: 1.65;">
+                  <strong style="color: var(--accent-red);">Attacker ({{ atk_c }}):</strong> {{ atk_s }}
+                </div>
+                <div class="data-grid-cell" style="font-size: 16px; line-height: 1.65;">
+                  <strong style="color: var(--accent-green);">Defender ({{ dfn_c }}):</strong> {{ dfn_s }}
+                </div>
               {% endif %}
-            </div>
-
-            <div style="font-size: 14.5px; color: #FFFFFF; line-height: 1.6; margin-bottom: 8px;">
-              <strong>Counterargument:</strong> {{ dfn.counterargument if (dfn is mapping and dfn.counterargument) else (dfn.alternative_explanation if dfn is mapping else dfn) }}
-            </div>
-
-            {% if dfn is mapping and dfn.falsification_condition %}
-              <div style="font-size: 13.5px; color: #86efac; line-height: 1.5; margin-bottom: 6px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px dashed rgba(34,197,94,0.3);">
-                <strong>Falsification Condition:</strong> {{ dfn.falsification_condition }}
-              </div>
-            {% endif %}
-
-            {% if dfn is mapping and dfn.evidence_strength %}
-              <div style="font-size: 13px; color: #bbf7d0; font-family: var(--font-mono);">
-                <strong>Evidence Strength:</strong> {{ dfn.evidence_strength }}
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- 8. Strength -->
-          <div class="math-card">
-            <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-              Strength
-            </div>
-            <div style="font-size: 14px; color: #FFFFFF; font-family: var(--font-mono);">
-              {{ rpt.strength or '' }}
             </div>
           </div>
         </div>
       </div>
     {% endfor %}
 
+    <!-- Execution Telemetry & Tool Audit Log (Identical Styling to Live Stream) -->
     {% if run.status == 'COMPLETED' and run.events %}
-      <div class="card" style="margin-top: 24px; border: 1px solid var(--border);">
-        <div class="card-header" style="cursor: pointer;" onclick="document.getElementById('audit-drawer').classList.toggle('hidden');">
-          <div class="card-title" style="font-size: 16px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="4 17 10 11 4 5"></polyline>
-              <line x1="12" y1="19" x2="20" y2="19"></line>
-            </svg>
-            <span>Execution Telemetry & Tool Audit Log ({{ run.events|length }} Events)</span>
+      <div class="card" style="margin-top: 32px; padding: 22px 26px; border: 1px solid var(--border-light);">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green);"></span>
+            <h2 style="font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: #FFFFFF; margin: 0;">
+              EXECUTION TELEMETRY &amp; TOOL AUDIT LOG
+            </h2>
+            <span class="badge badge-completed">{{ run.ticker }}</span>
           </div>
-          <span class="tag-badge" style="font-size: 10px;">CLICK TO TOGGLE</span>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-blue); background: var(--bg-surface-elevated); padding: 6px 12px; border: 1px solid var(--border); font-weight: 700;">
+              {{ run.events|length }} EVENTS
+            </span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAuditLog()" id="btn-toggle-audit">
+              <span id="audit-toggle-text">COLLAPSE LOG ▲</span>
+            </button>
+          </div>
         </div>
-        <div id="audit-drawer" style="background: #000; border-radius: var(--radius-sm); padding: 14px; max-height: 400px; overflow-y: auto; font-family: var(--font-mono); font-size: 12px; line-height: 1.6;">
-          {% for evt in run.events %}
-            <div style="margin-bottom: 6px;">
-              <span style="color: var(--text-muted);">[{{ evt.timestamp if evt.timestamp else '' }}]</span>
-              <span style="color: var(--accent-blue); font-weight: 700;">{{ evt.step }}:</span>
-              <span style="color: #e4e4e7;">{{ evt.message }}</span>
-              {% if evt.result %}
-                <pre style="background: #0a0a0f; border: 1px solid var(--border); padding: 6px; margin: 4px 0 8px 16px; border-radius: 4px; color: #a1a1aa; font-size: 11px; white-space: pre-wrap;">{{ evt.result }}</pre>
-              {% endif %}
+
+        <div id="audit-log-wrapper" style="background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--accent-green); font-weight: 700;">● AUDIT LOG ARCHIVED</span>
+              <span>·</span>
+              <span>TARGET: {{ run.ticker }}</span>
+              <span>·</span>
+              <span>ENGINE: {{ run.provider_used or run.provider or 'Gemini Cloud' }}</span>
             </div>
-          {% endfor %}
+            <div style="color: var(--text-dim);">DETERMINISTIC VERIFICATION</div>
+          </div>
+
+          <div id="audit-events-log" style="padding: 16px 20px; max-height: 540px; overflow-y: auto; font-family: var(--font-body); font-size: 16px; line-height: 1.6; color: var(--text-primary);">
+          </div>
         </div>
       </div>
     {% endif %}
 
   {% endif %}
 </div>
+
+<script>
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function createEventElement(data) {
+  if (!data) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'stream-row';
+
+  const timeStr = data.timestamp 
+    ? (typeof formatDeviceTimeOnly === 'function' ? formatDeviceTimeOnly(data.timestamp) : data.timestamp.substring(11, 19))
+    : new Date().toTimeString().substring(0, 8);
+  const timeHtml = `<span style="font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin-right: 8px;">[${timeStr}]</span>`;
+
+  if (data.step === 'INIT') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(53, 191, 255, 0.35); background: rgba(53, 191, 255, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="color: var(--accent-blue); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}TARGET SYSTEM INITIALIZATION ▶</span>
+          <span class="tag-badge" style="font-size: 11px;">${escapeHtml(data.model || data.provider || 'ENGINE')}</span>
+        </div>
+        <div style="color: #e0f2fe; font-size: 15.5px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'INGEST') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(155, 140, 255, 0.35); background: rgba(155, 140, 255, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <div style="color: var(--accent-violet); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px; margin-bottom: 4px;">
+          ${timeHtml}STATUTORY FILINGS INGESTION ✓
+        </div>
+        <div style="color: #e0e7ff; font-size: 15.5px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'ANALYTICS') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(231, 197, 71, 0.35); background: rgba(231, 197, 71, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <div style="color: var(--accent-yellow); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px; margin-bottom: 4px;">
+          ${timeHtml}FORENSIC STATISTICAL RADAR ▶
+        </div>
+        <div style="color: #fef3c7; font-size: 15.5px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'ANOMALY_START') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid var(--accent-yellow); background: rgba(231, 197, 71, 0.06); border-radius: var(--radius-sm); padding: 14px 18px; margin: 7px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="color: var(--accent-yellow); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px; text-transform: uppercase;">
+            ${timeHtml}TARGET ANOMALY: ${escapeHtml(data.metric || '')}
+          </span>
+          ${data.severity ? `<span class="badge" style="background: rgba(231,197,71,0.18); color: var(--accent-yellow); border: 1px solid var(--accent-yellow);">SEVERITY ${escapeHtml(data.severity)}/10</span>` : ''}
+        </div>
+        ${data.multi_quarter_trajectory ? `<div style="color: #fef08a; font-size: 15px; margin-top: 4px; line-height: 1.55;">${escapeHtml(data.multi_quarter_trajectory)}</div>` : ''}
+        ${data.message && data.message !== data.metric ? `<div style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">${escapeHtml(data.message)}</div>` : ''}
+      </div>
+    `;
+  } else if (data.step === 'PHASE1_START' || data.step === 'PHASE2_START') {
+    const isP1 = data.step === 'PHASE1_START';
+    const phaseTitle = isP1 ? 'PHASE 1: INVESTIGATIVE TRIANGULATION & SEARCH' : 'PHASE 2: COMPLETE FORENSIC SYNTHESIS';
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(155, 140, 255, 0.35); background: rgba(155, 140, 255, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          ${timeHtml}
+          <span style="color: var(--accent-violet); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${phaseTitle} ▶</span>
+        </div>
+        <div style="color: #f3e8ff; font-size: 15.5px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'TRIANGULATION') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(53, 191, 255, 0.4); background: rgba(53, 191, 255, 0.04); border-radius: var(--radius-sm); padding: 14px 18px; margin: 6px 0;">
+        <div style="color: var(--accent-blue); font-weight: 700; font-size: 12.5px; text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 6px;">
+          ${timeHtml}Preliminary Investigative Thesis
+        </div>
+        <div style="color: #e0e7ff; font-size: 16px; line-height: 1.6;">
+          "${escapeHtml(data.hypothesis || data.message || '')}"
+        </div>
+      </div>
+    `;
+  } else if (data.step === 'TOOL_CALL') {
+    const toolName = data.tool_name || 'FORENSIC TOOL';
+    let argStr = '';
+    if (data.tool_args && typeof data.tool_args === 'object') {
+      argStr = Object.entries(data.tool_args).map(([k, v]) => `${k}="${v}"`).join(', ');
+    }
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(53, 191, 255, 0.35); background: rgba(53, 191, 255, 0.04); border-radius: var(--radius-sm); padding: 11px 16px; margin: 6px 0; font-size: 15px;">
+        <span style="color: var(--accent-blue); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}TOOL EXECUTION ▶ ${escapeHtml(toolName.toUpperCase())}</span>
+        ${argStr ? `<span style="color: #93c5fd; font-family: var(--font-mono); font-size: 13px; margin-left: 8px;">(${escapeHtml(argStr)})</span>` : ''}
+      </div>
+    `;
+  } else if (data.step === 'TOOL_RESULT') {
+    const toolName = data.tool_name || 'FORENSIC EVIDENCE';
+    const evidenceText = data.result || data.result_preview || data.message || '';
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(36, 209, 126, 0.35); background: rgba(36, 209, 126, 0.04); border-radius: var(--radius-sm); padding: 14px 18px; margin: 7px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="color: var(--accent-green); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">
+            ${timeHtml}EVIDENCE RETRIEVED ✓ ${escapeHtml(toolName.toUpperCase())}
+          </span>
+          <span class="tag-badge">VERIFIED DISCLOSURE</span>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 13.5px; color: #a7f3d0; background: rgba(0,0,0,0.45); padding: 12px 14px; border: 1px solid rgba(36, 209, 126, 0.18); border-radius: var(--radius-sm); max-height: 220px; overflow-y: auto; white-space: pre-wrap; line-height: 1.55;">${escapeHtml(evidenceText)}</div>
+      </div>
+    `;
+  } else if (data.step === 'ATTACKER_START') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(255, 77, 87, 0.35); background: rgba(255, 77, 87, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <span style="color: var(--accent-red); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}PROSECUTORIAL CASE INITIATION ⚔</span>
+        <div style="color: #fee2e2; font-size: 15.5px; margin-top: 3px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'DEFENDER_START') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(36, 209, 126, 0.35); background: rgba(36, 209, 126, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <span style="color: var(--accent-green); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}CORPORATE DEFENSE COUNSEL INITIATION 🛡</span>
+        <div style="color: #dcfce7; font-size: 15.5px; margin-top: 3px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'ATTACKER' && (data.hypothesis || data.verdict)) {
+    const text = data.hypothesis || data.verdict || data.message || '';
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(255, 77, 87, 0.45); background: rgba(255, 77, 87, 0.05); border-radius: var(--radius-sm); padding: 14px 18px; margin: 7px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="color: var(--accent-red); font-weight: 700; font-size: 12.5px; text-transform: uppercase; font-family: var(--font-mono);">
+            ${timeHtml}ATTACKER CASE FORMULATED
+          </div>
+          ${data.confidence ? `<span class="badge badge-successful">CONFIDENCE: ${escapeHtml(data.confidence)}</span>` : ''}
+        </div>
+        <div style="color: #FFFFFF; font-size: 16px; line-height: 1.65;">
+          ${escapeHtml(text)}
+        </div>
+        ${data.evidence_strength ? `
+          <div style="font-size: 13.5px; color: #fca5a5; font-family: var(--font-mono); margin-top: 8px; background: rgba(0,0,0,0.4); padding: 8px 12px; border: 1px solid rgba(239,68,68,0.25); border-radius: var(--radius-sm);">
+            <strong>Evidence Strength:</strong> ${escapeHtml(data.evidence_strength)}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  } else if (data.step === 'DEFENDER' && (data.counterargument || data.hypothesis || data.alternative_explanation)) {
+    const text = data.counterargument || data.alternative_explanation || data.hypothesis || data.message || '';
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(36, 209, 126, 0.45); background: rgba(36, 209, 126, 0.05); border-radius: var(--radius-sm); padding: 14px 18px; margin: 7px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="color: var(--accent-green); font-weight: 700; font-size: 12.5px; text-transform: uppercase; font-family: var(--font-mono);">
+            ${timeHtml}DEFENDER CASE FORMULATED
+          </div>
+          ${data.confidence ? `<span class="badge badge-completed">CONFIDENCE: ${escapeHtml(data.confidence)}</span>` : ''}
+        </div>
+        <div style="color: #FFFFFF; font-size: 16px; line-height: 1.65; margin-bottom: 8px;">
+          ${escapeHtml(text)}
+        </div>
+        ${data.falsification_condition ? `
+          <div style="font-size: 13.5px; color: #86efac; background: rgba(0,0,0,0.4); padding: 8px 12px; border: 1px dashed rgba(36,209,126,0.35); border-radius: var(--radius-sm); margin-bottom: 6px;">
+            <strong>Falsification Condition:</strong> ${escapeHtml(data.falsification_condition)}
+          </div>
+        ` : ''}
+        ${data.evidence_strength ? `
+          <div style="font-size: 13.5px; color: #bbf7d0; font-family: var(--font-mono); background: rgba(0,0,0,0.4); padding: 8px 12px; border: 1px solid rgba(36,209,126,0.25); border-radius: var(--radius-sm);">
+            <strong>Evidence Strength:</strong> ${escapeHtml(data.evidence_strength)}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  } else if (data.step === 'SYNTHESIS') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(231, 197, 71, 0.35); background: rgba(231, 197, 71, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <span style="color: var(--accent-yellow); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}EDITORIAL SYNTHESIS COMPILATION ▶</span>
+        <div style="color: #fef3c7; font-size: 15.5px; margin-top: 3px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'ANOMALY_COMPLETE') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(36, 209, 126, 0.35); background: rgba(36, 209, 126, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <span style="color: var(--accent-green); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}ANOMALY INVESTIGATION COMPLETE ✓</span>
+        <div style="color: #dcfce7; font-size: 15.5px; margin-top: 3px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'EXPORT') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(155, 140, 255, 0.35); background: rgba(155, 140, 255, 0.04); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <span style="color: var(--accent-violet); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}DELIVERABLE EXPORT ▶</span>
+        <div style="color: #f3e8ff; font-size: 15.5px; margin-top: 3px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'DONE' || data.step === 'FINISHED') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(36, 209, 126, 0.5); background: rgba(36, 209, 126, 0.06); border-radius: var(--radius-sm); padding: 14px 18px; margin: 6px 0;">
+        <span style="color: var(--accent-green); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}FORENSIC INVESTIGATION PIPELINE COMPLETED ✓</span>
+        <div style="color: #ecfdf5; font-size: 15.5px; margin-top: 4px; line-height: 1.55;">${escapeHtml(data.message || 'Investigation completed successfully.')}</div>
+      </div>
+    `;
+  } else if (data.step === 'RETRY') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(231, 197, 71, 0.45); background: rgba(231, 197, 71, 0.06); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span style="color: var(--accent-yellow); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}⚠️ TRANSIENT CLOUD CAPACITY (503) — AUTO-RETRYING ▶</span>
+          <span class="badge" style="background: rgba(231,197,71,0.2); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); font-size: 11px;">ATTEMPT ${escapeHtml(data.attempt || '1')}/${escapeHtml(data.max_attempts || '7')}</span>
+        </div>
+        <div style="color: #fef08a; font-size: 15px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.step === 'ERROR') {
+    wrap.innerHTML = `
+      <div style="border: 1px solid rgba(255, 77, 87, 0.45); background: rgba(255, 77, 87, 0.07); border-radius: var(--radius-sm); padding: 12px 16px; margin: 6px 0;">
+        <span style="color: var(--accent-red); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px;">${timeHtml}EXECUTION ERROR ✖</span>
+        <div style="color: #fee2e2; font-size: 15.5px; margin-top: 3px; line-height: 1.55;">${escapeHtml(data.message || '')}</div>
+      </div>
+    `;
+  } else if (data.message) {
+    const stepHtml = data.step ? `<span style="color: var(--accent-blue); font-weight: 700; font-family: var(--font-mono); font-size: 12.5px; margin-right: 8px;">${escapeHtml(data.step)}:</span>` : '';
+    wrap.innerHTML = `
+      <div style="padding: 8px 12px; border-left: 2px solid var(--border-highlight); margin: 4px 0; background: rgba(255,255,255,0.02); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+        ${timeHtml}${stepHtml}<span style="color: var(--text-secondary); font-size: 15.5px; line-height: 1.55;">${escapeHtml(data.message)}</span>
+      </div>
+    `;
+  }
+  return wrap;
+}
+
+function formatNumberItemHtml(n) {
+  if (!n) return '';
+  const nStr = String(n).trim();
+  if (nStr.includes(':')) {
+    const colonIdx = nStr.indexOf(':');
+    const label = nStr.substring(0, colonIdx).trim();
+    const val = nStr.substring(colonIdx + 1).trim();
+
+    // Multi-quarter trajectory (3 or more ->)
+    if (val.includes(' -> ') && val.split(' -> ').length >= 3) {
+      const steps = val.split(' -> ');
+      const stepsHtml = steps.map(function(step, sIdx) {
+        let stepInner = '';
+        if (step.includes(':')) {
+          const sColon = step.indexOf(':');
+          const sDate = step.substring(0, sColon).trim();
+          const sData = step.substring(sColon + 1).trim();
+          let metricsHtml = '';
+          if (sData.includes(' | ')) {
+            metricsHtml = sData.split(' | ').map(function(m) {
+              return `<span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF; font-variant-numeric: tabular-nums;">${escapeHtml(m.trim())}</span>`;
+            }).join('<span style="color: var(--text-muted); font-size: 11px;">·</span>');
+          } else {
+            metricsHtml = `<span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF; font-variant-numeric: tabular-nums;">${escapeHtml(sData)}</span>`;
+          }
+          stepInner = `
+            <span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-yellow);">${escapeHtml(sDate)}</span>
+            <span style="color: var(--border-light); font-size: 11px;">|</span>
+            ${metricsHtml}
+          `;
+        } else {
+          stepInner = `<span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF;">${escapeHtml(step.trim())}</span>`;
+        }
+
+        const arrow = sIdx < steps.length - 1 ? '<span style="color: var(--accent-blue); font-size: 15px; font-weight: 700; user-select: none;">→</span>' : '';
+        return `
+          <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+            ${stepInner}
+          </div>
+          ${arrow}
+        `;
+      }).join('');
+
+      return `
+        <div class="data-grid-cell" style="grid-column: 1 / -1; background: var(--bg-surface); border: 1px solid var(--border-light); padding: 18px 22px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px;">
+            <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.06em; text-transform: uppercase;">
+              ${escapeHtml(label)}
+            </span>
+            <span class="badge" style="background: rgba(231, 197, 71, 0.12); color: var(--accent-yellow); border: 1px solid rgba(231, 197, 71, 0.35); font-size: 11px;">
+              ${steps.length} QUARTERS MAPPED
+            </span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            ${stepsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // Sector Peer Benchmark or multiple pipes
+    if (label.toUpperCase().includes('SECTOR PEER') || (val.includes(' | ') && val.split(' | ').length >= 3)) {
+      const pipeItems = val.split(' | ');
+      const headHtml = `<span style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-violet); background: rgba(155, 140, 255, 0.08); padding: 5px 10px; border: 1px solid rgba(155, 140, 255, 0.25); border-radius: var(--radius-sm);">${escapeHtml(pipeItems[0].trim())}</span>`;
+      const subHtml = pipeItems.slice(1).map(function(sub) {
+        return `<span style="font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; color: #FFFFFF; background: var(--bg-surface-elevated); padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-variant-numeric: tabular-nums;">${escapeHtml(sub.trim())}</span>`;
+      }).join('');
+
+      return `
+        <div class="data-grid-cell" style="grid-column: 1 / -1; background: var(--bg-surface); border: 1px solid var(--border-light); padding: 16px 20px;">
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px;">
+            ${escapeHtml(label)}
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            ${headHtml}
+            ${subHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // 2-point transition (Baseline -> Target)
+    if (val.includes(' -> ')) {
+      const pair = val.split(' -> ');
+      return `
+        <div class="data-grid-cell" style="background: var(--bg-surface); border: 1px solid var(--border-light);">
+          <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px;">
+            ${escapeHtml(label)}
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: #FFFFFF; line-height: 1.6; font-variant-numeric: tabular-nums;">
+            <span>${escapeHtml(pair[0].trim())}</span>
+            <span style="color: var(--accent-blue); font-weight: 700; margin: 0 6px;">→</span>
+            <span>${escapeHtml(pair[1].trim())}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Standard metric card
+    return `
+      <div class="data-grid-cell" style="background: var(--bg-surface); border: 1px solid var(--border-light);">
+        <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px;">
+          ${escapeHtml(label)}
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 16.5px; font-weight: 600; color: #FFFFFF; line-height: 1.6; font-variant-numeric: tabular-nums;">
+          ${escapeHtml(val)}
+        </div>
+      </div>
+    `;
+  }
+
+  // Fallback if no colon
+  return `
+    <div class="data-grid-cell" style="background: var(--bg-surface); border: 1px solid var(--border-light);">
+      <div style="font-family: var(--font-mono); font-size: 16.5px; font-weight: 600; color: #FFFFFF; line-height: 1.6; font-variant-numeric: tabular-nums;">
+        ${escapeHtml(nStr)}
+      </div>
+    </div>
+  `;
+}
+
+function renderProgressiveDossier(data) {
+  const pd = document.getElementById('progressive-dossier');
+  if (!pd) return;
+  pd.style.display = 'block';
+
+  const ind = data.indicators || {};
+  const anoms = data.anomalies || [];
+  const primaryAnom = anoms[0] || {};
+
+  let indChips = '';
+  if (ind['Market Cap']) indChips += `<span class="stat-chip">MKT CAP: <strong>${escapeHtml(ind['Market Cap'])}</strong></span>`;
+  if (ind['P/E']) indChips += `<span class="stat-chip">P/E: <strong>${escapeHtml(ind['P/E'])}</strong></span>`;
+  if (ind['ROCE']) indChips += `<span class="stat-chip">ROCE: <strong>${escapeHtml(ind['ROCE'])}</strong></span>`;
+  if (ind['Debt / Eq']) indChips += `<span class="stat-chip">DEBT/EQ: <strong>${escapeHtml(ind['Debt / Eq'])}</strong></span>`;
+
+  let bullets = primaryAnom.numbers_bullets || [];
+  const traj = primaryAnom.multi_quarter_trajectory || '';
+
+  // Ensure trajectory is formatted into bullets if not already present
+  const hasTrajectoryBullet = bullets.some(b => String(b).includes('Trajectory'));
+  if (traj && traj.includes(' -> ') && !hasTrajectoryBullet) {
+    bullets = bullets.concat([`Quarterly Trajectory: ${traj}`]);
+  }
+
+  let bulletsHtml = '';
+  if (bullets && bullets.length) {
+    bulletsHtml = `
+      <div style="margin-top: 14px;">
+        <div style="font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;">
+          AUDITED FORENSIC NUMBERS &amp; TRAJECTORY
+        </div>
+        <div class="data-grid">
+          ${bullets.map(formatNumberItemHtml).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  let narrativeTrajHtml = '';
+  if (traj && !traj.includes(' -> ')) {
+    narrativeTrajHtml = `<p style="color: var(--text-secondary); font-size: 15.5px; line-height: 1.6; margin: 0 0 10px 0;">${escapeHtml(traj)}</p>`;
+  }
+
+  pd.innerHTML = `
+    <div class="card" style="border: 1px solid var(--border-light); background: var(--bg-surface-elevated); padding: 20px 24px; border-radius: var(--radius); margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="live-radar-dot"></span>
+            <span style="font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; color: var(--accent-yellow); letter-spacing: 0.08em; font-weight: 700;">
+              IMMEDIATE FORENSIC DOSSIER DISCOVERY
+            </span>
+          </div>
+          <h2 style="font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: #FFFFFF; margin: 0; letter-spacing: -0.02em;">
+            ${escapeHtml(data.company_name || 'Target Entity')} (${escapeHtml(data.ticker || '{{ run.ticker }}')})
+          </h2>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          ${indChips}
+        </div>
+      </div>
+
+      ${primaryAnom.metric ? `
+        <div style="border-top: 1px solid var(--border); padding-top: 14px; margin-top: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: #FFFFFF;">
+              Target Anomaly: ${escapeHtml(primaryAnom.metric)}
+            </div>
+            ${primaryAnom.severity ? `<span class="badge" style="background: rgba(231, 197, 71, 0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); font-size: 11px;">SEVERITY ${escapeHtml(primaryAnom.severity)}/10</span>` : ''}
+          </div>
+          ${narrativeTrajHtml}
+          ${bulletsHtml}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// Live Execution Handlers
+{% if run.status in ('QUEUED', 'RUNNING') %}
+const logBox = document.getElementById('live-stream-log');
+const timerEl = document.getElementById('live-timer');
+const counterEl = document.getElementById('live-event-counter');
+let evtSource = null;
+let eventCount = 0;
+const startTime = Date.now();
+
+function updateTimer() {
+  if (!timerEl) return;
+  const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+  const m = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+  const s = String(elapsedSec % 60).padStart(2, '0');
+  timerEl.textContent = `ELAPSED: ${m}:${s}`;
+}
+setInterval(updateTimer, 1000);
+
+function appendEvent(data) {
+  if (!data) return;
+  if (data.step === 'ANALYTICS' && data.company_name) {
+    renderProgressiveDossier(data);
+  }
+
+  eventCount++;
+  if (counterEl) counterEl.textContent = `${eventCount} EVENTS`;
+
+  const node = createEventElement(data);
+  if (node && logBox) {
+    logBox.appendChild(node);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+}
+
+if (window.EventSource) {
+  evtSource = new EventSource("{{ url_for('api_investigation_stream', run_id=run.run_id) }}");
+  evtSource.onmessage = function(e) {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.step === 'FINISHED' || data.status === 'COMPLETED' || data.status === 'FAILED') {
+        evtSource.close();
+        setTimeout(function() { window.location.reload(); }, 1200);
+        return;
+      }
+      appendEvent(data);
+    } catch (err) {}
+  };
+  evtSource.onerror = function() {
+    pollStatus();
+  };
+} else {
+  pollStatus();
+}
+
+function pollStatus() {
+  fetch("{{ url_for('api_investigation_events', run_id=run.run_id) }}")
+    .then(function(res) { return res.json(); })
+    .then(function(d) {
+      if (d.events && d.events.length) {
+        logBox.innerHTML = '';
+        d.events.forEach(appendEvent);
+      }
+      if (d.status === 'COMPLETED' || d.status === 'FAILED') {
+        setTimeout(function() { window.location.reload(); }, 1200);
+      } else {
+        setTimeout(pollStatus, 2000);
+      }
+    })
+    .catch(function() { setTimeout(pollStatus, 3000); });
+}
+{% endif %}
+
+// Completed Audit Log Population (Identical styling to SSE Streamer)
+{% if run.status == 'COMPLETED' and run.events %}
+(function() {
+  const completedEvents = {{ (run.events or []) | tojson }};
+  const auditContainer = document.getElementById('audit-events-log');
+  if (auditContainer && completedEvents && completedEvents.length) {
+    completedEvents.forEach(evt => {
+      const node = createEventElement(evt);
+      if (node) auditContainer.appendChild(node);
+    });
+  }
+})();
+
+function toggleAuditLog() {
+  const wrapper = document.getElementById('audit-log-wrapper');
+  const btnText = document.getElementById('audit-toggle-text');
+  if (!wrapper) return;
+  if (wrapper.style.display === 'none') {
+    wrapper.style.display = 'block';
+    if (btnText) btnText.textContent = 'COLLAPSE LOG ▲';
+  } else {
+    wrapper.style.display = 'none';
+    if (btnText) btnText.textContent = 'EXPAND LOG ▼';
+  }
+}
+{% endif %}
+
+function confirmDeleteRun(runId, ticker) {
+  if (confirm(`Permanently delete investigation ${runId} for ${ticker}? This action cannot be undone.`)) {
+    fetch(`/api/investigation/${runId}/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = "{{ url_for('investigations_history_page') }}";
+      } else {
+        alert("Failed to delete report.");
+      }
+    })
+    .catch(err => alert("Error deleting report: " + err));
+  }
+}
+</script>
 {% endblock %}

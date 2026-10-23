@@ -8,8 +8,12 @@ from agent.attacker import Attacker
 from agent.defender import Defender
 from agent.finder import Finder
 from agent.llm import LLM
+from agent.prompts import (
+    SYNTHESIS_SYSTEM_PROMPT,
+    build_synthesis_prompt,
+    format_numbers_bullets,
+)
 from config import OLLAMA_MODEL
-from export.pdf import generate_pdf_report
 
 
 def build_deterministic_numbers(
@@ -73,6 +77,7 @@ def synthesize_anomaly_report(
     key_numbers: Optional[List[Dict[str, Any]]] = None,
     dossier: Optional[Dict[str, Any]] = None,
     model: Optional[str] = None,
+    event_callback: Optional[Callable[..., None]] = None,
 ) -> Tuple[Dict[str, Any], str]:
     metric = anomaly.get("metric", "Financial Metric")
     multi_quarter_trajectory = anomaly.get("multi_quarter_trajectory", "")
@@ -81,47 +86,27 @@ def synthesize_anomaly_report(
     numbers_list = build_deterministic_numbers(anomaly, peer_benchmarks)
     evidence_clean = build_deterministic_evidence(evidence_items)
 
-    numbers_text = "\n".join([f"- {n}" for n in numbers_list])
+    numbers_text = format_numbers_bullets(numbers_list)
     atk_verdict = str(attacker_result.get("verdict", "") or attacker_result.get("hypothesis", "")).strip()
     def_counter = str(defender_result.get("counterargument", "") or defender_result.get("hypothesis", "")).strip()
 
-    prompt = f"""Target Entity: {company_name} ({ticker})
-
-Anomaly Under Review:
-- Metric: {metric}
-- Multi-Quarter Trajectory: {multi_quarter_trajectory}
-- Calculated Numbers:
-{numbers_text}
-
-Attacker Case:
-"{atk_verdict}"
-
-Defender Case:
-"{def_counter}"
-
-Task:
-Synthesize the foundational discovery sentence, the commercial why-it-matters bullet points, and the multi-quarter chronological timeline narrative.
-
-Requirements:
-1. discovery: Exactly one clear sentence stating the core financial anomaly with exact numbers.
-2. why_it_matters: Array of comprehensive analytical plain-English bullet strings explaining the commercial consequences, capital allocation impact, and peer competitive implications. Provide full depth.
-3. timeline: A thorough chronological narrative tracing the exact multi-quarter progression from the trajectory provided.
-Do not output template text or prompt instructions. Write exclusively in fluent English.
-
-Output strictly valid JSON with this exact schema:
-{{
-  "discovery": "One clear sentence stating the core financial anomaly with exact numbers.",
-  "why_it_matters": [
-    "First comprehensive impact analysis",
-    "Second comprehensive impact analysis",
-    "Third comprehensive impact analysis"
-  ],
-  "timeline": "Thorough chronological narrative of the multi-quarter progression."
-}}
-"""
-    system = "You are a senior institutional financial editor. Output strictly valid JSON conforming to the requested schema. Write exclusively in fluent English."
+    prompt = build_synthesis_prompt(
+        company_name=company_name,
+        ticker=ticker,
+        metric=metric,
+        multi_quarter_trajectory=multi_quarter_trajectory,
+        numbers_text=numbers_text,
+        attacker_verdict=atk_verdict,
+        defender_counterargument=def_counter,
+    )
+    system = SYNTHESIS_SYSTEM_PROMPT
     llm = LLM(model=model)
-    parsed, provider = llm.generate_json(prompt, system=system)
+    parsed, provider = llm.generate_json(
+        prompt,
+        system=system,
+        event_callback=event_callback,
+        label=f"Editorial Synthesis ({metric})",
+    )
     if isinstance(parsed, dict) and "json" in parsed and isinstance(parsed["json"], dict):
         parsed = parsed["json"]
 
@@ -133,9 +118,16 @@ Output strictly valid JSON with this exact schema:
         why_matters = []
     why_matters = [str(b).strip() for b in why_matters if str(b).strip()]
 
-    timeline_str = str(parsed.get("timeline", "")).strip()
+    timeline_raw = parsed.get("timeline", [])
+    if isinstance(timeline_raw, list):
+        timeline_list = [str(b).strip().lstrip("-•* ").strip() for b in timeline_raw if str(b).strip()]
+    elif isinstance(timeline_raw, str):
+        lines = [line.strip().lstrip("-•* ").strip() for line in timeline_raw.split("\n") if line.strip()]
+        timeline_list = lines if lines else [timeline_raw.strip()]
+    else:
+        timeline_list = []
 
-    if not discovery or not why_matters or not timeline_str:
+    if not discovery or not why_matters or not timeline_list:
         raise KeyError(f"LLM synthesis missing required field: {parsed}")
 
     atk_strength = str(attacker_result.get("evidence_strength", "")).strip()
@@ -145,13 +137,16 @@ Output strictly valid JSON with this exact schema:
     def_strength = str(defender_result.get("evidence_strength", "")).strip()
     def_conf = str(defender_result.get("confidence", "")).strip()
 
-    strength_summary = f"Attacker: {atk_conf} ({atk_strength}) | Defender: {def_conf} ({def_strength})"
+    strength_bullets = [
+        f"Attacker ({atk_conf}): {atk_strength}",
+        f"Defender ({def_conf}): {def_strength}",
+    ]
 
     final_report = {
         "discovery": discovery,
         "why_it_matters": why_matters,
         "evidence": evidence_clean,
-        "timeline": timeline_str,
+        "timeline": timeline_list,
         "numbers": numbers_list,
         "attacker": {
             "verdict": atk_verdict,
@@ -164,7 +159,7 @@ Output strictly valid JSON with this exact schema:
             "evidence_strength": def_strength,
             "confidence": def_conf,
         },
-        "strength": strength_summary,
+        "strength": strength_bullets,
     }
 
     return final_report, provider
@@ -220,8 +215,15 @@ def run_investigation(
     base_dir = Path(output_dir or f"data/runs/{run_id}")
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    emit("INIT", f"Targeting {clean_ticker} via {active_model} ({provider_label})", {"model": active_model, "provider": active_provider})
-    emit("INGEST", f"Ingesting statutory filings and financial statements for {clean_ticker}")
+    emit("INIT", f"Targeting {clean_ticker} via {active_model} ({provider_label})", {
+        "model": active_model,
+        "provider": active_provider,
+        "provider_label": provider_label,
+        "ticker": clean_ticker,
+    })
+    emit("INGEST", f"Ingesting statutory filings, annual balance sheets, and concall transcripts for {clean_ticker}", {
+        "ticker": clean_ticker,
+    })
     finder = Finder()
     dossier = finder.gather_company_dossier(clean_ticker)
     company_name = dossier["company_name"]
@@ -232,9 +234,15 @@ def run_investigation(
     if not all_anomalies:
         raise RuntimeError(f"No statistical anomalies detected in financial statements for {clean_ticker}")
 
-    emit("ANALYTICS", f"Computed financial indicators and identified {len(all_anomalies)} anomalies")
-
     target_anomalies = all_anomalies[:anomaly_count]
+
+    emit("ANALYTICS", f"Financial analysis complete: identified {len(all_anomalies)} statistical anomalies across filings", {
+        "company_name": company_name,
+        "ticker": clean_ticker,
+        "indicators": indicators,
+        "anomalies": target_anomalies,
+        "total_anomalies": len(all_anomalies),
+    })
 
     attacker = Attacker(model=active_model)
     defender = Defender(model=active_model)
@@ -243,7 +251,13 @@ def run_investigation(
 
     for idx, anomaly in enumerate(target_anomalies, start=1):
         metric = anomaly.get("metric", f"Anomaly #{idx}")
-        emit("ANOMALY_START", f"Examining Anomaly {idx}/{len(target_anomalies)}: {metric}", {"index": idx, "metric": metric})
+        emit("ANOMALY_START", f"Examining Anomaly {idx}/{len(target_anomalies)}: {metric}", {
+            "index": idx,
+            "metric": metric,
+            "severity": anomaly.get("severity", 5.0),
+            "multi_quarter_trajectory": anomaly.get("multi_quarter_trajectory", ""),
+            "numbers_bullets": anomaly.get("numbers_bullets", []),
+        })
 
         emit("ATTACKER_START", f"Attacker building prosecutorial case on {metric}", {"index": idx})
         attack_ctx = finder.get_attack_context(anomaly, key_numbers, evidence_items)
@@ -304,6 +318,7 @@ def run_investigation(
             defender_result=def_res,
             dossier=dossier,
             model=active_model,
+            event_callback=emit,
         )
         last_provider = prov_synth
 
@@ -314,16 +329,6 @@ def run_investigation(
             "report": report_8_point,
         })
         emit("ANOMALY_COMPLETE", f"Completed Anomaly {idx}: {metric}", {"index": idx})
-
-    emit("EXPORT", f"Generating PDF report for {clean_ticker}")
-    pdf_file = str(base_dir / "report.pdf")
-    generate_pdf_report(
-        output_path=pdf_file,
-        company=company_name,
-        ticker=clean_ticker,
-        investigated_anomalies=investigated_anomalies,
-        indicators=indicators,
-    )
 
     first_discovery = investigated_anomalies[0]["report"]["discovery"] if investigated_anomalies else ""
 
@@ -344,7 +349,6 @@ def run_investigation(
         "indicators": indicators,
         "evidence_items": evidence_items,
         "evidence_count": len(evidence_items),
-        "pdf_path": pdf_file,
         "events": execution_events,
         "status": "COMPLETED",
     }

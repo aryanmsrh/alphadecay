@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}500 SERVER ERROR{% endblock %}
-
 {% block content %}
-<div class="empty-state" style="padding: 60px 20px;">
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+<div class="empty-state" style="padding: 60px 24px; max-width: 620px; margin: 60px auto;">
+  <div style="font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--accent-red); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px;">
+    HTTP 500 // INTERNAL SERVER ERROR
+  </div>
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--accent-red); margin-bottom: 16px;">
     <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
     <line x1="12" y1="8" x2="12" y2="12"></line>
     <line x1="12" y1="16" x2="12.01" y2="16"></line>
   </svg>
   <h2>Internal Server Error</h2>
-  <p>{{ message or "An unexpected runtime error occurred in the investigation service." }}</p>
-  <div style="display: flex; gap: 10px; justify-content: center; margin-top: 18px;">
-    <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Dashboard</a>
+  <p>{{ message or "An unexpected runtime error occurred within the forensic engine. The incident has been recorded." }}</p>
+  <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">Return to Dashboard</a>
   </div>
 </div>
 {% endblock %}

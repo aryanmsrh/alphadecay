@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 
-{% block topbar_title %}404 NOT FOUND{% endblock %}
-
 {% block content %}
-<div class="empty-state" style="padding: 60px 20px;">
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+<div class="empty-state" style="padding: 60px 24px; max-width: 620px; margin: 60px auto;">
+  <div style="font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: var(--accent-blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px;">
+    HTTP 404 // RESOURCE NOT FOUND
+  </div>
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--accent-blue); margin-bottom: 16px;">
     <circle cx="12" cy="12" r="10"></circle>
     <line x1="12" y1="8" x2="12" y2="12"></line>
     <line x1="12" y1="16" x2="12.01" y2="16"></line>
   </svg>
   <h2>Resource Not Found</h2>
-  <p>{{ message or "The requested investigation run or artifact could not be located." }}</p>
-  <div style="display: flex; gap: 10px; justify-content: center; margin-top: 18px;">
-    <a href="{{ url_for('index') }}" class="btn btn-primary">Dashboard</a>
-    <a href="{{ url_for('investigations_history_page') }}" class="btn btn-secondary">Investigation History</a>
+  <p>{{ message or "The requested investigation run, page route, or forensic telemetry record could not be located." }}</p>
+  <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">Return to Dashboard</a>
+    <a href="{{ url_for('investigations_history_page') }}" class="btn btn-secondary btn-sm">Investigation History</a>
   </div>
 </div>
 {% endblock %}

@@ -1,12 +1,12 @@
 # AlphaDecay: Autonomous Financial Research Agent
 
-<p align="left">
-  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=flat&logo=python&logoColor=white&labelColor=0d1117" alt="Python 3.12+"></a>
-  <a href="https://flask.palletsprojects.com"><img src="https://img.shields.io/badge/Flask-3.1-000000?style=flat&logo=flask&logoColor=white&labelColor=0d1117" alt="Flask 3.1"></a>
-  <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Google%20Gemini-4--Argon%20%7C%203.8--Flash-4285F4?style=flat&logo=google&logoColor=white&labelColor=0d1117" alt="Google Gemini"></a>
-  <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-DeepSeek--R1-white?style=flat&logo=ollama&logoColor=black&labelColor=0d1117" alt="Ollama"></a>
-  <a href="https://bits-atmos.org"><img src="https://img.shields.io/badge/ATMOS%202026-BITS%20Pilani-E11D48?style=flat&labelColor=0d1117" alt="ATMOS 2026"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Source--Available-24D17E?style=flat&labelColor=0d1117" alt="License"></a>
+<p align="center">
+  <a href="https://python.org"><img src="https://img.shields.io/badge/PYTHON-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=08090C" alt="Python 3.12" /></a>
+  <a href="https://flask.palletsprojects.com"><img src="https://img.shields.io/badge/FLASK-3.1-000000?style=for-the-badge&logo=flask&logoColor=white&labelColor=08090C" alt="Flask 3.1" /></a>
+  <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/GOOGLE_GEMINI-4--ARGON_%7C_3.8--FLASH-4285F4?style=for-the-badge&logo=google&logoColor=white&labelColor=08090C" alt="Google Gemini" /></a>
+  <a href="https://ollama.com"><img src="https://img.shields.io/badge/OLLAMA-DEEPSEEK--R1-white?style=for-the-badge&logo=ollama&logoColor=black&labelColor=08090C" alt="Ollama DeepSeek-R1" /></a>
+  <a href="https://bits-atmos.org"><img src="https://img.shields.io/badge/ATMOS_2026-BITS_PILANI-E11D48?style=for-the-badge&labelColor=08090C" alt="ATMOS 2026" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-SOURCE--AVAILABLE-10B981?style=for-the-badge&labelColor=08090C" alt="License" /></a>
 </p>
 
 > **ATMOS 2026 · BITS Pilani Hyderabad Campus**  
